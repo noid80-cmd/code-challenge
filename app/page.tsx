@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
+import ChordPlayer from './components/ChordPlayer'
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type Challenge = {
@@ -134,35 +135,25 @@ export default function HomePage() {
           </div>
 
           {challenge ? (
-            <div style={{ background: 'linear-gradient(145deg, #0d0d1f, #13103a)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 20, padding: 20 }}>
-              <h2 style={{ fontSize: 17, fontWeight: 800, color: '#eeeeff', marginBottom: challenge.description ? 6 : 16 }}>
-                {challenge.title}
-              </h2>
-              {challenge.description && (
-                <p style={{ fontSize: 13, color: '#8888aa', marginBottom: 16, lineHeight: 1.5 }}>{challenge.description}</p>
-              )}
-              {challenge.chords?.progressions?.map((prog, i) => (
-                <div key={i} style={{ marginBottom: i < challenge.chords.progressions.length - 1 ? 16 : 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                    <span style={{ fontSize: 11, color: '#818cf8', fontWeight: 700 }}>{prog.label}</span>
-                    {prog.style && <span style={{ fontSize: 11, color: '#444466' }}>{prog.style}</span>}
-                    {prog.tempo && <span style={{ fontSize: 11, color: '#444466' }}>♩={prog.tempo}</span>}
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {prog.chords.map((chord, j) => (
-                      <span key={j} style={{ padding: '7px 13px', borderRadius: 9, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', fontSize: 15, fontWeight: 800, color: '#c7d2fe', fontFamily: 'monospace' }}>
-                        {chord}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <div>
+              <div style={{ marginBottom: 12 }}>
+                <h2 style={{ fontSize: 17, fontWeight: 800, color: '#eeeeff', marginBottom: challenge.description ? 4 : 0 }}>
+                  {challenge.title}
+                </h2>
+                {challenge.description && (
+                  <p style={{ fontSize: 13, color: '#8888aa', lineHeight: 1.5 }}>{challenge.description}</p>
+                )}
+              </div>
+              <ChordPlayer
+                progressions={challenge.chords?.progressions ?? []}
+                defaultTempo={challenge.chords?.progressions?.[0]?.tempo ?? 120}
+              />
               {user ? (
-                <Link href="/upload" style={{ display: 'block', marginTop: 18, padding: '12px', borderRadius: 13, background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', fontSize: 14, fontWeight: 700, textAlign: 'center' }}>
+                <Link href="/upload" style={{ display: 'block', marginTop: 12, padding: '12px', borderRadius: 13, background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', fontSize: 14, fontWeight: 700, textAlign: 'center' }}>
                   🎹 챌린지 참여하기
                 </Link>
               ) : (
-                <Link href="/login" style={{ display: 'block', marginTop: 18, padding: '12px', borderRadius: 13, background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8', fontSize: 14, fontWeight: 700, textAlign: 'center' }}>
+                <Link href="/login" style={{ display: 'block', marginTop: 12, padding: '12px', borderRadius: 13, background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8', fontSize: 14, fontWeight: 700, textAlign: 'center' }}>
                   로그인하고 참여하기
                 </Link>
               )}
