@@ -169,11 +169,11 @@ export default function AdminPage() {
         {/* 모드 탭 */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           <button onClick={() => { setMode('manual'); setDraft(emptyDraft()); setError('') }}
-            style={{ flex: 1, padding: '11px', borderRadius: 12, border: 'none', background: mode === 'manual' ? 'rgba(99,102,241,0.2)' : '#0e0e1a', color: mode === 'manual' ? '#a5b4fc' : '#555570', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: mode === 'manual' ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.07)' } as React.CSSProperties}>
+            style={{ flex: 1, padding: '11px', borderRadius: 12, background: mode === 'manual' ? 'rgba(99,102,241,0.2)' : '#0e0e1a', color: mode === 'manual' ? '#a5b4fc' : '#555570', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: mode === 'manual' ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
             ✏️ 직접 입력
           </button>
           <button onClick={() => { setMode('ai'); setDraft(null); setError('') }}
-            style={{ flex: 1, padding: '11px', borderRadius: 12, border: 'none', background: mode === 'ai' ? 'rgba(99,102,241,0.2)' : '#0e0e1a', color: mode === 'ai' ? '#a5b4fc' : '#555570', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: mode === 'ai' ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.07)' } as React.CSSProperties}>
+            style={{ flex: 1, padding: '11px', borderRadius: 12, background: mode === 'ai' ? 'rgba(99,102,241,0.2)' : '#0e0e1a', color: mode === 'ai' ? '#a5b4fc' : '#555570', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: mode === 'ai' ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
             🤖 AI 생성
           </button>
         </div>
