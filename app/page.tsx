@@ -4,8 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
-import dynamic from 'next/dynamic'
-const ChordPlayer = dynamic(() => import('./components/ChordPlayer'), { ssr: false })
+import ChordPlayer from './components/ChordPlayer'
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type Challenge = {
