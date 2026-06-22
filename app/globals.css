@@ -10,3 +10,31 @@ body {
 a { text-decoration: none; color: inherit; }
 button, input, textarea, select { font-family: inherit; }
 input::placeholder, textarea::placeholder { color: #444466; }
+
+button { transition: opacity 0.15s, transform 0.1s, background 0.15s; }
+button:active:not(:disabled) { transform: scale(0.97); }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2a2a44; border-radius: 4px; }
+
+input[type="range"] {
+  -webkit-appearance: none;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.08);
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #6366f1;
+  box-shadow: 0 0 8px rgba(99,102,241,0.6);
+  cursor: pointer;
+}
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 4px;
+}
