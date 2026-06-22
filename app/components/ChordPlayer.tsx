@@ -241,6 +241,91 @@ function hitDrum(ctx: AudioContext, type: DrumType, time: number, g: number) {
   else if (type === 'ride')        playRide(ctx, time, g)
 }
 
+// ── Salamander Grand Piano (Web Audio API, Tone.js 없음) ─────────────────────
+
+const SAL_BASE = 'https://tonejs.github.io/audio/salamander/'
+// MIDI → Salamander 파일명 (C2~A5 범위, 가이드 톤 + 워킹 베이스 커버)
+const SAL_SAMPLES: [number, string][] = [
+  [36,'C2'],[39,'Ds2'],[42,'Fs2'],
+  [45,'A2'],[48,'C3'],[51,'Ds3'],[54,'Fs3'],
+  [57,'A3'],[60,'C4'],[63,'Ds4'],[66,'Fs4'],
+  [69,'A4'],[72,'C5'],[75,'Ds5'],[78,'Fs5'],
+  [81,'A5'],
+]
+
+function noteToMidi(note: string): number {
+  const m = note.match(/^([A-G]#?)(\d+)$/)
+  if (!m) return 60
+  const s: Record<string, number> = { C:0,'C#':1,D:2,'D#':3,E:4,F:5,'F#':6,G:7,'G#':8,A:9,'A#':10,B:11 }
+  return (parseInt(m[2]) + 1) * 12 + (s[m[1]] ?? 0)
+}
+
+class SalamanderPiano {
+  private ctx: AudioContext
+  private buffers = new Map<number, AudioBuffer>()
+  private output: GainNode
+
+  constructor(ctx: AudioContext) {
+    this.ctx = ctx
+
+    // 합성 임펄스 리버브
+    const convolver = ctx.createConvolver()
+    const len = Math.floor(ctx.sampleRate * 1.8)
+    const ir = ctx.createBuffer(2, len, ctx.sampleRate)
+    for (let ch = 0; ch < 2; ch++) {
+      const d = ir.getChannelData(ch)
+      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.5)
+    }
+    convolver.buffer = ir
+
+    const wet = ctx.createGain(); wet.gain.value = 0.18
+    const comp = ctx.createDynamicsCompressor()
+    comp.threshold.value = -18; comp.ratio.value = 3
+
+    this.output = ctx.createGain()
+    this.output.connect(comp)
+    comp.connect(ctx.destination)
+    comp.connect(convolver)
+    convolver.connect(wet)
+    wet.connect(ctx.destination)
+  }
+
+  async load(onProgress: (n: number, total: number) => void) {
+    const total = SAL_SAMPLES.length
+    await Promise.all(SAL_SAMPLES.map(async ([midi, name]) => {
+      try {
+        const res = await fetch(`${SAL_BASE}${name}.mp3`)
+        const ab = await res.arrayBuffer()
+        this.buffers.set(midi, await this.ctx.decodeAudioData(ab))
+      } catch { /* 네트워크 실패 시 스킵 */ }
+      onProgress(this.buffers.size, total)
+    }))
+  }
+
+  triggerAttackRelease(notes: string | string[], duration: number, time: number, velocity = 0.7) {
+    const arr = Array.isArray(notes) ? notes : [notes]
+    for (const note of arr) {
+      const midi = noteToMidi(note)
+      let bestMidi = -1, bestDist = Infinity
+      for (const [m] of this.buffers) { const d = Math.abs(m - midi); if (d < bestDist) { bestDist = d; bestMidi = m } }
+      const buf = this.buffers.get(bestMidi)
+      if (!buf) continue
+
+      const src = this.ctx.createBufferSource()
+      src.buffer = buf
+      src.playbackRate.value = Math.pow(2, (midi - bestMidi) / 12)
+
+      const gn = this.ctx.createGain()
+      gn.gain.setValueAtTime(velocity * 0.75, time)
+      gn.gain.setTargetAtTime(0.001, time + duration, 0.35)
+      src.connect(gn); gn.connect(this.output)
+      src.start(time); src.stop(time + duration + 2.5)
+    }
+  }
+
+  releaseAll() { /* 샘플 소스가 자동 종료됨 */ }
+}
+
 // ── Staff SVG ─────────────────────────────────────────────────────────────────
 
 const LINE_GAP = 8, STAFF_H = LINE_GAP * 4, PAD_TOP = 32, PAD_BOT = 14
@@ -428,10 +513,9 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
         if (!tr.keyboard.muted && pianoRef.current) {
           const voicing = getGuideTonesVoicing(chord)
           const vel = tr.keyboard.volume / 100
-          const now = ctx.currentTime
           for (const e of pat.keyboard) {
             const t = t0 + e.beat * secPerBeat
-            pianoRef.current.triggerAttackRelease(voicing, e.dur * secPerBeat, `+${Math.max(0, t - now)}`, e.vel * vel)
+            pianoRef.current.triggerAttackRelease(voicing, e.dur * secPerBeat, t, e.vel * vel)
           }
         }
 
@@ -448,38 +532,18 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
   })
 
   const startPlayback = useCallback(async () => {
-    const Tone = await import('tone')
-    await Tone.start()
-    const ctx = Tone.getContext().rawContext as AudioContext
+    if (!ctxRef.current)
+      ctxRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+    const ctx = ctxRef.current
     if (ctx.state === 'suspended') await ctx.resume()
-    ctxRef.current = ctx
 
-    setLoadingText('피아노 로딩 중...')
     try {
       if (!pianoRef.current) {
-        const reverb = new Tone.Reverb({ decay: 1.8, preDelay: 0.02, wet: 0.20 })
-        await reverb.generate()
-        const comp = new Tone.Compressor(-14, 3)
-        comp.connect(reverb)
-        reverb.toDestination()
-        const sampler = new Tone.Sampler({
-          urls: {
-            A0: 'A0.mp3',  C1: 'C1.mp3',  'D#1': 'Ds1.mp3', 'F#1': 'Fs1.mp3',
-            A1: 'A1.mp3',  C2: 'C2.mp3',  'D#2': 'Ds2.mp3', 'F#2': 'Fs2.mp3',
-            A2: 'A2.mp3',  C3: 'C3.mp3',  'D#3': 'Ds3.mp3', 'F#3': 'Fs3.mp3',
-            A3: 'A3.mp3',  C4: 'C4.mp3',  'D#4': 'Ds4.mp3', 'F#4': 'Fs4.mp3',
-            A4: 'A4.mp3',  C5: 'C5.mp3',  'D#5': 'Ds5.mp3', 'F#5': 'Fs5.mp3',
-            A5: 'A5.mp3',  C6: 'C6.mp3',  'D#6': 'Ds6.mp3', 'F#6': 'Fs6.mp3',
-            A6: 'A6.mp3',  C7: 'C7.mp3',  'D#7': 'Ds7.mp3', 'F#7': 'Fs7.mp3',
-            A7: 'A7.mp3',  C8: 'C8.mp3',
-          },
-          baseUrl: 'https://tonejs.github.io/audio/salamander/',
-          release: 1.0,
-        }).connect(comp)
-        await Tone.loaded()
-        pianoRef.current = sampler
+        const piano = new SalamanderPiano(ctx)
+        setLoadingText('피아노 로딩 중... 0%')
+        await piano.load((n, total) => setLoadingText(`피아노 로딩 중... ${Math.round(n / total * 100)}%`))
+        pianoRef.current = piano
       }
-
       setLoadingText('베이스/기타 로딩 중...')
       const Soundfont = (await import('soundfont-player')).default
       await Promise.all([
