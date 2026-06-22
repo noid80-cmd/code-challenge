@@ -54,6 +54,7 @@ function midiToNote(midi: number): string {
   return `${NAMES[((midi % 12) + 12) % 12]}${Math.floor(midi / 12) - 1}`
 }
 
+// 기존 함수 유지
 export function getChordNotes(name: string): string[] {
   const { root, quality } = parseChord(name)
   const rootSemi = ROOT_SEMITONES[root] ?? 0
@@ -69,4 +70,78 @@ export function getBassNote(name: string): string {
   const { root, bass } = parseChord(name)
   const semi = bass ? (ROOT_SEMITONES[bass] ?? 0) : (ROOT_SEMITONES[root] ?? 0)
   return midiToNote(semi + 36)
+}
+
+// ── 재즈 보이싱 함수들 ─────────────────────────────────────────────────────────
+
+// Guide tone: 3rd + 7th. 재즈 피아노 comp의 핵심 — block chord 절대 안 씀
+export function getGuideTonesVoicing(name: string): string[] {
+  const { root, quality } = parseChord(name)
+  const rootSemi = ROOT_SEMITONES[root] ?? 0
+  const ivs = QUALITY_INTERVALS[quality] ?? [0, 4, 7]
+
+  if (ivs.length < 4) {
+    // 3화음: 3rd + 5th
+    let t = rootSemi + 60 + ivs[1]
+    while (t < 60) t += 12; while (t > 72) t -= 12
+    return [midiToNote(t), midiToNote(t + (ivs[2] - ivs[1]))]
+  }
+
+  // 7th chord: 3rd + 7th를 C4–C5 범위에 배치
+  let third = rootSemi + 60 + ivs[1]
+  while (third < 60) third += 12
+  while (third > 72) third -= 12
+
+  // 7th는 3rd 근처에 배치 (위아래 반옥타브 이내)
+  let seventh = rootSemi + 60 + ivs[3]
+  while (seventh < third - 6) seventh += 12
+  while (seventh > third + 11) seventh -= 12
+
+  return [third, seventh].sort((a, b) => a - b).map(midiToNote)
+}
+
+// 기타 보이싱: 기타 음역대(D2–E4)에 맞는 shell voicing
+export function getGuitarVoicing(name: string): string[] {
+  const { root, quality } = parseChord(name)
+  const rootSemi = ROOT_SEMITONES[root] ?? 0
+  const ivs = QUALITY_INTERVALS[quality] ?? [0, 4, 7]
+
+  // 루트를 G2(43) 기준으로 배치하고 기타 음역대에 맞춤
+  const base = rootSemi + 43
+
+  return ivs.slice(0, 4).map(i => {
+    let m = base + i
+    while (m < 38) m += 12   // min D2
+    while (m > 64) m -= 12   // max E4
+    return midiToNote(m)
+  })
+}
+
+// Walking bass: 스윙에서 4분음표 4개 (루트 → 5th → 3rd → 다음코드 반음 아래 어프로치)
+export function getWalkingBassNotes(name: string, nextName: string): string[] {
+  const { root, quality } = parseChord(name)
+  const { root: nextRoot } = parseChord(nextName)
+  const rootSemi = ROOT_SEMITONES[root] ?? 0
+  const nextSemi = ROOT_SEMITONES[nextRoot] ?? 0
+  const ivs = QUALITY_INTERVALS[quality] ?? [0, 4, 7]
+
+  // C2(36)~B2(47) 범위에 루트 배치
+  let r = rootSemi + 36
+  while (r < 36) r += 12
+  while (r >= 48) r -= 12
+
+  const beat1 = r
+  const beat2 = r + ivs[Math.min(2, ivs.length - 1)]  // 5th
+  const beat3 = r + ivs[Math.min(1, ivs.length - 1)]  // 3rd
+
+  // 다음 코드 루트를 현재 루트 근처에 배치
+  let nextMidi = nextSemi + 36
+  while (nextMidi < 36) nextMidi += 12
+  while (nextMidi >= 50) nextMidi -= 12
+  if (nextMidi > beat3 + 7) nextMidi -= 12
+  if (nextMidi < beat3 - 7) nextMidi += 12
+
+  const beat4 = nextMidi - 1  // 반음 아래에서 어프로치
+
+  return [beat1, beat2, beat3, beat4].map(midiToNote)
 }

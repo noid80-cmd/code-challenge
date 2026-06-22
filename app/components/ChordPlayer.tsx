@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { getChordNotes, getBassNote } from '@/lib/chords'
+import { getChordNotes, getBassNote, getGuideTonesVoicing, getWalkingBassNotes } from '@/lib/chords'
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type StyleType = 'straight' | 'swing' | 'bossa' | 'funk'
@@ -363,6 +363,7 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
 
   const stopPlayback = useCallback(() => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null }
+    pianoRef.current?.releaseAll?.()
     setIsPlaying(false); setActiveIdx(-1)
   }, [])
 
@@ -396,8 +397,20 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
         }
 
         if (!tr.bass.muted && bassInstRef.current) {
-          for (const e of pat.bass)
-            bassInstRef.current.play(bass, t0 + e.beat * secPerBeat, { duration: e.dur * secPerBeat, gain: e.vel * (tr.bass.volume / 100) })
+          if (s.style === 'swing') {
+            const nextChord = s.allChords[(s.chordIdx + 1) % s.allChords.length]
+            const walkNotes = getWalkingBassNotes(chord, nextChord)
+            const walkVels = [0.85, 0.70, 0.78, 0.68]
+            walkNotes.forEach((note, i) => {
+              bassInstRef.current!.play(note, t0 + i * secPerBeat, {
+                duration: secPerBeat * 0.82,
+                gain: walkVels[i] * (tr.bass.volume / 100),
+              })
+            })
+          } else {
+            for (const e of pat.bass)
+              bassInstRef.current.play(bass, t0 + e.beat * secPerBeat, { duration: e.dur * secPerBeat, gain: e.vel * (tr.bass.volume / 100) })
+          }
         }
 
         if (!tr.guitar.muted && guitarRef.current) {
@@ -413,11 +426,12 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
         }
 
         if (!tr.keyboard.muted && pianoRef.current) {
+          const voicing = getGuideTonesVoicing(chord)
+          const vel = tr.keyboard.volume / 100
+          const now = ctx.currentTime
           for (const e of pat.keyboard) {
             const t = t0 + e.beat * secPerBeat
-            notes.forEach(note =>
-              pianoRef.current!.play(note, t, { duration: e.dur * secPerBeat, gain: e.vel * (tr.keyboard.volume / 100) })
-            )
+            pianoRef.current.triggerAttackRelease(voicing, e.dur * secPerBeat, `+${Math.max(0, t - now)}`, e.vel * vel)
           }
         }
 
@@ -434,16 +448,41 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
   })
 
   const startPlayback = useCallback(async () => {
-    if (!ctxRef.current)
-      ctxRef.current = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
-    const ctx = ctxRef.current
+    const Tone = await import('tone')
+    await Tone.start()
+    const ctx = Tone.getContext().rawContext as AudioContext
     if (ctx.state === 'suspended') await ctx.resume()
+    ctxRef.current = ctx
 
-    const Soundfont = (await import('soundfont-player')).default
-    setLoadingText('악기 로딩 중...')
+    setLoadingText('피아노 로딩 중...')
     try {
+      if (!pianoRef.current) {
+        const reverb = new Tone.Reverb({ decay: 1.8, preDelay: 0.02, wet: 0.20 })
+        await reverb.generate()
+        const comp = new Tone.Compressor(-14, 3)
+        comp.connect(reverb)
+        reverb.toDestination()
+        const sampler = new Tone.Sampler({
+          urls: {
+            A0: 'A0.mp3',  C1: 'C1.mp3',  'D#1': 'Ds1.mp3', 'F#1': 'Fs1.mp3',
+            A1: 'A1.mp3',  C2: 'C2.mp3',  'D#2': 'Ds2.mp3', 'F#2': 'Fs2.mp3',
+            A2: 'A2.mp3',  C3: 'C3.mp3',  'D#3': 'Ds3.mp3', 'F#3': 'Fs3.mp3',
+            A3: 'A3.mp3',  C4: 'C4.mp3',  'D#4': 'Ds4.mp3', 'F#4': 'Fs4.mp3',
+            A4: 'A4.mp3',  C5: 'C5.mp3',  'D#5': 'Ds5.mp3', 'F#5': 'Fs5.mp3',
+            A5: 'A5.mp3',  C6: 'C6.mp3',  'D#6': 'Ds6.mp3', 'F#6': 'Fs6.mp3',
+            A6: 'A6.mp3',  C7: 'C7.mp3',  'D#7': 'Ds7.mp3', 'F#7': 'Fs7.mp3',
+            A7: 'A7.mp3',  C8: 'C8.mp3',
+          },
+          baseUrl: 'https://tonejs.github.io/audio/salamander/',
+          release: 1.0,
+        }).connect(comp)
+        await Tone.loaded()
+        pianoRef.current = sampler
+      }
+
+      setLoadingText('베이스/기타 로딩 중...')
+      const Soundfont = (await import('soundfont-player')).default
       await Promise.all([
-        !pianoRef.current    && Soundfont.instrument(ctx, 'acoustic_grand_piano',  { soundfont: 'MusyngKite' }).then(i => { pianoRef.current    = i }),
         !bassInstRef.current && Soundfont.instrument(ctx, 'electric_bass_finger',  { soundfont: 'MusyngKite' }).then(i => { bassInstRef.current = i }),
         !guitarRef.current   && Soundfont.instrument(ctx, 'electric_guitar_clean', { soundfont: 'MusyngKite' }).then(i => { guitarRef.current   = i }),
       ].filter(Boolean))
@@ -451,7 +490,7 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
       setLoadingText('')
     }
 
-    stateRef.current.chordIdx       = 0
+    stateRef.current.chordIdx        = 0
     stateRef.current.nextMeasureTime = ctx.currentTime + 0.2
 
     setIsPlaying(true)
