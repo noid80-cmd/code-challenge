@@ -223,6 +223,56 @@ const DRUM_NOTE_MAP: Record<DrumType, string> = {
   ride:        'D#3',  // MIDI 51 – Ride Cymbal 1
 }
 
+// ── Real Bass Guitar Sampler (nbrosowsky 실제 녹음 샘플) ─────────────────────
+
+const BASS_BASE = 'https://nbrosowsky.github.io/tonejs-instruments/samples/bass-electric/'
+const BASS_NOTES: [number, string][] = [
+  [28,'E1'],[34,'As1'],[37,'Cs2'],[40,'E2'],[43,'G2'],[46,'As2'],[49,'Cs3'],[52,'E3'],[55,'G3'],
+]
+
+class BassSampler {
+  private ctx: AudioContext
+  private buffers = new Map<number, AudioBuffer>()
+  private output: GainNode
+
+  constructor(ctx: AudioContext) {
+    this.ctx = ctx
+    const comp = ctx.createDynamicsCompressor()
+    comp.threshold.value = -20; comp.ratio.value = 4
+    this.output = ctx.createGain()
+    this.output.connect(comp)
+    comp.connect(ctx.destination)
+  }
+
+  async load(onProgress: (n: number, total: number) => void) {
+    await Promise.all(BASS_NOTES.map(async ([midi, name]) => {
+      try {
+        const res = await fetch(`${BASS_BASE}${name}.mp3`)
+        const ab = await res.arrayBuffer()
+        this.buffers.set(midi, await this.ctx.decodeAudioData(ab))
+      } catch {}
+      onProgress(this.buffers.size, BASS_NOTES.length)
+    }))
+  }
+
+  // soundfont-player 호환 API
+  play(note: string, time: number, opts: { duration?: number; gain?: number } = {}) {
+    const midi = noteToMidi(note)
+    let bestMidi = -1, bestDist = Infinity
+    for (const [m] of this.buffers) { const d = Math.abs(m - midi); if (d < bestDist) { bestDist = d; bestMidi = m } }
+    const buf = this.buffers.get(bestMidi)
+    if (!buf) return
+    const src = this.ctx.createBufferSource()
+    src.buffer = buf
+    src.playbackRate.value = Math.pow(2, (midi - bestMidi) / 12)
+    const gn = this.ctx.createGain()
+    gn.gain.setValueAtTime(opts.gain ?? 0.7, time)
+    gn.gain.setTargetAtTime(0.001, time + (opts.duration ?? 1.0), 0.08)
+    src.connect(gn); gn.connect(this.output)
+    src.start(time); src.stop(time + (opts.duration ?? 1.0) + 1.5)
+  }
+}
+
 // ── Salamander Grand Piano (Web Audio API, Tone.js 없음) ─────────────────────
 
 const SAL_BASE = 'https://tonejs.github.io/audio/salamander/'
@@ -498,13 +548,18 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
         await piano.load((n, total) => setLoadingText(`피아노 로딩 중... ${Math.round(n / total * 100)}%`))
         pianoRef.current = piano
       }
-      setLoadingText('드럼/베이스 로딩 중...')
-      const Soundfont = (await import('soundfont-player')).default
-      await Promise.all([
+      if (!bassInstRef.current) {
+        const bass = new BassSampler(ctx)
+        setLoadingText('베이스 로딩 중... 0%')
+        await bass.load((n, total) => setLoadingText(`베이스 로딩 중... ${Math.round(n / total * 100)}%`))
+        bassInstRef.current = bass
+      }
+      if (!drumsRef.current) {
+        setLoadingText('드럼 로딩 중...')
+        const Soundfont = (await import('soundfont-player')).default
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        !drumsRef.current    && Soundfont.instrument(ctx, 'percussion' as any, { soundfont: 'MusyngKite' }).then(i => { drumsRef.current    = i }).catch(() => { /* 폴백: 합성 드럼 */ }),
-        !bassInstRef.current && Soundfont.instrument(ctx, 'acoustic_bass',     { soundfont: 'MusyngKite' }).then(i => { bassInstRef.current = i }),
-      ].filter(Boolean))
+        await Soundfont.instrument(ctx, 'percussion' as any, { soundfont: 'MusyngKite' }).then(i => { drumsRef.current = i }).catch(() => { /* 폴백: 합성 드럼 */ })
+      }
     } finally {
       setLoadingText('')
     }
