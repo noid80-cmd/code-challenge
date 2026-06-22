@@ -125,20 +125,20 @@ export function getRichVoicing(name: string): string[] {
   const base = rootSemi + 60
 
   if (ivs.length < 4) {
-    // 3화음: 3음 C4–E5 범위 클로즈 보이싱
+    // 3화음: 3음 C3–E4 범위 클로즈 보이싱
     const notes = ivs.slice(0, 3).map(i => {
       let m = base + i
-      while (m < 60) m += 12
-      while (m > 76) m -= 12
+      while (m < 48) m += 12
+      while (m > 64) m -= 12
       return m
     })
     return [...new Set(notes)].sort((a, b) => a - b).map(midiToNote)
   }
 
-  // 7화음: 3rd를 C4–B4 범위에 배치
+  // 7화음: 3rd를 C3–B3 범위에 배치 (한 옥타브 낮춤)
   let third = base + ivs[1]
-  while (third < 60) third += 12
-  while (third > 71) third -= 12
+  while (third < 48) third += 12
+  while (third > 59) third -= 12
 
   // 7th를 3rd 위 최대 한 옥타브 이내
   let seventh = base + ivs[3]

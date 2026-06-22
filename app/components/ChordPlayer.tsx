@@ -5,14 +5,14 @@ import { getChordNotes, getBassNote, getRichVoicing, getWalkingBassNotes } from 
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type StyleType = 'straight' | 'swing' | 'bossa' | 'funk'
-type TrackName = 'drums' | 'bass' | 'guitar' | 'keyboard'
+type TrackName = 'drums' | 'bass' | 'keyboard'
 type DrumType = 'kick' | 'snare' | 'snare_ghost' | 'hihat_c' | 'hihat_o' | 'rim' | 'ride'
 type DrumEvent = { beat: number; type: DrumType; vel: number }
 type NoteEvent  = { beat: number; dur: number; vel: number; strum?: boolean }
-type StylePattern = { drums: DrumEvent[]; bass: NoteEvent[]; guitar: NoteEvent[]; keyboard: NoteEvent[] }
+type StylePattern = { drums: DrumEvent[]; bass: NoteEvent[]; keyboard: NoteEvent[] }
 type TrackState = { volume: number; muted: boolean }
 
-const TRACK_LABELS: Record<TrackName, string> = { drums: '드럼', bass: '베이스', guitar: '기타', keyboard: '건반' }
+const TRACK_LABELS: Record<TrackName, string> = { drums: '드럼', bass: '베이스', keyboard: '건반' }
 const STYLE_LABELS: Record<StyleType, string> = { straight: '스트레이트', swing: '스윙', bossa: '보사노바', funk: '펑크' }
 
 // ── Patterns ─────────────────────────────────────────────────────────────────
@@ -34,12 +34,6 @@ const PATTERNS: Record<StyleType, StylePattern> = {
       { beat: 3.5, type: 'hihat_c', vel: 0.3  },
     ],
     bass:     [{ beat: 0, dur: 1.9, vel: 0.85 }, { beat: 2, dur: 1.9, vel: 0.75 }],
-    guitar:   [
-      { beat: 0, dur: 0.85, vel: 0.7,  strum: true },
-      { beat: 1, dur: 0.85, vel: 0.55, strum: true },
-      { beat: 2, dur: 0.85, vel: 0.7,  strum: true },
-      { beat: 3, dur: 0.85, vel: 0.55, strum: true },
-    ],
     keyboard: [{ beat: 0, dur: 1.8, vel: 0.65 }, { beat: 2, dur: 1.8, vel: 0.6 }],
   },
 
@@ -65,10 +59,6 @@ const PATTERNS: Record<StyleType, StylePattern> = {
       { beat: 1, dur: 0.85, vel: 0.7  },
       { beat: 2, dur: 0.85, vel: 0.78 },
       { beat: 3, dur: 0.85, vel: 0.7  },
-    ],
-    guitar:   [
-      { beat: 1, dur: 0.4, vel: 0.5, strum: true },
-      { beat: 3, dur: 0.4, vel: 0.5, strum: true },
     ],
     keyboard: [
       { beat: 0.667, dur: 0.30, vel: 0.45 },  // beat 2 픽업 (스윙 and)
@@ -97,14 +87,6 @@ const PATTERNS: Record<StyleType, StylePattern> = {
       { beat: 2,   dur: 0.45, vel: 0.7  },
       { beat: 2.5, dur: 0.4,  vel: 0.6  },
       { beat: 3.5, dur: 0.4,  vel: 0.55 },
-    ],
-    guitar: [
-      { beat: 0,    dur: 0.6,  vel: 0.65, strum: true },
-      { beat: 0.75, dur: 0.5,  vel: 0.5,  strum: true },
-      { beat: 1.5,  dur: 0.55, vel: 0.6,  strum: true },
-      { beat: 2,    dur: 0.5,  vel: 0.55, strum: true },
-      { beat: 2.75, dur: 0.45, vel: 0.5,  strum: true },
-      { beat: 3.5,  dur: 0.4,  vel: 0.45, strum: true },
     ],
     keyboard: [
       { beat: 0,   dur: 1.4, vel: 0.5  },
@@ -150,16 +132,6 @@ const PATTERNS: Record<StyleType, StylePattern> = {
       { beat: 2,    dur: 0.45, vel: 0.85 },
       { beat: 2.75, dur: 0.22, vel: 0.6  },
       { beat: 3.5,  dur: 0.4,  vel: 0.65 },
-    ],
-    guitar: [
-      { beat: 0,    dur: 0.22, vel: 0.7,  strum: false },
-      { beat: 0.5,  dur: 0.18, vel: 0.4,  strum: false },
-      { beat: 0.75, dur: 0.22, vel: 0.6,  strum: true  },
-      { beat: 1.5,  dur: 0.22, vel: 0.65, strum: true  },
-      { beat: 2,    dur: 0.22, vel: 0.7,  strum: false },
-      { beat: 2.25, dur: 0.18, vel: 0.4,  strum: false },
-      { beat: 2.75, dur: 0.22, vel: 0.6,  strum: true  },
-      { beat: 3.5,  dur: 0.22, vel: 0.6,  strum: true  },
     ],
     keyboard: [
       { beat: 0,   dur: 0.35, vel: 0.75 },
@@ -277,27 +249,11 @@ class SalamanderPiano {
 
   constructor(ctx: AudioContext) {
     this.ctx = ctx
-
-    // 합성 임펄스 리버브
-    const convolver = ctx.createConvolver()
-    const len = Math.floor(ctx.sampleRate * 1.8)
-    const ir = ctx.createBuffer(2, len, ctx.sampleRate)
-    for (let ch = 0; ch < 2; ch++) {
-      const d = ir.getChannelData(ch)
-      for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.5)
-    }
-    convolver.buffer = ir
-
-    const wet = ctx.createGain(); wet.gain.value = 0.18
     const comp = ctx.createDynamicsCompressor()
     comp.threshold.value = -18; comp.ratio.value = 3
-
     this.output = ctx.createGain()
     this.output.connect(comp)
     comp.connect(ctx.destination)
-    comp.connect(convolver)
-    convolver.connect(wet)
-    wet.connect(ctx.destination)
   }
 
   async load(onProgress: (n: number, total: number) => void) {
@@ -425,7 +381,6 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
   const [tracks, setTracks] = useState<Record<TrackName, TrackState>>({
     drums:    { volume: 80, muted: false },
     bass:     { volume: 70, muted: false },
-    guitar:   { volume: 65, muted: false },
     keyboard: { volume: 75, muted: false },
   })
   const [activeIdx, setActiveIdx] = useState(-1)
@@ -437,8 +392,6 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
   const drumsRef    = useRef<any>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const bassInstRef = useRef<any>(null)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const guitarRef   = useRef<any>(null)
   const timerRef    = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scheduleRef = useRef<(() => void) | null>(null)
   const stateRef    = useRef({
@@ -482,12 +435,6 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
         const t0          = s.nextMeasureTime
         const tr          = s.tracks
 
-        // Guitar notes shifted down one octave
-        const guitarNotes = notes.map(n => {
-          const m = n.match(/^([A-G]#?)(\d+)$/); if (!m) return n
-          return `${m[1]}${Math.max(2, parseInt(m[2]) - 1)}`
-        })
-
         if (!tr.drums.muted) {
           for (const e of pat.drums) {
             const dTime = t0 + e.beat * secPerBeat
@@ -514,18 +461,6 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
           } else {
             for (const e of pat.bass)
               bassInstRef.current.play(bass, t0 + e.beat * secPerBeat, { duration: e.dur * secPerBeat, gain: e.vel * (tr.bass.volume / 100) })
-          }
-        }
-
-        if (!tr.guitar.muted && guitarRef.current) {
-          for (const e of pat.guitar) {
-            const t = t0 + e.beat * secPerBeat
-            guitarNotes.forEach((note, i) => {
-              guitarRef.current!.play(note, t + (e.strum ? i * 0.015 : 0), {
-                duration: e.dur * secPerBeat,
-                gain: e.vel * (tr.guitar.volume / 100) * (e.strum ? 1 - i * 0.08 : 1),
-              })
-            })
           }
         }
 
@@ -563,13 +498,12 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
         await piano.load((n, total) => setLoadingText(`피아노 로딩 중... ${Math.round(n / total * 100)}%`))
         pianoRef.current = piano
       }
-      setLoadingText('드럼/베이스/기타 로딩 중...')
+      setLoadingText('드럼/베이스 로딩 중...')
       const Soundfont = (await import('soundfont-player')).default
       await Promise.all([
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        !drumsRef.current    && Soundfont.instrument(ctx, 'percussion' as any,     { soundfont: 'MusyngKite' }).then(i => { drumsRef.current    = i }).catch(() => { /* 폴백: 합성 드럼 */ }),
-        !bassInstRef.current && Soundfont.instrument(ctx, 'electric_bass_finger',  { soundfont: 'MusyngKite' }).then(i => { bassInstRef.current = i }),
-        !guitarRef.current   && Soundfont.instrument(ctx, 'electric_guitar_clean', { soundfont: 'MusyngKite' }).then(i => { guitarRef.current   = i }),
+        !drumsRef.current    && Soundfont.instrument(ctx, 'percussion' as any, { soundfont: 'MusyngKite' }).then(i => { drumsRef.current    = i }).catch(() => { /* 폴백: 합성 드럼 */ }),
+        !bassInstRef.current && Soundfont.instrument(ctx, 'acoustic_bass',     { soundfont: 'MusyngKite' }).then(i => { bassInstRef.current = i }),
       ].filter(Boolean))
     } finally {
       setLoadingText('')
