@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { getChordNotes, getBassNote, getGuideTonesVoicing, getWalkingBassNotes } from '@/lib/chords'
+import { getChordNotes, getBassNote, getRichVoicing, getWalkingBassNotes } from '@/lib/chords'
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type StyleType = 'straight' | 'swing' | 'bossa' | 'funk'
@@ -71,10 +71,9 @@ const PATTERNS: Record<StyleType, StylePattern> = {
       { beat: 3, dur: 0.4, vel: 0.5, strum: true },
     ],
     keyboard: [
-      { beat: 0,     dur: 0.35, vel: 0.5  },
-      { beat: 1.667, dur: 0.35, vel: 0.45 },
-      { beat: 2,     dur: 0.35, vel: 0.55 },
-      { beat: 3.667, dur: 0.35, vel: 0.45 },
+      { beat: 0.667, dur: 0.30, vel: 0.45 },  // beat 2 픽업 (스윙 and)
+      { beat: 2,     dur: 0.38, vel: 0.60 },  // beat 3 (강박)
+      { beat: 3.667, dur: 0.28, vel: 0.50 },  // beat 4-and (다음 마디 앤티시페이션)
     ],
   },
 
@@ -239,6 +238,17 @@ function hitDrum(ctx: AudioContext, type: DrumType, time: number, g: number) {
   else if (type === 'hihat_o')     playHihat(ctx, time, g, true)
   else if (type === 'rim')         playRim(ctx, time, g)
   else if (type === 'ride')        playRide(ctx, time, g)
+}
+
+// GM 퍼커션 노트 맵 (soundfont-player 'percussion' 기준)
+const DRUM_NOTE_MAP: Record<DrumType, string> = {
+  kick:        'C2',   // MIDI 36 – Bass Drum 1
+  snare:       'D2',   // MIDI 38 – Acoustic Snare
+  snare_ghost: 'D2',   // MIDI 38 – 낮은 벨로시티
+  hihat_c:     'F#2',  // MIDI 42 – Closed Hi-Hat
+  hihat_o:     'A#2',  // MIDI 46 – Open Hi-Hat
+  rim:         'C#2',  // MIDI 37 – Side Stick
+  ride:        'D#3',  // MIDI 51 – Ride Cymbal 1
 }
 
 // ── Salamander Grand Piano (Web Audio API, Tone.js 없음) ─────────────────────
@@ -424,6 +434,8 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pianoRef    = useRef<any>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const drumsRef    = useRef<any>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const bassInstRef = useRef<any>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const guitarRef   = useRef<any>(null)
@@ -477,8 +489,15 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
         })
 
         if (!tr.drums.muted) {
-          for (const e of pat.drums)
-            hitDrum(ctx, e.type, t0 + e.beat * secPerBeat, e.vel * (tr.drums.volume / 100))
+          for (const e of pat.drums) {
+            const dTime = t0 + e.beat * secPerBeat
+            const dVel  = e.vel * (tr.drums.volume / 100)
+            if (drumsRef.current) {
+              drumsRef.current.play(DRUM_NOTE_MAP[e.type], dTime, { duration: 0.5, gain: dVel })
+            } else {
+              hitDrum(ctx, e.type, dTime, dVel)
+            }
+          }
         }
 
         if (!tr.bass.muted && bassInstRef.current) {
@@ -511,7 +530,7 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
         }
 
         if (!tr.keyboard.muted && pianoRef.current) {
-          const voicing = getGuideTonesVoicing(chord)
+          const voicing = getRichVoicing(chord)
           const vel = tr.keyboard.volume / 100
           for (const e of pat.keyboard) {
             const t = t0 + e.beat * secPerBeat
@@ -544,9 +563,11 @@ export default function ChordPlayer({ progressions, defaultTempo = 120 }: {
         await piano.load((n, total) => setLoadingText(`피아노 로딩 중... ${Math.round(n / total * 100)}%`))
         pianoRef.current = piano
       }
-      setLoadingText('베이스/기타 로딩 중...')
+      setLoadingText('드럼/베이스/기타 로딩 중...')
       const Soundfont = (await import('soundfont-player')).default
       await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        !drumsRef.current    && Soundfont.instrument(ctx, 'percussion' as any,     { soundfont: 'MusyngKite' }).then(i => { drumsRef.current    = i }).catch(() => { /* 폴백: 합성 드럼 */ }),
         !bassInstRef.current && Soundfont.instrument(ctx, 'electric_bass_finger',  { soundfont: 'MusyngKite' }).then(i => { bassInstRef.current = i }),
         !guitarRef.current   && Soundfont.instrument(ctx, 'electric_guitar_clean', { soundfont: 'MusyngKite' }).then(i => { guitarRef.current   = i }),
       ].filter(Boolean))

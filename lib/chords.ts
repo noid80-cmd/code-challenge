@@ -69,7 +69,7 @@ export function getChordNotes(name: string): string[] {
 export function getBassNote(name: string): string {
   const { root, bass } = parseChord(name)
   const semi = bass ? (ROOT_SEMITONES[bass] ?? 0) : (ROOT_SEMITONES[root] ?? 0)
-  return midiToNote(semi + 36)
+  return midiToNote(semi + 24)  // C1 기준 (한 옥타브 낮춤)
 }
 
 // ── 재즈 보이싱 함수들 ─────────────────────────────────────────────────────────
@@ -117,6 +117,43 @@ export function getGuitarVoicing(name: string): string[] {
   })
 }
 
+// 리치 보이싱: 7화음 → 3rd+7th+9th, 3화음 → 3음 클로즈, 재즈 피아노 컴핑용
+export function getRichVoicing(name: string): string[] {
+  const { root, quality } = parseChord(name)
+  const rootSemi = ROOT_SEMITONES[root] ?? 0
+  const ivs = QUALITY_INTERVALS[quality] ?? [0, 4, 7]
+  const base = rootSemi + 60
+
+  if (ivs.length < 4) {
+    // 3화음: 3음 C4–E5 범위 클로즈 보이싱
+    const notes = ivs.slice(0, 3).map(i => {
+      let m = base + i
+      while (m < 60) m += 12
+      while (m > 76) m -= 12
+      return m
+    })
+    return [...new Set(notes)].sort((a, b) => a - b).map(midiToNote)
+  }
+
+  // 7화음: 3rd를 C4–B4 범위에 배치
+  let third = base + ivs[1]
+  while (third < 60) third += 12
+  while (third > 71) third -= 12
+
+  // 7th를 3rd 위 최대 한 옥타브 이내
+  let seventh = base + ivs[3]
+  while (seventh < third - 1) seventh += 12
+  while (seventh > third + 12) seventh -= 12
+
+  // 9th: 코드에 명시된 경우 사용, 없으면 장9도(14)
+  const ninthInt = ivs.length >= 5 ? ivs[4] : 14
+  let ninth = base + ninthInt
+  while (ninth < seventh - 1) ninth += 12
+  while (ninth > seventh + 13) ninth -= 12
+
+  return [third, seventh, ninth].sort((a, b) => a - b).map(midiToNote)
+}
+
 // Walking bass: 스윙에서 4분음표 4개 (루트 → 5th → 3rd → 다음코드 반음 아래 어프로치)
 export function getWalkingBassNotes(name: string, nextName: string): string[] {
   const { root, quality } = parseChord(name)
@@ -125,19 +162,19 @@ export function getWalkingBassNotes(name: string, nextName: string): string[] {
   const nextSemi = ROOT_SEMITONES[nextRoot] ?? 0
   const ivs = QUALITY_INTERVALS[quality] ?? [0, 4, 7]
 
-  // C2(36)~B2(47) 범위에 루트 배치
-  let r = rootSemi + 36
-  while (r < 36) r += 12
-  while (r >= 48) r -= 12
+  // C1(24)~B1(35) 범위에 루트 배치 (한 옥타브 낮춤)
+  let r = rootSemi + 24
+  while (r < 24) r += 12
+  while (r >= 36) r -= 12
 
   const beat1 = r
   const beat2 = r + ivs[Math.min(2, ivs.length - 1)]  // 5th
   const beat3 = r + ivs[Math.min(1, ivs.length - 1)]  // 3rd
 
   // 다음 코드 루트를 현재 루트 근처에 배치
-  let nextMidi = nextSemi + 36
-  while (nextMidi < 36) nextMidi += 12
-  while (nextMidi >= 50) nextMidi -= 12
+  let nextMidi = nextSemi + 24
+  while (nextMidi < 24) nextMidi += 12
+  while (nextMidi >= 38) nextMidi -= 12
   if (nextMidi > beat3 + 7) nextMidi -= 12
   if (nextMidi < beat3 - 7) nextMidi += 12
 
