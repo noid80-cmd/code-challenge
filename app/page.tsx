@@ -102,68 +102,72 @@ export default function HomePage() {
   const isAdmin = user?.email === 'noid80@hanmail.net'
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#09090f', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#6366f1', animation: 'pulse 1s infinite' }} />
-      <span style={{ color: '#444466', fontSize: 14 }}>불러오는 중...</span>
+    <div style={{ minHeight: '100vh', background: '#08080f', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#6366f1', opacity: 0.8 }} />
+      <span style={{ color: '#333358', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
     </div>
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: '#09090f' }}>
+    <div style={{ minHeight: '100vh', background: '#08080f' }}>
       {/* Header */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(9,9,15,0.96)',
+        background: 'rgba(8,8,15,0.95)',
         backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(255,255,255,0.06)',
-        padding: '0 16px', height: 56,
+        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        padding: '0 20px', height: 54,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
-            width: 32, height: 32, borderRadius: 10,
+            width: 28, height: 28, borderRadius: 8,
             background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, boxShadow: '0 0 20px rgba(99,102,241,0.45)',
-          }}>🎵</div>
-          <span style={{ fontWeight: 900, fontSize: 17, color: '#eeeeff', letterSpacing: '-0.03em' }}>
+          }}>
+            <svg width="13" height="10" viewBox="0 0 13 10" fill="none">
+              <line x1="1" y1="2" x2="12" y2="2" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="1" y1="5" x2="12" y2="5" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
+              <line x1="1" y1="8" x2="9"  y2="8" stroke="rgba(255,255,255,0.7)" strokeWidth="1.5" strokeLinecap="round" />
+            </svg>
+          </div>
+          <span style={{ fontWeight: 800, fontSize: 16, color: '#e0e0f8', letterSpacing: '-0.03em' }}>
             코드 챌린지
           </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {isAdmin && (
             <Link href="/admin" style={{
-              padding: '6px 12px', borderRadius: 8,
-              background: 'rgba(99,102,241,0.1)',
-              border: '1px solid rgba(99,102,241,0.25)',
-              color: '#818cf8', fontSize: 12, fontWeight: 700,
+              padding: '5px 11px', borderRadius: 7,
+              background: 'rgba(99,102,241,0.08)',
+              border: '1px solid rgba(99,102,241,0.2)',
+              color: '#7777cc', fontSize: 12, fontWeight: 700,
             }}>
-              어드민
+              관리
             </Link>
           )}
           {user ? (
             <>
               <Link href="/upload" style={{
-                padding: '7px 15px', borderRadius: 10,
-                background: 'linear-gradient(135deg, #4f46e5, #6366f1)',
+                padding: '6px 14px', borderRadius: 8,
+                background: '#4f46e5',
                 color: '#fff', fontSize: 13, fontWeight: 700,
-                boxShadow: '0 2px 12px rgba(99,102,241,0.4)',
               }}>
-                + 업로드
+                업로드
               </Link>
               <button onClick={handleLogout} style={{
                 background: 'none', border: 'none',
-                color: '#444466', fontSize: 12, cursor: 'pointer', padding: '4px 8px',
+                color: '#333358', fontSize: 12, cursor: 'pointer', padding: '4px 6px',
               }}>
                 로그아웃
               </button>
             </>
           ) : (
             <Link href="/login" style={{
-              padding: '7px 15px', borderRadius: 10,
+              padding: '6px 14px', borderRadius: 8,
               background: 'rgba(99,102,241,0.1)',
-              border: '1px solid rgba(99,102,241,0.25)',
-              color: '#818cf8', fontSize: 13, fontWeight: 700,
+              border: '1px solid rgba(99,102,241,0.2)',
+              color: '#7777cc', fontSize: 13, fontWeight: 700,
             }}>
               로그인
             </Link>
@@ -171,41 +175,34 @@ export default function HomePage() {
         </div>
       </header>
 
-      <main style={{ maxWidth: 560, margin: '0 auto', padding: '28px 16px 100px' }}>
+      <main style={{ maxWidth: 560, margin: '0 auto', padding: '32px 16px 100px' }}>
 
-        {/* Date badge */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 14 }}>
-          <div style={{
-            width: 7, height: 7, borderRadius: '50%', background: '#6366f1',
-            boxShadow: '0 0 10px rgba(99,102,241,0.9)',
-          }} />
-          <span style={{
-            fontSize: 11, color: '#6366f1', fontWeight: 800,
-            letterSpacing: '0.1em', textTransform: 'uppercase',
-          }}>
+        {/* Date */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#6366f1' }} />
+          <span style={{ fontSize: 11, color: '#4444aa', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
             오늘의 챌린지 · {dateStr}
           </span>
         </div>
 
         {/* Challenge */}
-        <section style={{ marginBottom: 40 }}>
+        <section style={{ marginBottom: 48 }}>
           {challenge ? (
             <div style={{
-              background: 'linear-gradient(155deg, #0e0e20 0%, #0a0a17 100%)',
-              border: '1px solid rgba(99,102,241,0.2)',
-              borderRadius: 22,
-              padding: 20,
-              boxShadow: '0 0 60px rgba(99,102,241,0.06)',
+              background: '#0d0d1e',
+              border: '1px solid rgba(99,102,241,0.15)',
+              borderRadius: 20,
+              padding: 22,
             }}>
               <h2 style={{
-                fontSize: 20, fontWeight: 900, color: '#eeeeff',
-                letterSpacing: '-0.02em',
-                marginBottom: challenge.description ? 6 : 18,
+                fontSize: 19, fontWeight: 900, color: '#e4e4f8',
+                letterSpacing: '-0.025em',
+                marginBottom: challenge.description ? 6 : 20,
               }}>
                 {challenge.title}
               </h2>
               {challenge.description && (
-                <p style={{ fontSize: 13, color: '#7777a8', lineHeight: 1.65, marginBottom: 18 }}>
+                <p style={{ fontSize: 13, color: '#6666a0', lineHeight: 1.7, marginBottom: 20 }}>
                   {challenge.description}
                 </p>
               )}
@@ -213,55 +210,62 @@ export default function HomePage() {
                 progressions={challenge.chords?.progressions ?? []}
                 title={challenge.title}
               />
-              {user ? (
-                <Link href="/upload" style={{
-                  display: 'block', marginTop: 14, padding: '13px',
-                  borderRadius: 14,
-                  background: 'linear-gradient(135deg, #4f46e5, #6366f1)',
-                  color: '#fff', fontSize: 14, fontWeight: 800, textAlign: 'center',
-                  boxShadow: '0 4px 24px rgba(99,102,241,0.35)',
-                  letterSpacing: '-0.01em',
-                }}>
-                  🎹 챌린지 참여하기
-                </Link>
-              ) : (
-                <Link href="/login" style={{
-                  display: 'block', marginTop: 14, padding: '13px',
-                  borderRadius: 14,
-                  background: 'rgba(99,102,241,0.08)',
-                  border: '1px solid rgba(99,102,241,0.2)',
-                  color: '#818cf8', fontSize: 14, fontWeight: 700, textAlign: 'center',
-                }}>
-                  로그인하고 참여하기
-                </Link>
-              )}
+              <div style={{ marginTop: 14 }}>
+                {user ? (
+                  <Link href="/upload" style={{
+                    display: 'block', padding: '13px',
+                    borderRadius: 12,
+                    background: '#4f46e5',
+                    color: '#fff', fontSize: 14, fontWeight: 800, textAlign: 'center',
+                    letterSpacing: '-0.01em',
+                  }}>
+                    챌린지 참여하기
+                  </Link>
+                ) : (
+                  <Link href="/login" style={{
+                    display: 'block', padding: '13px',
+                    borderRadius: 12,
+                    background: 'rgba(99,102,241,0.08)',
+                    border: '1px solid rgba(99,102,241,0.18)',
+                    color: '#7777cc', fontSize: 14, fontWeight: 700, textAlign: 'center',
+                  }}>
+                    로그인하고 참여하기
+                  </Link>
+                )}
+              </div>
             </div>
           ) : (
             <div style={{
-              background: '#0d0d1a',
-              border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 22, padding: '44px 20px', textAlign: 'center',
+              background: '#0d0d1e',
+              border: '1px solid rgba(255,255,255,0.05)',
+              borderRadius: 20, padding: '48px 20px', textAlign: 'center',
             }}>
               <div style={{
-                width: 68, height: 68, borderRadius: 22,
-                background: 'rgba(99,102,241,0.08)',
-                border: '1px solid rgba(99,102,241,0.15)',
+                width: 52, height: 52, borderRadius: 16,
+                background: 'rgba(99,102,241,0.06)',
+                border: '1px solid rgba(99,102,241,0.1)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 28, margin: '0 auto 18px',
-              }}>🎼</div>
-              <p style={{ color: '#666688', fontSize: 15, fontWeight: 700, marginBottom: 6 }}>
+                margin: '0 auto 18px',
+              }}>
+                <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
+                  {[2,6,10,14,18].map(y => (
+                    <line key={y} x1="1" y1={y/10*18} x2="21" y2={y/10*18} stroke="#4444aa" strokeWidth="1" strokeLinecap="round" />
+                  ))}
+                </svg>
+              </div>
+              <p style={{ color: '#555588', fontSize: 15, fontWeight: 700, marginBottom: 5 }}>
                 오늘의 챌린지를 준비 중이에요
               </p>
-              <p style={{ color: '#333352', fontSize: 13 }}>
+              <p style={{ color: '#2e2e52', fontSize: 13 }}>
                 매일 새로운 코드 진행이 올라와요
               </p>
               {isAdmin && (
                 <Link href="/admin" style={{
                   display: 'inline-block', marginTop: 22,
-                  padding: '10px 22px', borderRadius: 12,
-                  background: 'rgba(99,102,241,0.12)',
-                  border: '1px solid rgba(99,102,241,0.3)',
-                  color: '#818cf8', fontSize: 13, fontWeight: 700,
+                  padding: '9px 20px', borderRadius: 10,
+                  background: 'rgba(99,102,241,0.1)',
+                  border: '1px solid rgba(99,102,241,0.25)',
+                  color: '#7777cc', fontSize: 13, fontWeight: 700,
                 }}>
                   챌린지 생성하기
                 </Link>
@@ -272,30 +276,29 @@ export default function HomePage() {
 
         {/* Submissions */}
         <section>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <span style={{ fontSize: 14, fontWeight: 800, color: '#ccccee', letterSpacing: '-0.01em' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+            <span style={{ fontSize: 14, fontWeight: 800, color: '#b0b0d8', letterSpacing: '-0.01em' }}>
               오늘의 연주
             </span>
             {submissions.length > 0 && (
               <span style={{
                 fontSize: 11, color: '#6366f1', fontWeight: 800,
-                background: 'rgba(99,102,241,0.12)',
-                border: '1px solid rgba(99,102,241,0.2)',
+                background: 'rgba(99,102,241,0.1)',
+                border: '1px solid rgba(99,102,241,0.18)',
                 padding: '3px 10px', borderRadius: 20,
               }}>
-                {submissions.length}개
+                {submissions.length}
               </span>
             )}
           </div>
 
           {submissions.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '56px 0' }}>
-              <div style={{ fontSize: 48, marginBottom: 14, opacity: 0.35 }}>🎸</div>
-              <p style={{ color: '#555578', fontSize: 15, fontWeight: 700 }}>아직 연주가 없어요</p>
-              <p style={{ color: '#333352', fontSize: 13, marginTop: 5 }}>첫 번째로 올려보세요!</p>
+            <div style={{ textAlign: 'center', padding: '52px 0' }}>
+              <p style={{ color: '#44445a', fontSize: 14, fontWeight: 700 }}>아직 연주가 없어요</p>
+              <p style={{ color: '#2a2a42', fontSize: 13, marginTop: 5 }}>첫 번째로 올려보세요</p>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {submissions.map(sub => (
                 <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)} />
               ))}
@@ -317,9 +320,9 @@ function SubmissionCard({ sub, onLike }: { sub: Submission; onLike: () => void }
 
   return (
     <div style={{
-      background: '#0d0d1a',
-      border: '1px solid rgba(255,255,255,0.07)',
-      borderRadius: 20, overflow: 'hidden',
+      background: '#0d0d1e',
+      border: '1px solid rgba(255,255,255,0.06)',
+      borderRadius: 18, overflow: 'hidden',
     }}>
       <video
         src={videoUrl}
@@ -332,10 +335,10 @@ function SubmissionCard({ sub, onLike }: { sub: Submission; onLike: () => void }
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
-              width: 34, height: 34, borderRadius: '50%',
+              width: 32, height: 32, borderRadius: '50%',
               background: 'linear-gradient(135deg, #4f46e5, #7c3aed)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14, fontWeight: 800, color: '#fff',
+              fontSize: 13, fontWeight: 800, color: '#fff',
               overflow: 'hidden', flexShrink: 0,
             }}>
               {sub.profiles?.avatar_url
@@ -343,28 +346,28 @@ function SubmissionCard({ sub, onLike }: { sub: Submission; onLike: () => void }
                 : initials}
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#ddddff', lineHeight: 1.2 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#ccccee', lineHeight: 1.2 }}>
                 {sub.profiles?.name ?? '익명'}
               </div>
-              <div style={{ fontSize: 11, color: '#44445a', marginTop: 2 }}>
+              <div style={{ fontSize: 11, color: '#333358', marginTop: 2 }}>
                 {timeAgo(sub.created_at)}
               </div>
             </div>
           </div>
           <button onClick={onLike} style={{
-            background: sub.user_liked ? 'rgba(244,114,182,0.1)' : 'rgba(255,255,255,0.04)',
-            border: sub.user_liked ? '1px solid rgba(244,114,182,0.3)' : '1px solid rgba(255,255,255,0.08)',
-            borderRadius: 10, cursor: 'pointer',
+            background: sub.user_liked ? 'rgba(244,114,182,0.08)' : 'transparent',
+            border: sub.user_liked ? '1px solid rgba(244,114,182,0.2)' : '1px solid rgba(255,255,255,0.07)',
+            borderRadius: 9, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 5,
-            color: sub.user_liked ? '#f472b6' : '#555578',
-            fontSize: 14, fontWeight: 700, padding: '6px 12px',
+            color: sub.user_liked ? '#f472b6' : '#444466',
+            fontSize: 13, fontWeight: 700, padding: '5px 11px',
           }}>
             {sub.user_liked ? '♥' : '♡'}
-            <span style={{ fontSize: 13 }}>{sub.likes_count}</span>
+            <span style={{ fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>{sub.likes_count}</span>
           </button>
         </div>
         {sub.caption && (
-          <p style={{ fontSize: 13, color: '#8888aa', marginTop: 10, lineHeight: 1.6 }}>
+          <p style={{ fontSize: 13, color: '#7777a0', marginTop: 10, lineHeight: 1.6 }}>
             {sub.caption}
           </p>
         )}
