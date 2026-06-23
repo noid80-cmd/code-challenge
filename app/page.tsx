@@ -5,7 +5,6 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
-import { buildIRealUrl } from '@/lib/chords'
 const ChordPlayer = dynamic(() => import('./components/ChordPlayer'), { ssr: false })
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
@@ -212,30 +211,8 @@ export default function HomePage() {
               )}
               <ChordPlayer
                 progressions={challenge.chords?.progressions ?? []}
-                defaultTempo={challenge.chords?.progressions?.[0]?.tempo ?? 120}
+                title={challenge.title}
               />
-              {/* iReal Pro 연동 버튼 */}
-              {(() => {
-                const progs = challenge.chords?.progressions ?? []
-                const allChords = progs.flatMap(p => p.chords.filter(c => c.trim()))
-                const style = progs[0]?.style?.toLowerCase() ?? 'swing'
-                const iRealUrl = buildIRealUrl(challenge.title, allChords, style)
-                return (
-                  <a href={iRealUrl} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
-                    marginTop: 10, padding: '11px',
-                    borderRadius: 12,
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.09)',
-                    color: '#888899', fontSize: 13, fontWeight: 700,
-                    textDecoration: 'none',
-                  }}>
-                    <span style={{ fontSize: 15 }}>🎷</span>
-                    iReal Pro로 열기
-                    <span style={{ fontSize: 11, color: '#555570', fontWeight: 500 }}>(앱 필요)</span>
-                  </a>
-                )
-              })()}
               {user ? (
                 <Link href="/upload" style={{
                   display: 'block', marginTop: 14, padding: '13px',
