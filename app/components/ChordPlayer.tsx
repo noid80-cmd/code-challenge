@@ -22,7 +22,7 @@ function StaffRow({ chords, isFirstRow, isLast }: {
   const startX = isFirstRow ? CLEF_W : 16
   const totalW = startX + 4 * MEASURE_W + 16
   return (
-    <svg width={totalW} height={ROW_H} style={{ display: 'block', maxWidth: '100%', overflow: 'visible' }}>
+    <svg width={totalW} height={ROW_H} style={{ display: 'block', overflow: 'visible' }}>
       {[0,1,2,3,4].map(i => (
         <line key={i} x1={isFirstRow ? 8 : 0} y1={PAD_TOP + i * LINE_GAP} x2={totalW - 8} y2={PAD_TOP + i * LINE_GAP} stroke="#3a3a5c" strokeWidth={0.8} />
       ))}
