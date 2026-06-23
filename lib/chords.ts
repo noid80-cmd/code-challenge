@@ -180,8 +180,24 @@ function toIRealChord(name: string): string {
 
 export function buildIRealUrl(title: string, chords: string[], style: string): string {
   const STYLE_MAP: Record<string, string> = {
-    swing: 'Medium Swing', straight: 'Even 8ths',
-    bossa: 'Bossa Nova',   funk: 'Funk',
+    'slow-swing':  'Slow Swing',
+    'swing':       'Medium Swing',
+    'fast-swing':  'Fast Swing',
+    'ballad':      'Ballad',
+    'jazz-waltz':  'Jazz Waltz',
+    'bossa':       'Bossa Nova',
+    'samba':       'Samba',
+    'afro-cuban':  'Afro Cuban',
+    'mambo':       'Mambo',
+    'cha-cha':     'Cha Cha',
+    'tango':       'Tango',
+    'straight':    'Even 8ths',
+    'pop':         'Pop',
+    'rock':        'Rock',
+    'funk':        'Funk',
+    'shuffle':     'Shuffle',
+    'rnb':         'R&B',
+    'reggae':      'Reggae',
   }
   const iRealStyle = STYLE_MAP[style] ?? 'Medium Swing'
   const keyRoot = chords[0] ? parseChord(chords[0]).root : 'C'

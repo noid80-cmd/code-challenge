@@ -4,11 +4,28 @@ import { useState } from 'react'
 import { buildIRealUrl } from '@/lib/chords'
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
-type StyleType = 'straight' | 'swing' | 'bossa' | 'funk'
 
-const STYLE_LABELS: Record<StyleType, string> = {
-  straight: '스트레이트', swing: '스윙', bossa: '보사노바', funk: '펑크',
-}
+const STYLE_OPTIONS = [
+  { group: '재즈',   value: 'slow-swing',  label: '슬로우 스윙' },
+  { group: '재즈',   value: 'swing',       label: '미디엄 스윙' },
+  { group: '재즈',   value: 'fast-swing',  label: '패스트 스윙' },
+  { group: '재즈',   value: 'ballad',      label: '발라드' },
+  { group: '재즈',   value: 'jazz-waltz',  label: '재즈 왈츠' },
+  { group: '라틴',   value: 'bossa',       label: '보사노바' },
+  { group: '라틴',   value: 'samba',       label: '삼바' },
+  { group: '라틴',   value: 'afro-cuban',  label: '아프로 쿠반' },
+  { group: '라틴',   value: 'mambo',       label: '맘보' },
+  { group: '라틴',   value: 'cha-cha',     label: '차차' },
+  { group: '라틴',   value: 'tango',       label: '탱고' },
+  { group: '팝/록', value: 'straight',    label: '스트레이트' },
+  { group: '팝/록', value: 'pop',         label: '팝' },
+  { group: '팝/록', value: 'rock',        label: '록' },
+  { group: '팝/록', value: 'funk',        label: '펑크' },
+  { group: '팝/록', value: 'shuffle',     label: '셔플' },
+  { group: '팝/록', value: 'rnb',         label: 'R&B' },
+  { group: '팝/록', value: 'reggae',      label: '레게' },
+]
+const STYLE_VALUES = STYLE_OPTIONS.map(o => o.value)
 
 // ── Staff SVG ─────────────────────────────────────────────────────────────────
 
@@ -51,9 +68,9 @@ export default function ChordPlayer({ progressions, title }: {
   progressions: Progression[]
   title: string
 }) {
-  const defaultStyle = progressions[0]?.style?.toLowerCase() as StyleType
-  const [style, setStyle] = useState<StyleType>(
-    Object.keys(STYLE_LABELS).includes(defaultStyle) ? defaultStyle : 'swing'
+  const defaultStyle = progressions[0]?.style?.toLowerCase() ?? ''
+  const [style, setStyle] = useState(
+    STYLE_VALUES.includes(defaultStyle) ? defaultStyle : 'swing'
   )
 
   const allChords = progressions.flatMap(p => p.chords.filter(c => c.trim()))
@@ -84,19 +101,25 @@ export default function ChordPlayer({ progressions, title }: {
 
       {/* Style + iReal Pro */}
       <div style={{ background: '#0c0c1a', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 18, padding: 16 }}>
-        <div style={{ display: 'flex', gap: 5, marginBottom: 12, background: 'rgba(255,255,255,0.03)', borderRadius: 11, padding: 4 }}>
-          {(Object.keys(STYLE_LABELS) as StyleType[]).map(s => (
-            <button key={s} onClick={() => setStyle(s)} style={{
-              flex: 1, padding: '7px 2px', borderRadius: 8, fontSize: 10, fontWeight: 700, cursor: 'pointer',
-              background: style === s ? 'rgba(99,102,241,0.3)' : 'transparent',
-              color: style === s ? '#c7d2fe' : '#44445a',
-              border: style === s ? '1px solid rgba(99,102,241,0.4)' : '1px solid transparent',
-              boxShadow: style === s ? '0 2px 8px rgba(99,102,241,0.2)' : 'none',
-            }}>
-              {STYLE_LABELS[s]}
-            </button>
+        <select
+          value={style}
+          onChange={e => setStyle(e.target.value)}
+          style={{
+            width: '100%', marginBottom: 12,
+            background: '#111118', border: '1px solid rgba(99,102,241,0.3)',
+            borderRadius: 10, padding: '10px 14px',
+            fontSize: 14, fontWeight: 700, color: '#c7d2fe',
+            outline: 'none', cursor: 'pointer',
+          }}
+        >
+          {['재즈', '라틴', '팝/록'].map(group => (
+            <optgroup key={group} label={group}>
+              {STYLE_OPTIONS.filter(o => o.group === group).map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </optgroup>
           ))}
-        </div>
+        </select>
 
         <a href={iRealUrl} style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,

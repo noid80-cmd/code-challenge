@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -11,6 +11,7 @@ type DraftChallenge = {
   description: string
   progressions: Progression[]
 }
+type ExistingChallenge = { id: string; date: string; title: string }
 
 const emptyDraft = (): DraftChallenge => ({
   title: '',
@@ -25,10 +26,25 @@ export default function AdminPage() {
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [draft, setDraft] = useState<DraftChallenge | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [todayExists, setTodayExists] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
+  const [challenges, setChallenges] = useState<ExistingChallenge[]>([])
+  const [deleting, setDeleting] = useState<string | null>(null)
+
+  const loadChallenges = useCallback(async () => {
+    const supabase = createClient()
+    const { data } = await supabase
+      .from('challenges')
+      .select('id, date, title')
+      .order('date', { ascending: false })
+      .limit(30)
+    setChallenges(data ?? [])
+    const today = new Date().toISOString().slice(0, 10)
+    setTodayExists(!!(data ?? []).find(c => c.date === today))
+  }, [])
 
   useEffect(() => {
     async function check() {
@@ -38,16 +54,14 @@ export default function AdminPage() {
         router.push('/')
         return
       }
-      const today = new Date().toISOString().slice(0, 10)
-      const { data } = await supabase.from('challenges').select('id').eq('date', today).single()
-      setTodayExists(!!data)
+      await loadChallenges()
       setLoading(false)
     }
     check()
-  }, [router])
+  }, [router, loadChallenges])
 
   async function generate() {
-    setGenerating(true); setError(''); setDraft(null)
+    setGenerating(true); setError(''); setDraft(null); setEditingId(null)
     try {
       const res = await fetch('/api/generate-challenge', { method: 'POST' })
       const data = await res.json()
@@ -71,22 +85,60 @@ export default function AdminPage() {
     }
     setSaving(true); setError(''); setSuccess('')
     const supabase = createClient()
-    const { error } = await supabase.from('challenges').insert({
-      date: selectedDate,
+    const payload = {
       title: draft.title.trim(),
       description: draft.description.trim() || null,
       chords: { progressions: validProgressions },
-    })
-    if (error) {
-      setError(error.message.includes('duplicate') || error.message.includes('unique')
-        ? '해당 날짜의 챌린지가 이미 있어요.'
-        : error.message)
+    }
+    if (editingId) {
+      const { error } = await supabase.from('challenges').update(payload).eq('id', editingId)
+      if (error) {
+        setError(error.message)
+      } else {
+        setSuccess('챌린지가 수정되었어요!')
+        setDraft(null); setEditingId(null)
+        await loadChallenges()
+      }
     } else {
-      setSuccess(`${selectedDate} 챌린지가 저장되었어요!`)
-      if (selectedDate === new Date().toISOString().slice(0, 10)) setTodayExists(true)
-      setDraft(null)
+      const { error } = await supabase.from('challenges').insert({ date: selectedDate, ...payload })
+      if (error) {
+        setError(error.message.includes('duplicate') || error.message.includes('unique')
+          ? '해당 날짜의 챌린지가 이미 있어요.'
+          : error.message)
+      } else {
+        setSuccess(`${selectedDate} 챌린지가 저장되었어요!`)
+        if (selectedDate === new Date().toISOString().slice(0, 10)) setTodayExists(true)
+        setDraft(null)
+        await loadChallenges()
+      }
     }
     setSaving(false)
+  }
+
+  async function startEdit(ch: ExistingChallenge) {
+    const supabase = createClient()
+    const { data } = await supabase.from('challenges').select('*').eq('id', ch.id).single()
+    if (!data) return
+    setEditingId(ch.id)
+    setSelectedDate(data.date)
+    setDraft({
+      title: data.title,
+      description: data.description ?? '',
+      progressions: data.chords?.progressions ?? [{ label: '진행 1', chords: [''], style: '' }],
+    })
+    setMode('manual')
+    setError(''); setSuccess('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function deleteChallenge(id: string) {
+    if (!confirm('정말 삭제할까요?')) return
+    setDeleting(id)
+    const supabase = createClient()
+    await supabase.from('challenges').delete().eq('id', id)
+    await loadChallenges()
+    if (editingId === id) { setDraft(null); setEditingId(null) }
+    setDeleting(null)
   }
 
   function updateChord(progIdx: number, chordIdx: number, value: string) {
@@ -158,21 +210,23 @@ export default function AdminPage() {
       <main style={{ maxWidth: 560, margin: '0 auto', padding: '24px 16px 80px' }}>
 
         {/* 날짜 */}
-        <div style={{ background: '#0e0e1a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 20, marginBottom: 16 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: '#eeeeff', marginBottom: 10 }}>챌린지 날짜</div>
-          <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} style={inputStyle} />
-          {todayExists && selectedDate === new Date().toISOString().slice(0, 10) && (
-            <p style={{ color: '#fbbf24', fontSize: 12, marginTop: 8 }}>⚠️ 오늘 챌린지가 이미 있어요.</p>
-          )}
-        </div>
+        {!editingId && (
+          <div style={{ background: '#0e0e1a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 20, marginBottom: 16 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#eeeeff', marginBottom: 10 }}>챌린지 날짜</div>
+            <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} style={inputStyle} />
+            {todayExists && selectedDate === new Date().toISOString().slice(0, 10) && (
+              <p style={{ color: '#fbbf24', fontSize: 12, marginTop: 8 }}>⚠️ 오늘 챌린지가 이미 있어요.</p>
+            )}
+          </div>
+        )}
 
         {/* 모드 탭 */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          <button onClick={() => { setMode('manual'); setDraft(emptyDraft()); setError('') }}
+          <button onClick={() => { setMode('manual'); if (!editingId) setDraft(emptyDraft()); setError('') }}
             style={{ flex: 1, padding: '11px', borderRadius: 12, background: mode === 'manual' ? 'rgba(99,102,241,0.2)' : '#0e0e1a', color: mode === 'manual' ? '#a5b4fc' : '#555570', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: mode === 'manual' ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
             ✏️ 직접 입력
           </button>
-          <button onClick={() => { setMode('ai'); setDraft(null); setError('') }}
+          <button onClick={() => { setMode('ai'); setDraft(null); setEditingId(null); setError('') }}
             style={{ flex: 1, padding: '11px', borderRadius: 12, background: mode === 'ai' ? 'rgba(99,102,241,0.2)' : '#0e0e1a', color: mode === 'ai' ? '#a5b4fc' : '#555570', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: mode === 'ai' ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
             🤖 AI 생성
           </button>
@@ -191,9 +245,17 @@ export default function AdminPage() {
 
         {/* 입력/편집 폼 */}
         {draft && (
-          <div style={{ background: '#0e0e1a', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 16, padding: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#818cf8', marginBottom: 16 }}>
-              {mode === 'ai' ? '생성된 챌린지 확인 · 수정' : '챌린지 입력'}
+          <div style={{ background: '#0e0e1a', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: '#818cf8' }}>
+                {editingId ? '챌린지 수정' : mode === 'ai' ? '생성된 챌린지 확인 · 수정' : '챌린지 입력'}
+              </div>
+              {editingId && (
+                <button onClick={() => { setDraft(null); setEditingId(null); setError('') }}
+                  style={{ background: 'none', border: 'none', color: '#555570', fontSize: 12, cursor: 'pointer' }}>
+                  취소
+                </button>
+              )}
             </div>
 
             <div style={{ marginBottom: 14 }}>
@@ -248,7 +310,7 @@ export default function AdminPage() {
 
             <button onClick={saveChallenge} disabled={saving}
               style={{ width: '100%', padding: '13px', borderRadius: 13, border: 'none', background: saving ? '#1a1a2e' : 'linear-gradient(135deg, #059669, #10b981)', color: saving ? '#444466' : '#fff', fontSize: 15, fontWeight: 700, cursor: saving ? 'default' : 'pointer' }}>
-              {saving ? '저장 중...' : '✓ 챌린지 저장하기'}
+              {saving ? '저장 중...' : editingId ? '✓ 수정 저장' : '✓ 챌린지 저장하기'}
             </button>
           </div>
         )}
@@ -256,9 +318,41 @@ export default function AdminPage() {
         {/* 직접 입력 모드인데 draft가 없으면 시작 버튼 */}
         {mode === 'manual' && !draft && (
           <button onClick={() => setDraft(emptyDraft())}
-            style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer' }}>
+            style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', marginBottom: 20 }}>
             ✏️ 직접 입력하기
           </button>
+        )}
+
+        {/* 기존 챌린지 목록 */}
+        {challenges.length > 0 && (
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#ccccee', marginBottom: 12 }}>기존 챌린지</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {challenges.map(ch => (
+                <div key={ch.id} style={{
+                  background: '#0d0d1a',
+                  border: editingId === ch.id ? '1px solid rgba(99,102,241,0.5)' : '1px solid rgba(255,255,255,0.07)',
+                  borderRadius: 14, padding: '12px 14px',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+                }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, color: '#5555aa', fontWeight: 700, marginBottom: 2 }}>{ch.date}</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#ccccee', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ch.title}</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                    <button onClick={() => startEdit(ch)}
+                      style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                      수정
+                    </button>
+                    <button onClick={() => deleteChallenge(ch.id)} disabled={deleting === ch.id}
+                      style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                      {deleting === ch.id ? '...' : '삭제'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
       </main>
     </div>
