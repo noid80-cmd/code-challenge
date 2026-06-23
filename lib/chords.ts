@@ -154,6 +154,41 @@ export function getRichVoicing(name: string): string[] {
   return [third, seventh, ninth].sort((a, b) => a - b).map(midiToNote)
 }
 
+// ── iReal Pro 연동 ───────────────────────────────────────────────────────────
+
+// 우리 코드 표기 → iReal Pro 표기 변환
+function toIRealChord(name: string): string {
+  if (!name?.trim()) return 'n'
+  const { root, quality, bass } = parseChord(name)
+  const qualityMap: Record<string, string> = {
+    '': '',       'maj': '',
+    'm': '-',     'min': '-',
+    '7': '7',     'maj7': '^7',    'M7': '^7',
+    'm7': '-7',   'min7': '-7',
+    'dim': 'o',   'dim7': 'o7',
+    'aug': '+',   'sus2': 'sus2',  'sus4': 'sus',
+    '7sus4': '7sus', 'm7b5': 'h7',
+    '9': '9',     'maj9': '^9',    'm9': '-9',
+    '6': '6',     'm6': '-6',      'add9': 'add9',
+    '7b9': '7b9', '7#9': '7#9',    '7#5': '7#5',
+    '7b5': '7b5', 'maj7#11': '^7#11',
+    '11': '11',   'm11': '-11',    '13': '13',   'm13': '-13',
+  }
+  const q = qualityMap[quality] ?? quality
+  return bass ? `${root}${q}/${bass}` : `${root}${q}`
+}
+
+export function buildIRealUrl(title: string, chords: string[], style: string): string {
+  const STYLE_MAP: Record<string, string> = {
+    swing: 'Medium Swing', straight: 'Even 8ths',
+    bossa: 'Bossa Nova',   funk: 'Funk',
+  }
+  const iRealStyle = STYLE_MAP[style] ?? 'Medium Swing'
+  const keyRoot = chords[0] ? parseChord(chords[0]).root : 'C'
+  const chordStr = chords.filter(c => c.trim()).map(toIRealChord).join(' |')
+  return `irealbook://${title}=Code Challenge=${iRealStyle}=${keyRoot}=n=T44{${chordStr} }`
+}
+
 // Walking bass: 스윙에서 4분음표 4개 (루트 → 5th → 3rd → 다음코드 반음 아래 어프로치)
 export function getWalkingBassNotes(name: string, nextName: string): string[] {
   const { root, quality } = parseChord(name)
