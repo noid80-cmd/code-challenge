@@ -1,6 +1,6 @@
-﻿'use client'
+'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -23,6 +23,16 @@ export default function UploadPage() {
   const [done, setDone] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // 카메라 녹화 상태
+  const [recordMode, setRecordMode] = useState(false)
+  const [recording, setRecording] = useState(false)
+  const [recordSecs, setRecordSecs] = useState(0)
+  const cameraRef = useRef<HTMLVideoElement>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   useEffect(() => {
     async function load() {
       const supabase = createClient()
@@ -37,6 +47,67 @@ export default function UploadPage() {
     }
     load()
   }, [router])
+
+  // 카메라 시작
+  const startCamera = useCallback(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: true,
+      })
+      streamRef.current = stream
+      setRecordMode(true)
+      // video element는 다음 render 후 마운트되므로 requestAnimationFrame으로 대기
+      requestAnimationFrame(() => {
+        if (cameraRef.current) {
+          cameraRef.current.srcObject = stream
+          cameraRef.current.play()
+        }
+      })
+    } catch {
+      setError('카메라 접근 권한이 필요해요. 브라우저 설정에서 허용해주세요.')
+    }
+  }, [])
+
+  // 카메라 종료
+  const stopCamera = useCallback(() => {
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    streamRef.current = null
+    setRecordMode(false)
+    setRecording(false)
+    setRecordSecs(0)
+    if (timerRef.current) clearInterval(timerRef.current)
+  }, [])
+
+  // 녹화 시작
+  function startRecording() {
+    if (!streamRef.current) return
+    chunksRef.current = []
+    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+      ? 'video/webm;codecs=vp8,opus'
+      : MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : ''
+    const recorder = new MediaRecorder(streamRef.current, mimeType ? { mimeType } : undefined)
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data) }
+    recorder.onstop = () => {
+      const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'video/webm' })
+      const ext = blob.type.includes('mp4') ? 'mp4' : 'webm'
+      const f = new File([blob], `recording.${ext}`, { type: blob.type })
+      setFile(f)
+      setPreview(URL.createObjectURL(blob))
+      stopCamera()
+    }
+    recorder.start()
+    recorderRef.current = recorder
+    setRecording(true)
+    setRecordSecs(0)
+    timerRef.current = setInterval(() => setRecordSecs(s => s + 1), 1000)
+  }
+
+  // 녹화 중지
+  function stopRecording() {
+    recorderRef.current?.stop()
+    if (timerRef.current) clearInterval(timerRef.current)
+  }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
@@ -53,7 +124,7 @@ export default function UploadPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
-    const ext = file.name.split('.').pop() || 'mp4'
+    const ext = file.name.split('.').pop() || 'webm'
     const path = `${user.id}/${Date.now()}.${ext}`
     const { error: uploadError } = await supabase.storage.from('videos').upload(path, file, { contentType: file.type, upsert: false })
     if (uploadError) { setError('업로드 실패: ' + uploadError.message); setUploading(false); return }
@@ -66,6 +137,7 @@ export default function UploadPage() {
     setUploading(false); setDone(true)
   }
 
+  // 완료 화면
   if (done) {
     const isGroup = selectedGroupId !== 'public'
     const groupName = myGroups.find(g => g.id === selectedGroupId)?.name
@@ -82,9 +154,7 @@ export default function UploadPage() {
               <path d="M5 14l7 7L23 7" stroke="#f0ece0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <h2 style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 10, color: '#f0ece0' }}>
-            업로드 완료!
-          </h2>
+          <h2 style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 10, color: '#f0ece0' }}>업로드 완료!</h2>
           <p style={{ color: '#605850', fontSize: 14, marginBottom: 36, lineHeight: 1.8 }}>
             {isGroup ? `${groupName} 크루에 올라갔어요.` : '연주가 피드에 올라갔어요.'}<br />
             {isGroup ? '크루 피드에서 확인해보세요.' : '다른 분들의 연주도 확인해보세요.'}
@@ -112,6 +182,107 @@ export default function UploadPage() {
     )
   }
 
+  // 카메라 녹화 화면
+  if (recordMode) {
+    const allChords = challenge?.chords?.progressions?.flatMap(p => p.chords.filter(c => c.trim())) ?? []
+    const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 100, display: 'flex', flexDirection: 'column' }}>
+        {/* 코드 오버레이 */}
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)',
+          padding: '52px 16px 28px',
+        }}>
+          <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(240,236,224,0.5)', letterSpacing: '0.12em', marginBottom: 10 }}>
+            {challenge?.title}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {allChords.map((chord, i) => (
+              <span key={i} style={{
+                padding: '5px 12px', borderRadius: 8,
+                background: 'rgba(240,236,224,0.15)',
+                border: '1px solid rgba(240,236,224,0.3)',
+                backdropFilter: 'blur(8px)',
+                fontSize: 14, fontWeight: 900, color: '#f8f4ec',
+              }}>{chord}</span>
+            ))}
+          </div>
+        </div>
+
+        {/* 카메라 프리뷰 */}
+        <video
+          ref={cameraRef}
+          autoPlay
+          playsInline
+          muted
+          style={{ flex: 1, width: '100%', objectFit: 'cover' }}
+        />
+
+        {/* 하단 컨트롤 */}
+        <div style={{
+          position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 10,
+          background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)',
+          padding: '28px 24px 48px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          {/* 취소 */}
+          <button onClick={stopCamera} style={{
+            width: 48, height: 48, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.12)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          }}>✕</button>
+
+          {/* 녹화 버튼 */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            {recording && (
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#ff4444', letterSpacing: '0.05em' }}>
+                ● {fmt(recordSecs)}
+              </div>
+            )}
+            <button
+              onClick={recording ? stopRecording : startRecording}
+              style={{
+                width: 72, height: 72, borderRadius: '50%', border: 'none', cursor: 'pointer',
+                background: recording ? '#ff4444' : '#fff',
+                boxShadow: recording ? '0 0 0 4px rgba(255,68,68,0.4)' : '0 0 0 4px rgba(255,255,255,0.25)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              {recording ? (
+                <div style={{ width: 22, height: 22, borderRadius: 4, background: '#fff' }} />
+              ) : (
+                <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#ff4444' }} />
+              )}
+            </button>
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
+              {recording ? '탭하면 중지' : '탭하면 녹화'}
+            </div>
+          </div>
+
+          {/* 카메라 전환 (앞/뒤) */}
+          <button onClick={async () => {
+            const currentFacing = (streamRef.current?.getVideoTracks()[0]?.getSettings() as { facingMode?: string })?.facingMode
+            const nextFacing = currentFacing === 'environment' ? 'user' : 'environment'
+            streamRef.current?.getTracks().forEach(t => t.stop())
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: nextFacing }, audio: true,
+            })
+            streamRef.current = stream
+            if (cameraRef.current) { cameraRef.current.srcObject = stream; cameraRef.current.play() }
+          }} style={{
+            width: 48, height: 48, borderRadius: '50%',
+            background: 'rgba(255,255,255,0.12)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            color: '#fff', fontSize: 18, cursor: 'pointer',
+          }}>⟳</button>
+        </div>
+      </div>
+    )
+  }
+
   const inputStyle: React.CSSProperties = {
     width: '100%', background: 'rgba(13,13,12,0.8)',
     border: '1px solid rgba(240,236,224,0.15)',
@@ -134,34 +305,21 @@ export default function UploadPage() {
       </header>
 
       <main style={{ maxWidth: 480, margin: '0 auto', padding: '28px 16px 100px' }}>
+        {/* 오늘의 챌린지 + 악보 */}
         {challenge ? (
           <div style={{
             background: 'linear-gradient(145deg, #111110, #0d0d0c)',
             border: '1px solid rgba(240,236,224,0.18)', borderRadius: 18, padding: 18, marginBottom: 20,
             boxShadow: '0 8px 32px rgba(240,236,224,0.06)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', color: '#a0988c' }}>
-                오늘의 챌린지
-              </div>
-              <Link href="/chart" style={{
-                fontSize: 11, fontWeight: 700, color: '#a0988c',
-                background: 'rgba(240,236,224,0.06)',
-                border: '1px solid rgba(240,236,224,0.12)',
-                borderRadius: 8, padding: '4px 10px',
-                textDecoration: 'none',
-              }}>
-                악보 크게 보기 →
-              </Link>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', color: '#a0988c', marginBottom: 8 }}>
+              오늘의 챌린지
             </div>
             <div style={{ fontSize: 15, fontWeight: 900, color: '#f0ece0', marginBottom: 16, letterSpacing: '-0.02em' }}>
               {challenge.title}
             </div>
             <div style={{ overflowX: 'auto' }}>
-              <ChordPlayer
-                progressions={challenge.chords.progressions}
-                title={challenge.title}
-              />
+              <ChordPlayer progressions={challenge.chords.progressions} title={challenge.title} />
             </div>
           </div>
         ) : (
@@ -177,39 +335,69 @@ export default function UploadPage() {
             <div style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(240,236,224,0.12)' }}>
               <video src={preview} controls playsInline
                 style={{ width: '100%', display: 'block', background: '#000', maxHeight: 360, objectFit: 'contain' }} />
-              <button type="button" onClick={() => fileRef.current?.click()} style={{
-                width: '100%', padding: '11px', background: 'rgba(8,12,0,0.9)', border: 'none',
-                borderTop: '1px solid rgba(240,236,224,0.08)',
-                color: '#605850', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-              }}>영상 바꾸기</button>
+              <div style={{ display: 'flex', borderTop: '1px solid rgba(240,236,224,0.08)' }}>
+                <button type="button" onClick={startCamera} style={{
+                  flex: 1, padding: '11px', background: 'transparent', border: 'none',
+                  borderRight: '1px solid rgba(240,236,224,0.08)',
+                  color: '#605850', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}>다시 촬영</button>
+                <button type="button" onClick={() => fileRef.current?.click()} style={{
+                  flex: 1, padding: '11px', background: 'transparent', border: 'none',
+                  color: '#605850', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}>파일 선택</button>
+              </div>
             </div>
           ) : (
-            <button type="button" onClick={() => fileRef.current?.click()} style={{
-              width: '100%', padding: '48px 20px', borderRadius: 18,
-              border: '1px dashed rgba(240,236,224,0.25)', background: 'rgba(240,236,224,0.03)',
-              color: '#605850', fontSize: 14, fontWeight: 700, cursor: 'pointer',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
-            }}>
-              <div style={{
-                width: 52, height: 52, borderRadius: 16,
-                background: 'rgba(240,236,224,0.08)', border: '1px solid rgba(240,236,224,0.18)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+            <div style={{ display: 'flex', gap: 10 }}>
+              {/* 촬영하기 */}
+              <button type="button" onClick={startCamera} style={{
+                flex: 1, padding: '32px 12px', borderRadius: 18,
+                border: '1px solid rgba(240,236,224,0.2)',
+                background: 'rgba(240,236,224,0.04)',
+                color: '#f0ece0', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
               }}>
-                <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                  <path d="M11 16V8M11 8L7 12M11 8L15 12" stroke="#c8c4b0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M4 19h14" stroke="#c8c4b0" strokeWidth="1.8" strokeLinecap="round"/>
-                </svg>
-              </div>
-              영상 선택하기
-              <span style={{ fontSize: 12, color: '#1a1a18', fontWeight: 500 }}>MP4, MOV 등 · 최대 100MB</span>
-            </button>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 14,
+                  background: 'rgba(240,236,224,0.1)', border: '1px solid rgba(240,236,224,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <circle cx="10" cy="10" r="4" fill="#f0ece0"/>
+                    <circle cx="10" cy="10" r="8" stroke="#f0ece0" strokeWidth="1.5"/>
+                  </svg>
+                </div>
+                지금 촬영하기
+                <span style={{ fontSize: 10, color: '#605850', fontWeight: 600 }}>코드 보면서 녹화</span>
+              </button>
+
+              {/* 파일 선택 */}
+              <button type="button" onClick={() => fileRef.current?.click()} style={{
+                flex: 1, padding: '32px 12px', borderRadius: 18,
+                border: '1px dashed rgba(240,236,224,0.15)',
+                background: 'transparent',
+                color: '#605850', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+              }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 14,
+                  background: 'rgba(240,236,224,0.05)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                    <path d="M10 14V6M10 6L6 10M10 6L14 10" stroke="#605850" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M3 17h14" stroke="#605850" strokeWidth="1.6" strokeLinecap="round"/>
+                  </svg>
+                </div>
+                파일 선택
+                <span style={{ fontSize: 10, color: '#303028', fontWeight: 600 }}>갤러리에서 올리기</span>
+              </button>
+            </div>
           )}
 
           {myGroups.length > 0 && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 10, color: '#a0988c' }}>
-                어디에 올릴까요?
-              </div>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 10, color: '#a0988c' }}>어디에 올릴까요?</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                 {[{ id: 'public', name: '전체 공개 피드' }, ...myGroups].map(g => (
                   <label key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
