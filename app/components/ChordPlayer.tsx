@@ -45,7 +45,7 @@ function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean 
       {/* 오선 */}
       {[0,1,2,3,4].map(i => (
         <line key={i} x1={0} y1={PAD_T + i * LG} x2={W - 4} y2={PAD_T + i * LG}
-          stroke="#1a1a18" strokeWidth={1} />
+          stroke="rgba(240,236,224,0.12)" strokeWidth={1} />
       ))}
 
       {/* 마디별 코드 */}
@@ -55,9 +55,9 @@ function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean 
         const slotW = MW / n
         return (
           <g key={col}>
-            {/* 마디 시작 세로선 */}
+            {/* 마디 구분 세로선 */}
             <line x1={mx} y1={PAD_T} x2={mx} y2={PAD_T + STAFF_H}
-              stroke="#1a1a18" strokeWidth={1} />
+              stroke="rgba(240,236,224,0.45)" strokeWidth={1.5} />
             {/* 코드 텍스트 */}
             {chords.filter(c => c.trim()).map((chord, ci) => (
               <text key={ci}
@@ -76,10 +76,10 @@ function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean 
 
       {/* 마지막 세로선 */}
       <line x1={PAD_L + 4 * MW} y1={PAD_T} x2={PAD_L + 4 * MW} y2={PAD_T + STAFF_H}
-        stroke="#1a1a18" strokeWidth={isLast ? 3 : 1} />
+        stroke="rgba(240,236,224,0.45)" strokeWidth={isLast ? 3 : 1.5} />
       {isLast && (
         <line x1={PAD_L + 4 * MW - 5} y1={PAD_T} x2={PAD_L + 4 * MW - 5} y2={PAD_T + STAFF_H}
-          stroke="#1a1a18" strokeWidth={1} />
+          stroke="rgba(240,236,224,0.45)" strokeWidth={1.5} />
       )}
     </svg>
   )
