@@ -120,30 +120,30 @@ export default function GroupPage() {
   }
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #0e0700 0%, #080300 60%, #0b0400 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#e07a35', opacity: 0.7 }} />
-      <span style={{ color: '#4a2a10', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #060900 0%, #040600 60%, #070a00 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#aaff00', opacity: 0.7 }} />
+      <span style={{ color: '#2e4008', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
     </div>
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #0e0700 0%, #080300 60%, #0b0400 100%)' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #060900 0%, #040600 60%, #070a00 100%)' }}>
       <header style={{
         position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(10,4,0,0.88)', backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(224,122,53,0.12)',
+        background: 'rgba(4,7,0,0.88)', backdropFilter: 'blur(24px)',
+        borderBottom: '1px solid rgba(170,255,0,0.12)',
         padding: '0 20px', height: 54,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/groups" style={{ color: '#7a4820', fontSize: 13, fontWeight: 700 }}>← 크루</Link>
-        <span style={{ fontWeight: 800, fontSize: 15, color: '#fdf0e8', letterSpacing: '-0.02em', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <Link href="/groups" style={{ color: '#506010', fontSize: 13, fontWeight: 700 }}>← 크루</Link>
+        <span style={{ fontWeight: 800, fontSize: 15, color: '#e8ffc0', letterSpacing: '-0.02em', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {group?.name}
         </span>
         <button onClick={copyCode} style={{
-          background: copied ? 'rgba(52,211,153,0.1)' : 'rgba(224,122,53,0.1)',
-          border: copied ? '1px solid rgba(52,211,153,0.25)' : '1px solid rgba(224,122,53,0.25)',
+          background: copied ? 'rgba(52,211,153,0.1)' : 'rgba(170,255,0,0.1)',
+          border: copied ? '1px solid rgba(52,211,153,0.25)' : '1px solid rgba(170,255,0,0.25)',
           borderRadius: 9, padding: '5px 12px',
-          color: copied ? '#34d399' : '#c07840',
+          color: copied ? '#34d399' : '#7aaa18',
           fontSize: 12, fontWeight: 800, cursor: 'pointer',
           letterSpacing: '0.06em', transition: 'all 0.2s',
         }}>
@@ -153,26 +153,26 @@ export default function GroupPage() {
 
       <main style={{ maxWidth: 560, margin: '0 auto', padding: '24px 16px 100px' }}>
         <div style={{
-          background: 'linear-gradient(145deg, #140800, #0d0500)',
-          border: '1px solid rgba(224,122,53,0.12)', borderRadius: 18, padding: '14px 18px', marginBottom: 24,
+          background: 'linear-gradient(145deg, #0c1000, #080c00)',
+          border: '1px solid rgba(170,255,0,0.12)', borderRadius: 18, padding: '14px 18px', marginBottom: 24,
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div>
-            {group?.description && <div style={{ fontSize: 13, color: '#c07840', marginBottom: 4 }}>{group.description}</div>}
-            <div style={{ fontSize: 12, color: '#4a2a10', fontWeight: 600 }}>멤버 {memberCount}명</div>
+            {group?.description && <div style={{ fontSize: 13, color: '#7aaa18', marginBottom: 4 }}>{group.description}</div>}
+            <div style={{ fontSize: 12, color: '#2e4008', fontWeight: 600 }}>멤버 {memberCount}명</div>
           </div>
           <Link href="/upload" style={{
             padding: '8px 16px', borderRadius: 10,
-            background: 'linear-gradient(135deg, #f09050, #c26020)',
-            color: '#080400', fontSize: 13, fontWeight: 700, textDecoration: 'none',
-            boxShadow: '0 4px 14px rgba(224,122,53,0.35)',
+            background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
+            color: '#050800', fontSize: 13, fontWeight: 700, textDecoration: 'none',
+            boxShadow: '0 4px 14px rgba(170,255,0,0.35)',
           }}>업로드</Link>
         </div>
 
         {submissions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <p style={{ color: '#4a2a10', fontSize: 14, fontWeight: 700 }}>아직 연주가 없어요</p>
-            <p style={{ color: '#2a1408', fontSize: 13, marginTop: 5 }}>첫 번째로 올려보세요</p>
+            <p style={{ color: '#2e4008', fontSize: 14, fontWeight: 700 }}>아직 연주가 없어요</p>
+            <p style={{ color: '#182400', fontSize: 13, marginTop: 5 }}>첫 번째로 올려보세요</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -221,8 +221,8 @@ function SubmissionCard({
 
   return (
     <div style={{
-      background: 'linear-gradient(145deg, #140800, #0d0500)',
-      border: '1px solid rgba(224,122,53,0.1)', borderRadius: 20, overflow: 'hidden',
+      background: 'linear-gradient(145deg, #0c1000, #080c00)',
+      border: '1px solid rgba(170,255,0,0.1)', borderRadius: 20, overflow: 'hidden',
       boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
     }}>
       <video src={videoUrl} controls playsInline preload="metadata"
@@ -233,29 +233,29 @@ function SubmissionCard({
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 34, height: 34, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #f09050, #c26020)',
+              background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 13, fontWeight: 800, color: '#080400', overflow: 'hidden', flexShrink: 0,
-              boxShadow: '0 2px 10px rgba(224,122,53,0.3)',
+              fontSize: 13, fontWeight: 800, color: '#050800', overflow: 'hidden', flexShrink: 0,
+              boxShadow: '0 2px 10px rgba(170,255,0,0.3)',
             }}>
               {sub.profiles?.avatar_url
                 ? <img src={sub.profiles.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                 : initials}
             </div>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#fdf0e8', lineHeight: 1.2 }}>{sub.profiles?.name ?? '익명'}</div>
-              <div style={{ fontSize: 11, color: '#4a2a10', marginTop: 1 }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#e8ffc0', lineHeight: 1.2 }}>{sub.profiles?.name ?? '익명'}</div>
+              <div style={{ fontSize: 11, color: '#2e4008', marginTop: 1 }}>
                 {challengeDate && <span style={{ marginRight: 4 }}>{challengeDate} ·</span>}
                 {timeAgo(sub.created_at)}
               </div>
             </div>
           </div>
           <button onClick={onLike} style={{
-            background: liked ? 'rgba(224,122,53,0.12)' : 'rgba(255,255,255,0.02)',
-            border: liked ? '1px solid rgba(224,122,53,0.4)' : '1px solid rgba(255,255,255,0.06)',
+            background: liked ? 'rgba(170,255,0,0.12)' : 'rgba(255,255,255,0.02)',
+            border: liked ? '1px solid rgba(170,255,0,0.4)' : '1px solid rgba(255,255,255,0.06)',
             borderRadius: 10, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 6,
-            color: liked ? '#e07a35' : '#4a2a10',
+            color: liked ? '#aaff00' : '#2e4008',
             fontSize: 14, fontWeight: 800, padding: '7px 12px',
           }}>
             {liked ? '♥' : '♡'}
@@ -263,28 +263,28 @@ function SubmissionCard({
           </button>
         </div>
 
-        {sub.caption && <p style={{ fontSize: 13, color: '#7a4820', marginBottom: 10, lineHeight: 1.6 }}>{sub.caption}</p>}
+        {sub.caption && <p style={{ fontSize: 13, color: '#506010', marginBottom: 10, lineHeight: 1.6 }}>{sub.caption}</p>}
 
         {sub.challenges?.title && (
           <div style={{
-            fontSize: 11, color: '#c07840', fontWeight: 700,
-            background: 'rgba(224,122,53,0.07)', border: '1px solid rgba(224,122,53,0.15)',
+            fontSize: 11, color: '#7aaa18', fontWeight: 700,
+            background: 'rgba(170,255,0,0.07)', border: '1px solid rgba(170,255,0,0.15)',
             borderRadius: 7, padding: '3px 10px', display: 'inline-block', marginBottom: 10,
           }}>{sub.challenges.title}</div>
         )}
       </div>
 
       {/* Comments */}
-      <div style={{ borderTop: '1px solid rgba(224,122,53,0.06)', padding: '12px 16px 14px' }}>
+      <div style={{ borderTop: '1px solid rgba(170,255,0,0.06)', padding: '12px 16px 14px' }}>
         {comments.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
             {comments.map(c => (
               <div key={c.id} style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
                 <div style={{
                   width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-                  background: 'linear-gradient(135deg, #f09050, #c26020)',
+                  background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 10, fontWeight: 800, color: '#080400', overflow: 'hidden',
+                  fontSize: 10, fontWeight: 800, color: '#050800', overflow: 'hidden',
                 }}>
                   {c.profiles?.avatar_url
                     ? <img src={c.profiles.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
@@ -292,15 +292,15 @@ function SubmissionCard({
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 2 }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: '#f09050' }}>{c.profiles?.name ?? '익명'}</span>
-                    <span style={{ fontSize: 10, color: '#2a1408' }}>{timeAgo(c.created_at)}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: '#c8ff40' }}>{c.profiles?.name ?? '익명'}</span>
+                    <span style={{ fontSize: 10, color: '#182400' }}>{timeAgo(c.created_at)}</span>
                   </div>
                   <p style={{ fontSize: 13, color: '#7a6020', lineHeight: 1.5, margin: 0 }}>{c.content}</p>
                 </div>
                 {c.user_id === currentUserId && (
                   <button onClick={() => onDeleteComment(c.id)} style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: '#2a1408', fontSize: 11, padding: '2px 4px', flexShrink: 0,
+                    color: '#182400', fontSize: 11, padding: '2px 4px', flexShrink: 0,
                   }}>삭제</button>
                 )}
               </div>
@@ -311,11 +311,11 @@ function SubmissionCard({
         {!showInput ? (
           <button onClick={() => { setShowInput(true); setTimeout(() => inputRef.current?.focus(), 50) }} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            color: '#4a2a10', fontSize: 13, fontWeight: 600, padding: 0,
+            color: '#2e4008', fontSize: 13, fontWeight: 600, padding: 0,
             display: 'flex', alignItems: 'center', gap: 5,
           }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M2 2h10v8H8l-3 2V10H2V2z" stroke="#4a2a10" strokeWidth="1.2" strokeLinejoin="round"/>
+              <path d="M2 2h10v8H8l-3 2V10H2V2z" stroke="#2e4008" strokeWidth="1.2" strokeLinejoin="round"/>
             </svg>
             {comments.length > 0 ? `댓글 ${comments.length}` : '댓글 달기'}
           </button>
@@ -326,20 +326,20 @@ function SubmissionCard({
               placeholder="댓글을 입력하세요"
               onKeyDown={e => { if (e.key === 'Enter') handleComment() }}
               style={{
-                flex: 1, background: 'rgba(18,8,0,0.8)',
-                border: '1px solid rgba(224,122,53,0.2)',
+                flex: 1, background: 'rgba(8,12,0,0.8)',
+                border: '1px solid rgba(170,255,0,0.2)',
                 borderRadius: 9, padding: '9px 12px',
-                fontSize: 13, color: '#fdf0e8', outline: 'none',
+                fontSize: 13, color: '#e8ffc0', outline: 'none',
               }} />
             <button onClick={handleComment} style={{
               padding: '9px 14px', borderRadius: 9,
-              background: 'linear-gradient(135deg, #f09050, #c26020)',
-              color: '#080400', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer',
+              background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
+              color: '#050800', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer',
             }}>등록</button>
             <button onClick={() => setShowInput(false)} style={{
               padding: '9px 10px', borderRadius: 9,
-              background: 'transparent', border: '1px solid rgba(224,122,53,0.15)',
-              color: '#4a2a10', fontSize: 13, cursor: 'pointer',
+              background: 'transparent', border: '1px solid rgba(170,255,0,0.15)',
+              color: '#2e4008', fontSize: 13, cursor: 'pointer',
             }}>✕</button>
           </div>
         )}

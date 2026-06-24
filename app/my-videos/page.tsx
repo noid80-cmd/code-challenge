@@ -60,16 +60,16 @@ export default function MyVideosPage() {
   const uploadsToday = submissions[0]?.created_at.slice(0, 10) === new Date().toISOString().slice(0, 10)
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #0e0700 0%, #080300 60%, #0b0400 100%)' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #060900 0%, #040600 60%, #070a00 100%)' }}>
       <header style={{
         position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(10,4,0,0.88)', backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(224,122,53,0.12)',
+        background: 'rgba(4,7,0,0.88)', backdropFilter: 'blur(24px)',
+        borderBottom: '1px solid rgba(170,255,0,0.12)',
         padding: '0 20px', height: 54,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/" style={{ color: '#7a4820', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
-        <span style={{ fontWeight: 800, fontSize: 16, color: '#fdf0e8', letterSpacing: '-0.02em' }}>내 성장 기록</span>
+        <Link href="/" style={{ color: '#506010', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
+        <span style={{ fontWeight: 800, fontSize: 16, color: '#e8ffc0', letterSpacing: '-0.02em' }}>내 성장 기록</span>
         <div style={{ width: 48 }} />
       </header>
 
@@ -81,37 +81,37 @@ export default function MyVideosPage() {
               <div style={{
                 flex: 1,
                 background: streak > 0
-                  ? 'linear-gradient(145deg, rgba(224,122,53,0.12), rgba(194,96,32,0.06))'
-                  : 'linear-gradient(145deg, #140800, #0d0500)',
-                border: streak > 0 ? '1px solid rgba(224,122,53,0.3)' : '1px solid rgba(224,122,53,0.08)',
+                  ? 'linear-gradient(145deg, rgba(170,255,0,0.12), rgba(122,204,0,0.06))'
+                  : 'linear-gradient(145deg, #0c1000, #080c00)',
+                border: streak > 0 ? '1px solid rgba(170,255,0,0.3)' : '1px solid rgba(170,255,0,0.08)',
                 borderRadius: 18, padding: '18px',
-                boxShadow: streak > 0 ? '0 8px 32px rgba(224,122,53,0.1)' : 'none',
+                boxShadow: streak > 0 ? '0 8px 32px rgba(170,255,0,0.1)' : 'none',
               }}>
-                <div style={{ fontSize: 10, color: streak > 0 ? '#c07840' : '#4a2a10', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>연속 참여</div>
-                <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.04em', color: streak > 0 ? '#f09050' : '#2a1408' }}>
+                <div style={{ fontSize: 10, color: streak > 0 ? '#7aaa18' : '#2e4008', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>연속 참여</div>
+                <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.04em', color: streak > 0 ? '#c8ff40' : '#182400' }}>
                   {streak}
                 </div>
-                <div style={{ fontSize: 11, color: streak > 0 ? '#7a4820' : '#2a1408', marginTop: 5 }}>일 연속</div>
+                <div style={{ fontSize: 11, color: streak > 0 ? '#506010' : '#182400', marginTop: 5 }}>일 연속</div>
               </div>
 
-              <div style={{ flex: 1, background: 'linear-gradient(145deg, #140800, #0d0500)', border: '1px solid rgba(224,122,53,0.08)', borderRadius: 18, padding: '18px' }}>
-                <div style={{ fontSize: 10, color: '#4a2a10', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>총 참여</div>
-                <div style={{ fontSize: 36, fontWeight: 900, color: '#f0c4a0', lineHeight: 1, letterSpacing: '-0.04em' }}>{submissions.length}</div>
-                <div style={{ fontSize: 11, color: '#2a1408', marginTop: 5 }}>회 업로드</div>
+              <div style={{ flex: 1, background: 'linear-gradient(145deg, #0c1000, #080c00)', border: '1px solid rgba(170,255,0,0.08)', borderRadius: 18, padding: '18px' }}>
+                <div style={{ fontSize: 10, color: '#2e4008', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>총 참여</div>
+                <div style={{ fontSize: 36, fontWeight: 900, color: '#b8e860', lineHeight: 1, letterSpacing: '-0.04em' }}>{submissions.length}</div>
+                <div style={{ fontSize: 11, color: '#182400', marginTop: 5 }}>회 업로드</div>
               </div>
 
-              <div style={{ flex: 1, background: 'linear-gradient(145deg, #140800, #0d0500)', border: '1px solid rgba(224,122,53,0.08)', borderRadius: 18, padding: '18px' }}>
-                <div style={{ fontSize: 10, color: '#4a2a10', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>받은 좋아요</div>
-                <div style={{ fontSize: 36, fontWeight: 900, color: '#e07a35', lineHeight: 1, letterSpacing: '-0.04em' }}>{totalLikes}</div>
-                <div style={{ fontSize: 11, color: '#2a1408', marginTop: 5 }}>개</div>
+              <div style={{ flex: 1, background: 'linear-gradient(145deg, #0c1000, #080c00)', border: '1px solid rgba(170,255,0,0.08)', borderRadius: 18, padding: '18px' }}>
+                <div style={{ fontSize: 10, color: '#2e4008', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>받은 좋아요</div>
+                <div style={{ fontSize: 36, fontWeight: 900, color: '#aaff00', lineHeight: 1, letterSpacing: '-0.04em' }}>{totalLikes}</div>
+                <div style={{ fontSize: 11, color: '#182400', marginTop: 5 }}>개</div>
               </div>
             </div>
 
             {streak > 0 && (
               <div style={{
-                background: 'rgba(224,122,53,0.06)', border: '1px solid rgba(224,122,53,0.15)',
+                background: 'rgba(170,255,0,0.06)', border: '1px solid rgba(170,255,0,0.15)',
                 borderRadius: 14, padding: '12px 16px', marginBottom: 24,
-                fontSize: 13, color: '#c07840', fontWeight: 600, lineHeight: 1.6,
+                fontSize: 13, color: '#7aaa18', fontWeight: 600, lineHeight: 1.6,
               }}>
                 🔥 {streak}일 연속 참여 중이에요.{' '}
                 {uploadsToday ? '내일도 올려보세요!' : `오늘 올리면 ${streak + 1}일이 돼요!`}
@@ -121,21 +121,21 @@ export default function MyVideosPage() {
         )}
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#2a1408', fontSize: 14 }}>불러오는 중</div>
+          <div style={{ textAlign: 'center', padding: 60, color: '#182400', fontSize: 14 }}>불러오는 중</div>
         ) : submissions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '52px 0' }}>
-            <p style={{ color: '#4a2a10', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>아직 업로드한 영상이 없어요</p>
+            <p style={{ color: '#2e4008', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>아직 업로드한 영상이 없어요</p>
             <Link href="/upload" style={{
               display: 'inline-block', marginTop: 16, padding: '11px 24px', borderRadius: 12,
-              background: 'linear-gradient(135deg, #f09050, #c26020)',
-              color: '#080400', fontSize: 14, fontWeight: 700,
-              boxShadow: '0 6px 20px rgba(224,122,53,0.35)',
+              background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
+              color: '#050800', fontSize: 14, fontWeight: 700,
+              boxShadow: '0 6px 20px rgba(170,255,0,0.35)',
             }}>첫 영상 올리기</Link>
           </div>
         ) : (
           Object.entries(byMonth).map(([month, subs]) => (
             <div key={month} style={{ marginBottom: 32 }}>
-              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', marginBottom: 14, color: '#c07840' }}>
+              <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', marginBottom: 14, color: '#7aaa18' }}>
                 {month}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -157,8 +157,8 @@ function VideoCard({ sub }: { sub: Submission }) {
   const date = new Date(sub.created_at)
   return (
     <div style={{
-      background: 'linear-gradient(145deg, #140800, #0d0500)',
-      border: '1px solid rgba(224,122,53,0.08)',
+      background: 'linear-gradient(145deg, #0c1000, #080c00)',
+      border: '1px solid rgba(170,255,0,0.08)',
       borderRadius: 18, overflow: 'hidden', display: 'flex',
     }}>
       <div style={{ width: 120, flexShrink: 0, background: '#000' }}>
@@ -168,15 +168,15 @@ function VideoCard({ sub }: { sub: Submission }) {
       <div style={{ flex: 1, padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
           {sub.challenges?.title && (
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#f0c4a0', marginBottom: 4, lineHeight: 1.3 }}>
+            <div style={{ fontSize: 13, fontWeight: 800, color: '#b8e860', marginBottom: 4, lineHeight: 1.3 }}>
               {sub.challenges.title}
             </div>
           )}
-          {sub.caption && <div style={{ fontSize: 12, color: '#4a2a10', lineHeight: 1.5 }}>{sub.caption}</div>}
+          {sub.caption && <div style={{ fontSize: 12, color: '#2e4008', lineHeight: 1.5 }}>{sub.caption}</div>}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-          <span style={{ fontSize: 11, color: '#2a1408' }}>{date.getMonth() + 1}/{date.getDate()}</span>
-          <span style={{ fontSize: 13, color: '#e07a35', fontWeight: 800 }}>♥ {sub.likes_count}</span>
+          <span style={{ fontSize: 11, color: '#182400' }}>{date.getMonth() + 1}/{date.getDate()}</span>
+          <span style={{ fontSize: 13, color: '#aaff00', fontWeight: 800 }}>♥ {sub.likes_count}</span>
         </div>
       </div>
     </div>

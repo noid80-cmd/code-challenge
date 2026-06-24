@@ -115,37 +115,37 @@ export default function HomePage() {
   const isAdmin = user?.email === 'noid80@hanmail.net'
 
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#080400', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#e07a35', opacity: 0.7 }} />
-      <span style={{ color: '#4a2a10', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
+    <div style={{ minHeight: '100vh', background: '#050800', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#aaff00', opacity: 0.7 }} />
+      <span style={{ color: '#2e4008', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
     </div>
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #0e0700 0%, #080300 60%, #0b0400 100%)' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #060900 0%, #040600 60%, #070a00 100%)' }}>
 
       {/* Header */}
       <header style={{
         position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(10,4,0,0.88)', backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(224,122,53,0.12)',
+        background: 'rgba(4,7,0,0.88)', backdropFilter: 'blur(24px)',
+        borderBottom: '1px solid rgba(170,255,0,0.12)',
         padding: '0 20px', height: 54,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
             width: 30, height: 30, borderRadius: 9,
-            background: 'linear-gradient(135deg, #f09050, #c26020)',
+            background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(224,122,53,0.4)',
+            boxShadow: '0 4px 12px rgba(170,255,0,0.4)',
           }}>
             <svg width="13" height="10" viewBox="0 0 13 10" fill="none">
-              <line x1="1" y1="2" x2="12" y2="2" stroke="rgba(10,4,0,0.9)" strokeWidth="1.6" strokeLinecap="round" />
-              <line x1="1" y1="5" x2="12" y2="5" stroke="rgba(10,4,0,0.9)" strokeWidth="1.6" strokeLinecap="round" />
-              <line x1="1" y1="8" x2="8"  y2="8" stroke="rgba(10,4,0,0.9)" strokeWidth="1.6" strokeLinecap="round" />
+              <line x1="1" y1="2" x2="12" y2="2" stroke="rgba(4,7,0,0.9)" strokeWidth="1.6" strokeLinecap="round" />
+              <line x1="1" y1="5" x2="12" y2="5" stroke="rgba(4,7,0,0.9)" strokeWidth="1.6" strokeLinecap="round" />
+              <line x1="1" y1="8" x2="8"  y2="8" stroke="rgba(4,7,0,0.9)" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
           </div>
-          <span style={{ fontWeight: 900, fontSize: 16, color: '#fdf0e8', letterSpacing: '-0.03em' }}>
+          <span style={{ fontWeight: 900, fontSize: 16, color: '#e8ffc0', letterSpacing: '-0.03em' }}>
             코드 챌린지
           </span>
         </div>
@@ -154,30 +154,30 @@ export default function HomePage() {
           {isAdmin && (
             <Link href="/admin" style={{
               padding: '5px 11px', borderRadius: 7,
-              background: 'rgba(224,122,53,0.1)', border: '1px solid rgba(224,122,53,0.2)',
-              color: '#c07840', fontSize: 12, fontWeight: 700,
+              background: 'rgba(170,255,0,0.1)', border: '1px solid rgba(170,255,0,0.2)',
+              color: '#7aaa18', fontSize: 12, fontWeight: 700,
             }}>관리</Link>
           )}
           {user ? (
             <>
               <Link href="/groups" style={{
                 padding: '6px 13px', borderRadius: 8,
-                background: 'rgba(224,122,53,0.1)', border: '1px solid rgba(224,122,53,0.2)',
-                color: '#f09050', fontSize: 13, fontWeight: 700,
+                background: 'rgba(170,255,0,0.1)', border: '1px solid rgba(170,255,0,0.2)',
+                color: '#c8ff40', fontSize: 13, fontWeight: 700,
               }}>크루</Link>
               <Link href="/upload" style={{
                 padding: '6px 14px', borderRadius: 8,
-                background: 'linear-gradient(135deg, #f09050, #c26020)',
-                color: '#080400', fontSize: 13, fontWeight: 800,
-                boxShadow: '0 3px 12px rgba(224,122,53,0.35)',
+                background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
+                color: '#050800', fontSize: 13, fontWeight: 800,
+                boxShadow: '0 3px 12px rgba(170,255,0,0.35)',
               }}>업로드</Link>
               <Link href="/my-videos" style={{ display: 'flex', alignItems: 'center' }}>
                 <div style={{
                   width: 32, height: 32, borderRadius: '50%', overflow: 'hidden',
-                  background: 'linear-gradient(135deg, #f09050, #c26020)',
+                  background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 13, fontWeight: 800, color: '#080400',
-                  boxShadow: '0 2px 10px rgba(224,122,53,0.4)',
+                  fontSize: 13, fontWeight: 800, color: '#050800',
+                  boxShadow: '0 2px 10px rgba(170,255,0,0.4)',
                   flexShrink: 0,
                 }}>
                   {profile?.avatar_url
@@ -187,14 +187,14 @@ export default function HomePage() {
               </Link>
               <button onClick={handleLogout} style={{
                 background: 'none', border: 'none',
-                color: '#2a1408', fontSize: 11, cursor: 'pointer', padding: '4px 2px',
+                color: '#182400', fontSize: 11, cursor: 'pointer', padding: '4px 2px',
               }}>로그아웃</button>
             </>
           ) : (
             <Link href="/login" style={{
               padding: '6px 14px', borderRadius: 8,
-              background: 'linear-gradient(135deg, #f09050, #c26020)',
-              color: '#080400', fontSize: 13, fontWeight: 800,
+              background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
+              color: '#050800', fontSize: 13, fontWeight: 800,
             }}>로그인</Link>
           )}
         </div>
@@ -204,8 +204,8 @@ export default function HomePage() {
 
         {/* Date */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#e07a35' }} />
-          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c07840' }}>
+          <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#aaff00' }} />
+          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#7aaa18' }}>
             오늘의 챌린지 · {dateStr}
           </span>
         </div>
@@ -214,17 +214,17 @@ export default function HomePage() {
         <section style={{ marginBottom: 40 }}>
           {challenge ? (
             <div style={{
-              background: 'linear-gradient(145deg, #140800, #0d0500)',
-              border: '1px solid rgba(224,122,53,0.2)',
+              background: 'linear-gradient(145deg, #0c1000, #080c00)',
+              border: '1px solid rgba(170,255,0,0.2)',
               borderRadius: 22, padding: 22,
-              boxShadow: '0 0 0 1px rgba(224,122,53,0.06), 0 24px 60px rgba(224,122,53,0.1)',
+              boxShadow: '0 0 0 1px rgba(170,255,0,0.06), 0 24px 60px rgba(170,255,0,0.1)',
             }}>
-              <h2 style={{ fontSize: 20, fontWeight: 900, color: '#fdf0e8', letterSpacing: '-0.025em',
+              <h2 style={{ fontSize: 20, fontWeight: 900, color: '#e8ffc0', letterSpacing: '-0.025em',
                 marginBottom: challenge.description && challenge.description !== challenge.title ? 6 : 18 }}>
                 {challenge.title}
               </h2>
               {challenge.description && challenge.description !== challenge.title && (
-                <p style={{ fontSize: 13, color: '#7a4820', lineHeight: 1.7, marginBottom: 18 }}>
+                <p style={{ fontSize: 13, color: '#506010', lineHeight: 1.7, marginBottom: 18 }}>
                   {challenge.description}
                 </p>
               )}
@@ -233,19 +233,19 @@ export default function HomePage() {
                 {user ? (
                   <Link href="/upload" style={{
                     display: 'block', padding: '14px', borderRadius: 13,
-                    background: 'linear-gradient(135deg, #f09050, #c26020)',
-                    color: '#080400', fontSize: 14, fontWeight: 800, textAlign: 'center',
+                    background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
+                    color: '#050800', fontSize: 14, fontWeight: 800, textAlign: 'center',
                     letterSpacing: '-0.01em',
-                    boxShadow: '0 6px 24px rgba(224,122,53,0.4)',
+                    boxShadow: '0 6px 24px rgba(170,255,0,0.4)',
                   }}>
                     챌린지 참여하기
                   </Link>
                 ) : (
                   <Link href="/login" style={{
                     display: 'block', padding: '14px', borderRadius: 13,
-                    background: 'linear-gradient(135deg, #f09050, #c26020)',
-                    color: '#080400', fontSize: 14, fontWeight: 800, textAlign: 'center',
-                    boxShadow: '0 6px 24px rgba(224,122,53,0.35)',
+                    background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
+                    color: '#050800', fontSize: 14, fontWeight: 800, textAlign: 'center',
+                    boxShadow: '0 6px 24px rgba(170,255,0,0.35)',
                   }}>
                     로그인하고 참여하기
                   </Link>
@@ -254,28 +254,28 @@ export default function HomePage() {
             </div>
           ) : (
             <div style={{
-              background: 'linear-gradient(145deg, #140800, #0d0500)',
-              border: '1px solid rgba(224,122,53,0.08)',
+              background: 'linear-gradient(145deg, #0c1000, #080c00)',
+              border: '1px solid rgba(170,255,0,0.08)',
               borderRadius: 22, padding: '48px 20px', textAlign: 'center',
             }}>
               <div style={{
                 width: 52, height: 52, borderRadius: 16,
-                background: 'rgba(224,122,53,0.06)', border: '1px solid rgba(224,122,53,0.12)',
+                background: 'rgba(170,255,0,0.06)', border: '1px solid rgba(170,255,0,0.12)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px',
               }}>
                 <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
                   {[0,1,2,3,4].map(i => (
-                    <line key={i} x1="1" y1={3 + i * 3.5} x2="21" y2={3 + i * 3.5} stroke="#4a2a10" strokeWidth="1" strokeLinecap="round" />
+                    <line key={i} x1="1" y1={3 + i * 3.5} x2="21" y2={3 + i * 3.5} stroke="#2e4008" strokeWidth="1" strokeLinecap="round" />
                   ))}
                 </svg>
               </div>
-              <p style={{ color: '#7a4820', fontSize: 15, fontWeight: 700, marginBottom: 5 }}>오늘의 챌린지를 준비 중이에요</p>
-              <p style={{ color: '#4a2a10', fontSize: 13 }}>매일 새로운 코드 진행이 올라와요</p>
+              <p style={{ color: '#506010', fontSize: 15, fontWeight: 700, marginBottom: 5 }}>오늘의 챌린지를 준비 중이에요</p>
+              <p style={{ color: '#2e4008', fontSize: 13 }}>매일 새로운 코드 진행이 올라와요</p>
               {isAdmin && (
                 <Link href="/admin" style={{
                   display: 'inline-block', marginTop: 22, padding: '9px 20px', borderRadius: 10,
-                  background: 'linear-gradient(135deg, #f09050, #c26020)',
-                  color: '#080400', fontSize: 13, fontWeight: 700,
+                  background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
+                  color: '#050800', fontSize: 13, fontWeight: 700,
                 }}>챌린지 생성하기</Link>
               )}
             </div>
@@ -286,22 +286,22 @@ export default function HomePage() {
         {user && streak > 0 && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            background: 'rgba(224,122,53,0.06)',
-            border: '1px solid rgba(224,122,53,0.15)',
+            background: 'rgba(170,255,0,0.06)',
+            border: '1px solid rgba(170,255,0,0.15)',
             borderRadius: 14, padding: '12px 16px', marginBottom: 28,
           }}>
             <div style={{
               width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-              background: 'rgba(224,122,53,0.15)',
+              background: 'rgba(170,255,0,0.15)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <span style={{ fontSize: 18 }}>🔥</span>
             </div>
             <div style={{ flex: 1 }}>
-              <span style={{ fontSize: 14, fontWeight: 800, color: '#f09050' }}>{streak}일 연속 참여 중</span>
-              <p style={{ fontSize: 12, color: '#7a4820', margin: 0, marginTop: 1 }}>오늘도 올려보세요</p>
+              <span style={{ fontSize: 14, fontWeight: 800, color: '#c8ff40' }}>{streak}일 연속 참여 중</span>
+              <p style={{ fontSize: 12, color: '#506010', margin: 0, marginTop: 1 }}>오늘도 올려보세요</p>
             </div>
-            <Link href="/my-videos" style={{ fontSize: 12, color: '#e07a35', fontWeight: 700 }}>
+            <Link href="/my-videos" style={{ fontSize: 12, color: '#aaff00', fontWeight: 700 }}>
               내 기록 →
             </Link>
           </div>
@@ -311,40 +311,40 @@ export default function HomePage() {
         <section>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 15, fontWeight: 800, color: '#f0c4a0', letterSpacing: '-0.01em' }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: '#b8e860', letterSpacing: '-0.01em' }}>
                 오늘의 연주
               </span>
               {submissions.length > 0 && (
                 <span style={{
                   fontSize: 11, fontWeight: 800,
-                  background: 'linear-gradient(135deg, #f09050, #c26020)',
-                  color: '#080400', padding: '2px 9px', borderRadius: 20,
+                  background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
+                  color: '#050800', padding: '2px 9px', borderRadius: 20,
                 }}>
                   {submissions.length}
                 </span>
               )}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Link href="/ranking" style={{ fontSize: 12, color: '#4a2a10', fontWeight: 700 }}>주간랭킹</Link>
-              <span style={{ color: '#2a1408', fontSize: 11 }}>·</span>
+              <Link href="/ranking" style={{ fontSize: 12, color: '#2e4008', fontWeight: 700 }}>주간랭킹</Link>
+              <span style={{ color: '#182400', fontSize: 11 }}>·</span>
               <button onClick={() => setSortBy('newest')} style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                 fontSize: 12, fontWeight: 700,
-                color: sortBy === 'newest' ? '#f09050' : '#4a2a10',
+                color: sortBy === 'newest' ? '#c8ff40' : '#2e4008',
               }}>최신</button>
-              <span style={{ color: '#2a1408', fontSize: 11 }}>|</span>
+              <span style={{ color: '#182400', fontSize: 11 }}>|</span>
               <button onClick={() => setSortBy('popular')} style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                 fontSize: 12, fontWeight: 700,
-                color: sortBy === 'popular' ? '#f09050' : '#4a2a10',
+                color: sortBy === 'popular' ? '#c8ff40' : '#2e4008',
               }}>인기</button>
             </div>
           </div>
 
           {submissions.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <p style={{ color: '#4a2a10', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>아직 연주가 없어요</p>
-              <p style={{ color: '#2a1408', fontSize: 13, marginTop: 5 }}>첫 번째로 올려보세요</p>
+              <p style={{ color: '#2e4008', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>아직 연주가 없어요</p>
+              <p style={{ color: '#182400', fontSize: 13, marginTop: 5 }}>첫 번째로 올려보세요</p>
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -373,8 +373,8 @@ function SubmissionCard({ sub, onLike }: { sub: Submission; onLike: () => void }
 
   return (
     <div style={{
-      background: 'linear-gradient(145deg, #140800, #0d0500)',
-      border: '1px solid rgba(224,122,53,0.1)',
+      background: 'linear-gradient(145deg, #0c1000, #080c00)',
+      border: '1px solid rgba(170,255,0,0.1)',
       borderRadius: 20, overflow: 'hidden',
       boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
     }}>
@@ -386,32 +386,32 @@ function SubmissionCard({ sub, onLike }: { sub: Submission; onLike: () => void }
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 36, height: 36, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #f09050, #c26020)',
+              background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14, fontWeight: 800, color: '#080400',
+              fontSize: 14, fontWeight: 800, color: '#050800',
               overflow: 'hidden', flexShrink: 0,
-              boxShadow: '0 2px 10px rgba(224,122,53,0.3)',
+              boxShadow: '0 2px 10px rgba(170,255,0,0.3)',
             }}>
               {sub.profiles?.avatar_url
                 ? <img src={sub.profiles.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                 : initials}
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#fdf0e8', lineHeight: 1.2 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#e8ffc0', lineHeight: 1.2 }}>
                 {sub.profiles?.name ?? '익명'}
               </div>
-              <div style={{ fontSize: 11, color: '#4a2a10', marginTop: 2 }}>{timeAgo(sub.created_at)}</div>
+              <div style={{ fontSize: 11, color: '#2e4008', marginTop: 2 }}>{timeAgo(sub.created_at)}</div>
             </div>
           </div>
 
           <button onClick={onLike} style={{
             background: sub.user_liked
-              ? 'rgba(224,122,53,0.12)'
+              ? 'rgba(170,255,0,0.12)'
               : 'rgba(255,255,255,0.02)',
-            border: sub.user_liked ? '1px solid rgba(224,122,53,0.4)' : '1px solid rgba(255,255,255,0.06)',
+            border: sub.user_liked ? '1px solid rgba(170,255,0,0.4)' : '1px solid rgba(255,255,255,0.06)',
             borderRadius: 10, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 6,
-            color: sub.user_liked ? '#e07a35' : '#4a2a10',
+            color: sub.user_liked ? '#aaff00' : '#2e4008',
             fontSize: 14, fontWeight: 800, padding: '7px 13px',
             transition: 'all 0.2s',
           }}>
