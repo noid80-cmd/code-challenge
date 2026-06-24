@@ -341,18 +341,24 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* 마디 목록 */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {/* 마디 그리드 (2열) */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
                   {prog.chords.map((measure, mi) => (
-                    <div key={mi} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {/* 마디 번호 */}
-                      <div style={{ fontSize: 10, color: '#333355', fontWeight: 700, width: 32, textAlign: 'right', flexShrink: 0 }}>
-                        {mi + 1}마디
+                    <div key={mi} style={{
+                      background: 'rgba(99,102,241,0.07)',
+                      border: '1px solid rgba(99,102,241,0.2)',
+                      borderRadius: 10, padding: '8px 8px 6px',
+                    }}>
+                      {/* 마디 헤더 */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <span style={{ fontSize: 10, color: '#555577', fontWeight: 700 }}>{mi + 1}마디</span>
+                        {prog.chords.length > 1 && (
+                          <button onClick={() => removeMeasure(pi, mi)}
+                            style={{ background: 'none', border: 'none', color: '#444466', fontSize: 13, cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
+                        )}
                       </div>
-                      {/* 세로 구분선 */}
-                      <div style={{ width: 2, height: 28, background: 'rgba(99,102,241,0.3)', borderRadius: 1, flexShrink: 0 }} />
-                      {/* 코드 인풋들 */}
-                      <div style={{ display: 'flex', gap: 4, flex: 1 }}>
+                      {/* 코드 인풋 */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                         {measure.map((chord, ci) => (
                           <div key={ci} style={{ position: 'relative' }}>
                             <input
@@ -360,39 +366,33 @@ export default function AdminPage() {
                               onChange={e => updateChord(pi, mi, ci, e.target.value)}
                               placeholder="코드"
                               style={{
-                                width: 58, padding: '6px 4px', borderRadius: 8,
-                                background: chord ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.04)',
-                                border: chord ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.1)',
-                                fontSize: 13, fontWeight: 800, color: '#c7d2fe',
+                                width: 52, padding: '5px 3px', borderRadius: 7,
+                                background: chord ? 'rgba(99,102,241,0.22)' : 'rgba(255,255,255,0.04)',
+                                border: chord ? '1px solid rgba(99,102,241,0.45)' : '1px solid rgba(255,255,255,0.1)',
+                                fontSize: 12, fontWeight: 800, color: '#c7d2fe',
                                 fontFamily: 'monospace', textAlign: 'center', outline: 'none',
                               }}
                             />
                             {measure.length > 1 && (
                               <button onClick={() => removeChordFromMeasure(pi, mi, ci)}
-                                style={{ position: 'absolute', top: -5, right: -5, width: 14, height: 14, borderRadius: '50%', background: '#f87171', border: 'none', color: '#fff', fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                                style={{ position: 'absolute', top: -4, right: -4, width: 13, height: 13, borderRadius: '50%', background: '#f87171', border: 'none', color: '#fff', fontSize: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
                             )}
                           </div>
                         ))}
-                        {/* 코드 추가 (최대 4개) */}
                         {measure.length < 4 && (
                           <button onClick={() => addChordToMeasure(pi, mi)}
-                            style={{ width: 30, padding: '6px 4px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.12)', fontSize: 14, color: '#333355', cursor: 'pointer' }}>+</button>
+                            style={{ width: 26, padding: '5px 3px', borderRadius: 7, background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.12)', fontSize: 13, color: '#333355', cursor: 'pointer' }}>+</button>
                         )}
                       </div>
-                      {/* 마디 삭제 */}
-                      {prog.chords.length > 1 && (
-                        <button onClick={() => removeMeasure(pi, mi)}
-                          style={{ background: 'none', border: 'none', color: '#444466', fontSize: 14, cursor: 'pointer', padding: '0 4px', flexShrink: 0 }}>×</button>
-                      )}
                     </div>
                   ))}
-                </div>
 
-                {/* 마디 추가 */}
-                <button onClick={() => addMeasure(pi)}
-                  style={{ marginTop: 8, marginLeft: 40, padding: '5px 12px', borderRadius: 7, border: '1px dashed rgba(99,102,241,0.25)', background: 'none', color: '#555577', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                  + 마디 추가
-                </button>
+                  {/* 마디 추가 카드 */}
+                  <button onClick={() => addMeasure(pi)}
+                    style={{ padding: '16px 8px', borderRadius: 10, border: '1px dashed rgba(99,102,241,0.2)', background: 'none', color: '#444466', fontSize: 20, cursor: 'pointer' }}>
+                    +
+                  </button>
+                </div>
               </div>
             ))}
 
