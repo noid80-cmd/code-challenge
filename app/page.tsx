@@ -238,7 +238,7 @@ export default function HomePage() {
               }}>
                 {challenge.title}
               </h2>
-              {challenge.description && (
+              {challenge.description && challenge.description !== challenge.title && (
                 <p style={{ fontSize: 13, color: '#6666a0', lineHeight: 1.7, marginBottom: 20 }}>
                   {challenge.description}
                 </p>

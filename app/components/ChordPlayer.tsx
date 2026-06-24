@@ -48,7 +48,7 @@ function StaffRow({ chords, isLast }: { chords: string[]; isLast: boolean }) {
             <line x1={x} y1={PAD_T} x2={x} y2={PAD_T + STAFF_H} stroke="#252545" strokeWidth={1} />
             {chord && (
               <text x={x + 6} y={PAD_T - 7} fontSize={12} fontWeight={700}
-                fill="#9898c8" fontFamily="'Courier New','SF Mono',monospace">
+                fill="#9898c8" fontFamily="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif">
                 {chord}
               </text>
             )}
@@ -91,8 +91,15 @@ export default function ChordPlayer({ progressions, title }: {
       <div style={{ background: '#07071200', borderRadius: 12, overflowX: 'auto', paddingBottom: 4 }}>
         {rows.map((row, ri) => (
           <div key={ri}>
-            {row.label && (
-              <div style={{ fontSize: 10, fontWeight: 800, color: '#4040a0', marginBottom: 2, marginTop: ri > 0 ? 12 : 0, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            {row.label && rows.length > 1 && (
+              <div style={{
+                display: 'inline-block',
+                fontSize: 11, fontWeight: 700, color: '#5555a0',
+                background: 'rgba(99,102,241,0.08)',
+                border: '1px solid rgba(99,102,241,0.15)',
+                borderRadius: 6, padding: '2px 9px',
+                marginBottom: 8, marginTop: ri > 0 ? 14 : 0,
+              }}>
                 {row.label}
               </div>
             )}
