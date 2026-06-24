@@ -87,23 +87,23 @@ export default function MyVideosPage() {
                 borderRadius: 18, padding: '18px',
                 boxShadow: streak > 0 ? '0 8px 32px rgba(240,236,224,0.1)' : 'none',
               }}>
-                <div style={{ fontSize: 10, color: streak > 0 ? '#a0988c' : '#303028', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>연속 참여</div>
-                <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.04em', color: streak > 0 ? '#f8f4ec' : '#1a1a18' }}>
+                <div style={{ fontSize: 10, color: streak > 0 ? '#a0988c' : '#605850', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>연속 참여</div>
+                <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.04em', color: streak > 0 ? '#f8f4ec' : '#484640' }}>
                   {streak}
                 </div>
-                <div style={{ fontSize: 11, color: streak > 0 ? '#605850' : '#1a1a18', marginTop: 5 }}>일 연속</div>
+                <div style={{ fontSize: 11, color: streak > 0 ? '#605850' : '#484640', marginTop: 5 }}>일 연속</div>
               </div>
 
               <div style={{ flex: 1, background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: '18px' }}>
-                <div style={{ fontSize: 10, color: '#303028', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>총 참여</div>
+                <div style={{ fontSize: 10, color: '#605850', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>총 참여</div>
                 <div style={{ fontSize: 36, fontWeight: 900, color: '#e0dcd0', lineHeight: 1, letterSpacing: '-0.04em' }}>{submissions.length}</div>
-                <div style={{ fontSize: 11, color: '#1a1a18', marginTop: 5 }}>회 업로드</div>
+                <div style={{ fontSize: 11, color: '#484640', marginTop: 5 }}>회 업로드</div>
               </div>
 
               <div style={{ flex: 1, background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: '18px' }}>
-                <div style={{ fontSize: 10, color: '#303028', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>받은 좋아요</div>
+                <div style={{ fontSize: 10, color: '#605850', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>받은 좋아요</div>
                 <div style={{ fontSize: 36, fontWeight: 900, color: '#f0ece0', lineHeight: 1, letterSpacing: '-0.04em' }}>{totalLikes}</div>
-                <div style={{ fontSize: 11, color: '#1a1a18', marginTop: 5 }}>개</div>
+                <div style={{ fontSize: 11, color: '#484640', marginTop: 5 }}>개</div>
               </div>
             </div>
 
