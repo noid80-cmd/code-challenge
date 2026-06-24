@@ -88,9 +88,9 @@ export default function ChordPlayer({ progressions, title }: {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ background: '#07071200', borderRadius: 12, overflowX: 'auto', paddingBottom: 4 }}>
+      <div style={{ borderRadius: 12, paddingBottom: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {rows.map((row, ri) => (
-          <div key={ri}>
+          <div key={ri} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             {row.label && rows.length > 1 && (
               <div style={{
                 display: 'inline-block',
