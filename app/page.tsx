@@ -52,6 +52,7 @@ export default function HomePage() {
   const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest')
   const [streak, setStreak] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<{ name: string; avatar_url: string | null } | null>(null)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -80,6 +81,9 @@ export default function HomePage() {
     if (user) {
       const { data: myDates } = await supabase.from('submissions').select('created_at').eq('user_id', user.id)
       setStreak(calcStreak(myDates?.map(s => s.created_at.slice(0, 10)) ?? []))
+
+      const { data: prof } = await supabase.from('profiles').select('name, avatar_url').eq('id', user.id).single()
+      setProfile(prof)
     }
 
     setLoading(false)
@@ -168,9 +172,23 @@ export default function HomePage() {
                 color: '#fff', fontSize: 13, fontWeight: 700,
                 boxShadow: '0 3px 12px rgba(236,72,153,0.3)',
               }}>업로드</Link>
+              <Link href="/my-videos" style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: '50%', overflow: 'hidden',
+                  background: 'linear-gradient(135deg, #7c3aed, #ec4899)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 13, fontWeight: 800, color: '#fff',
+                  boxShadow: '0 2px 10px rgba(236,72,153,0.35)',
+                  flexShrink: 0,
+                }}>
+                  {profile?.avatar_url
+                    ? <img src={profile.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                    : (profile?.name ?? user.email ?? '?').slice(0, 1).toUpperCase()}
+                </div>
+              </Link>
               <button onClick={handleLogout} style={{
                 background: 'none', border: 'none',
-                color: '#3d2a5a', fontSize: 12, cursor: 'pointer', padding: '4px 6px',
+                color: '#2a1840', fontSize: 11, cursor: 'pointer', padding: '4px 2px',
               }}>로그아웃</button>
             </>
           ) : (
