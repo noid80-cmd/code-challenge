@@ -68,65 +68,61 @@ export default function ChordPlayer({ progressions, title }: {
   progressions: Progression[]
   title: string
 }) {
-  // 어드민이 설정한 스타일·템포를 그대로 사용 (유저가 변경 불가)
-  const style = progressions[0]?.style?.toLowerCase() || 'swing'
-  const tempo = progressions[0]?.tempo
-
-  const allMeasures = progressions.flatMap(p => normalizeMeasures(p.chords))
-  const iRealUrl = buildIRealUrl(title, allMeasures, style)
-
-  const rows: { measures: string[][]; label: string }[] = []
-  progressions.forEach(prog => {
-    const measures = normalizeMeasures(prog.chords)
-    for (let i = 0; i < measures.length; i += 4) {
-      rows.push({ measures: measures.slice(i, i + 4), label: i === 0 ? prog.label : '' })
-    }
-  })
-
-  const styleLabel = STYLE_LABELS[style] ?? style
-  const tempoLabel = tempo ? ` · ♩${tempo}` : ''
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ borderRadius: 12, paddingBottom: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        {rows.map((row, ri) => (
-          <div key={ri} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {row.label && progressions.length > 1 && (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {progressions.map((prog, pi) => {
+        const measures = normalizeMeasures(prog.chords)
+        const style = prog.style?.toLowerCase() || 'swing'
+        const styleLabel = STYLE_LABELS[style] ?? style
+        const tempoLabel = prog.tempo ? ` · ♩${prog.tempo}` : ''
+        const iRealUrl = buildIRealUrl(title, measures, style)
+
+        const rows: string[][][] = []
+        for (let i = 0; i < measures.length; i += 4) rows.push(measures.slice(i, i + 4))
+        const isLastProg = pi === progressions.length - 1
+
+        return (
+          <div key={pi}>
+            {/* 진행 레이블 */}
+            {progressions.length > 1 && prog.label && (
               <div style={{
-                display: 'inline-block',
-                fontSize: 11, fontWeight: 700, color: '#a0988c',
-                background: 'rgba(240,236,224,0.08)',
-                border: '1px solid rgba(240,236,224,0.15)',
-                borderRadius: 6, padding: '2px 9px',
-                marginBottom: 8, marginTop: ri > 0 ? 14 : 0,
+                display: 'inline-block', fontSize: 11, fontWeight: 700, color: '#a0988c',
+                background: 'rgba(240,236,224,0.08)', border: '1px solid rgba(240,236,224,0.15)',
+                borderRadius: 6, padding: '2px 9px', marginBottom: 8,
               }}>
-                {row.label}
+                {prog.label}
               </div>
             )}
-            <StaffRow measures={row.measures} isLast={ri === rows.length - 1} />
-          </div>
-        ))}
-      </div>
 
-      {/* 리듬 정보 + iReal Pro */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{
-          flex: 1, padding: '10px 14px', borderRadius: 10,
-          background: 'rgba(13,13,12,0.8)', border: '1px solid rgba(240,236,224,0.15)',
-          fontSize: 13, fontWeight: 600, color: '#a0988c',
-        }}>
-          {styleLabel}{tempoLabel}
-        </div>
-        <a href={iRealUrl} style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: '10px 14px', borderRadius: 10, flexShrink: 0,
-          background: 'rgba(13,13,12,0.8)', border: '1px solid rgba(240,236,224,0.15)',
-          color: '#a0988c', fontSize: 12, fontWeight: 700,
-          textDecoration: 'none', whiteSpace: 'nowrap',
-        }}>
-          iReal Pro →
-        </a>
-      </div>
+            {/* 악보 */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 8 }}>
+              {rows.map((row, ri) => (
+                <StaffRow key={ri} measures={row} isLast={ri === rows.length - 1 && isLastProg} />
+              ))}
+            </div>
+
+            {/* 리듬 + iReal */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{
+                flex: 1, padding: '9px 13px', borderRadius: 10,
+                background: 'rgba(13,13,12,0.8)', border: '1px solid rgba(240,236,224,0.15)',
+                fontSize: 13, fontWeight: 600, color: '#a0988c',
+              }}>
+                {styleLabel}{tempoLabel}
+              </div>
+              <a href={iRealUrl} style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                padding: '9px 13px', borderRadius: 10, flexShrink: 0,
+                background: 'rgba(13,13,12,0.8)', border: '1px solid rgba(240,236,224,0.15)',
+                color: '#a0988c', fontSize: 12, fontWeight: 700,
+                textDecoration: 'none', whiteSpace: 'nowrap',
+              }}>
+                iReal Pro →
+              </a>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }

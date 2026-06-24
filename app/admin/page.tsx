@@ -302,24 +302,6 @@ export default function AdminPage() {
               )}
             </div>
 
-            {/* 난이도 선택 */}
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 8 }}>난이도</label>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {(['beginner', 'intermediate', 'advanced'] as const).map(lv => (
-                  <button key={lv} onClick={() => setDraft({ ...draft, level: lv })}
-                    style={{
-                      flex: 1, padding: '9px 4px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700,
-                      background: draft.level === lv ? `${LEVEL_COLORS[lv]}22` : '#111118',
-                      border: draft.level === lv ? `1.5px solid ${LEVEL_COLORS[lv]}88` : '1px solid rgba(255,255,255,0.07)',
-                      color: draft.level === lv ? LEVEL_COLORS[lv] : '#444466',
-                    }}>
-                    {LEVEL_LABELS[lv]}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>제목</label>
               <input value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })}
