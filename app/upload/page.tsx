@@ -184,30 +184,51 @@ export default function UploadPage() {
 
   // 카메라 녹화 화면
   if (recordMode) {
-    const allChords = challenge?.chords?.progressions?.flatMap(p => p.chords.filter(c => c.trim())) ?? []
     const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
     return (
       <div style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 100, display: 'flex', flexDirection: 'column' }}>
         {/* 코드 오버레이 */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%)',
-          padding: '52px 16px 28px',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0) 100%)',
+          padding: '52px 16px 32px',
         }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: 'rgba(240,236,224,0.5)', letterSpacing: '0.12em', marginBottom: 10 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(240,236,224,0.4)', letterSpacing: '0.12em', marginBottom: 12 }}>
             {challenge?.title}
           </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {allChords.map((chord, i) => (
-              <span key={i} style={{
-                padding: '5px 12px', borderRadius: 8,
-                background: 'rgba(240,236,224,0.15)',
-                border: '1px solid rgba(240,236,224,0.3)',
-                backdropFilter: 'blur(8px)',
-                fontSize: 14, fontWeight: 900, color: '#f8f4ec',
-              }}>{chord}</span>
-            ))}
-          </div>
+          {(challenge?.chords?.progressions ?? []).map((prog, pi, arr) => {
+            const valid = prog.chords.filter(c => c.trim())
+            const measures: string[][] = []
+            for (let i = 0; i < valid.length; i += 4) measures.push(valid.slice(i, i + 4))
+            return (
+              <div key={pi} style={{ marginBottom: pi < arr.length - 1 ? 10 : 0 }}>
+                {arr.length > 1 && (
+                  <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(240,236,224,0.3)', letterSpacing: '0.1em', marginBottom: 6 }}>
+                    {prog.label}
+                  </div>
+                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                  {measures.map((measure, mi) => (
+                    <div key={mi} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {mi > 0 && (
+                        <div style={{ width: 1.5, height: 28, background: 'rgba(240,236,224,0.35)', margin: '0 3px', borderRadius: 1 }} />
+                      )}
+                      {measure.map((chord, ci) => (
+                        <span key={ci} style={{
+                          padding: '5px 10px', borderRadius: 7,
+                          background: 'rgba(240,236,224,0.13)',
+                          border: '1px solid rgba(240,236,224,0.28)',
+                          backdropFilter: 'blur(8px)',
+                          fontSize: 14, fontWeight: 900, color: '#f8f4ec',
+                          letterSpacing: '-0.01em',
+                        }}>{chord}</span>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
         </div>
 
         {/* 카메라 프리뷰 */}
