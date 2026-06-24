@@ -30,31 +30,51 @@ const STYLE_VALUES = STYLE_OPTIONS.map(o => o.value)
 // ── Staff ─────────────────────────────────────────────────────────────────────
 
 const LG = 9, STAFF_H = LG * 4, PAD_T = 28, PAD_B = 12
-const ROW_H = PAD_T + STAFF_H + PAD_B, PAD_L = 10, MW = 72
+const ROW_H = PAD_T + STAFF_H + PAD_B, PAD_L = 10
+// 마디 하나의 너비 — 2코드도 여유있게 들어갈 크기
+const MW = 92
 
-function StaffRow({ chords, isLast }: { chords: string[]; isLast: boolean }) {
-  const filled = [...chords]; while (filled.length < 4) filled.push('')
+// measures: 최대 4마디, 각 마디는 1~4개의 코드
+function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean }) {
+  const filled = [...measures]
+  while (filled.length < 4) filled.push([])
+
   const W = PAD_L + 4 * MW + 12
   return (
     <svg width={W} height={ROW_H} style={{ display: 'block', overflow: 'visible' }}>
+      {/* 오선 */}
       {[0,1,2,3,4].map(i => (
         <line key={i} x1={0} y1={PAD_T + i * LG} x2={W - 4} y2={PAD_T + i * LG}
           stroke="#1a1a18" strokeWidth={1} />
       ))}
-      {filled.map((chord, col) => {
-        const x = PAD_L + col * MW
+
+      {/* 마디별 코드 */}
+      {filled.map((chords, col) => {
+        const mx = PAD_L + col * MW
+        const n = chords.length || 1
+        const slotW = MW / n
         return (
           <g key={col}>
-            <line x1={x} y1={PAD_T} x2={x} y2={PAD_T + STAFF_H} stroke="#1a1a18" strokeWidth={1} />
-            {chord && (
-              <text x={x + 6} y={PAD_T - 7} fontSize={12} fontWeight={700}
-                fill="#c8c4b0" fontFamily="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif">
+            {/* 마디 시작 세로선 */}
+            <line x1={mx} y1={PAD_T} x2={mx} y2={PAD_T + STAFF_H}
+              stroke="#1a1a18" strokeWidth={1} />
+            {/* 코드 텍스트 */}
+            {chords.filter(c => c.trim()).map((chord, ci) => (
+              <text key={ci}
+                x={mx + ci * slotW + 5}
+                y={PAD_T - 7}
+                fontSize={n > 1 ? 11 : 12}
+                fontWeight={700}
+                fill="#c8c4b0"
+                fontFamily="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif">
                 {chord}
               </text>
-            )}
+            ))}
           </g>
         )
       })}
+
+      {/* 마지막 세로선 */}
       <line x1={PAD_L + 4 * MW} y1={PAD_T} x2={PAD_L + 4 * MW} y2={PAD_T + STAFF_H}
         stroke="#1a1a18" strokeWidth={isLast ? 3 : 1} />
       {isLast && (
@@ -79,11 +99,16 @@ export default function ChordPlayer({ progressions, title }: {
   const allMeasures = progressions.flatMap(p => normalizeMeasures(p.chords))
   const iRealUrl = buildIRealUrl(title, allMeasures, style)
 
-  const rows: { chords: string[]; label: string }[] = []
+  // 각 진행의 마디들을 4마디씩 묶어 행으로 만들기
+  const rows: { measures: string[][]; label: string }[] = []
   progressions.forEach(prog => {
-    normalizeMeasures(prog.chords).forEach((measure, mi) => {
-      rows.push({ chords: measure, label: mi === 0 ? prog.label : '' })
-    })
+    const measures = normalizeMeasures(prog.chords)
+    for (let i = 0; i < measures.length; i += 4) {
+      rows.push({
+        measures: measures.slice(i, i + 4),
+        label: i === 0 ? prog.label : '',
+      })
+    }
   })
 
   return (
@@ -91,7 +116,7 @@ export default function ChordPlayer({ progressions, title }: {
       <div style={{ borderRadius: 12, paddingBottom: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         {rows.map((row, ri) => (
           <div key={ri} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {row.label && rows.length > 1 && (
+            {row.label && progressions.length > 1 && (
               <div style={{
                 display: 'inline-block',
                 fontSize: 11, fontWeight: 700, color: '#a0988c',
@@ -103,7 +128,7 @@ export default function ChordPlayer({ progressions, title }: {
                 {row.label}
               </div>
             )}
-            <StaffRow chords={row.chords} isLast={ri === rows.length - 1} />
+            <StaffRow measures={row.measures} isLast={ri === rows.length - 1} />
           </div>
         ))}
       </div>
