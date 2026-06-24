@@ -15,6 +15,7 @@ type Challenge = {
 type Submission = {
   id: string; challenge_id: string; video_url: string; caption?: string
   likes_count: number; created_at: string; user_liked?: boolean
+  progression_index?: number
   profiles: { name: string; avatar_url?: string } | null
 }
 
@@ -344,7 +345,8 @@ export default function HomePage() {
                   : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
                 )
                 .map(sub => (
-                  <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)} />
+                  <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)}
+                    progressions={challenge?.chords?.progressions} />
                 ))}
             </div>
           )}
@@ -354,7 +356,7 @@ export default function HomePage() {
   )
 }
 
-function SubmissionCard({ sub, onLike }: { sub: Submission; onLike: () => void }) {
+function SubmissionCard({ sub, onLike, progressions }: { sub: Submission; onLike: () => void; progressions?: Progression[] }) {
   const supabase = createClient()
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
@@ -368,6 +370,20 @@ function SubmissionCard({ sub, onLike }: { sub: Submission; onLike: () => void }
       borderRadius: 20, overflow: 'hidden',
       boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
     }}>
+      {progressions && progressions.length > 1 && sub.progression_index != null && (
+        <div style={{
+          position: 'relative', padding: '8px 14px',
+          borderBottom: '1px solid rgba(240,236,224,0.06)',
+          background: 'rgba(240,236,224,0.04)',
+        }}>
+          <span style={{
+            fontSize: 10, fontWeight: 800, color: '#a0988c',
+            letterSpacing: '0.05em',
+          }}>
+            {progressions[sub.progression_index]?.label ?? `진행 ${sub.progression_index + 1}`}
+          </span>
+        </div>
+      )}
       <video src={videoUrl} controls playsInline preload="metadata"
         style={{ width: '100%', display: 'block', background: '#000', maxHeight: 460, objectFit: 'contain' }} />
 

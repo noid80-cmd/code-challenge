@@ -20,6 +20,7 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [caption, setCaption] = useState('')
+  const [selectedProgression, setSelectedProgression] = useState(0)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
@@ -132,6 +133,7 @@ export default function UploadPage() {
       challenge_id: challenge.id, user_id: user.id, video_url: path,
       caption: caption.trim() || null,
       group_id: selectedGroupId === 'public' ? null : selectedGroupId,
+      progression_index: selectedProgression,
     })
     if (dbError) { setError('저장 실패: ' + dbError.message); setUploading(false); return }
     setUploading(false); setDone(true)
@@ -205,12 +207,15 @@ export default function UploadPage() {
           <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(240,236,224,0.4)', letterSpacing: '0.12em', marginBottom: 12 }}>
             {challenge?.title}
           </div>
-          {(challenge?.chords?.progressions ?? []).map((prog: Progression, pi: number, arr: Progression[]) => {
+          {(() => {
+            const progressions = challenge?.chords?.progressions ?? []
+            const prog = progressions[selectedProgression]
+            if (!prog) return null
             const measures = normalizeMeasures(prog.chords)
             return (
-              <div key={pi} style={{ marginBottom: pi < arr.length - 1 ? 10 : 0 }}>
-                {arr.length > 1 && (
-                  <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(240,236,224,0.3)', letterSpacing: '0.1em', marginBottom: 6 }}>
+              <div>
+                {progressions.length > 1 && (
+                  <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(240,236,224,0.4)', letterSpacing: '0.1em', marginBottom: 6 }}>
                     {prog.label}
                   </div>
                 )}
@@ -235,7 +240,7 @@ export default function UploadPage() {
                 </div>
               </div>
             )
-          })}
+          })()}
         </div>
 
         {/* 카메라 프리뷰 */}
@@ -338,6 +343,39 @@ export default function UploadPage() {
         ) : (
           <div style={{ background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: 20, marginBottom: 20, textAlign: 'center' }}>
             <p style={{ color: '#303028', fontSize: 14 }}>오늘의 챌린지가 아직 없어요.</p>
+          </div>
+        )}
+
+        {/* 진행 선택 */}
+        {challenge && (challenge.chords?.progressions?.length ?? 0) > 1 && (
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 8, color: '#a0988c' }}>
+              어느 진행을 연주할까요?
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {challenge.chords.progressions.map((prog, i) => (
+                <button key={i} type="button" onClick={() => setSelectedProgression(i)} style={{
+                  padding: '11px 14px', borderRadius: 12,
+                  background: selectedProgression === i ? 'rgba(240,236,224,0.1)' : 'rgba(240,236,224,0.03)',
+                  border: selectedProgression === i ? '1px solid rgba(240,236,224,0.35)' : '1px solid rgba(240,236,224,0.08)',
+                  color: selectedProgression === i ? '#f0ece0' : '#605850',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <div style={{
+                    width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                    background: selectedProgression === i ? 'rgba(240,236,224,0.9)' : 'rgba(240,236,224,0.12)',
+                    border: selectedProgression === i ? 'none' : '1px solid rgba(240,236,224,0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {selectedProgression === i && (
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#0a0a08' }} />
+                    )}
+                  </div>
+                  {prog.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
