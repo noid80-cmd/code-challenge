@@ -29,8 +29,8 @@ const STYLE_VALUES = STYLE_OPTIONS.map(o => o.value)
 
 // ── Staff ─────────────────────────────────────────────────────────────────────
 
-const LG = 12, STAFF_H = LG * 4, PAD_T = 44, PAD_B = 20
-const ROW_H = PAD_T + STAFF_H + PAD_B, CLEF_W = 62, MW = 156
+const LG = 9, STAFF_H = LG * 4, PAD_T = 34, PAD_B = 14
+const ROW_H = PAD_T + STAFF_H + PAD_B, CLEF_W = 40, MW = 68
 
 function StaffRow({ chords, isFirstRow, isLast }: {
   chords: string[]; isFirstRow: boolean; isLast: boolean
@@ -54,7 +54,7 @@ function StaffRow({ chords, isFirstRow, isLast }: {
           <g key={col}>
             <line x1={x} y1={PAD_T} x2={x} y2={PAD_T + STAFF_H} stroke="#252545" strokeWidth={1} />
             {chord && (
-              <text x={x + 10} y={PAD_T - 10} fontSize={14} fontWeight={700}
+              <text x={x + 7} y={PAD_T - 8} fontSize={12} fontWeight={700}
                 fill="#9898c8" fontFamily="'Courier New','SF Mono',monospace">
                 {chord}
               </text>

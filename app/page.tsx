@@ -35,10 +35,29 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(h / 24)}일 전`
 }
 
+function calcStreak(dates: string[]) {
+  const uniq = [...new Set(dates)].sort().reverse()
+  if (uniq.length === 0) return 0
+  const today = new Date().toISOString().slice(0, 10)
+  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+  if (uniq[0] !== today && uniq[0] !== yesterday) return 0
+  let streak = 0, checkDate = uniq[0]
+  for (const d of uniq) {
+    if (d === checkDate) {
+      streak++
+      const dt = new Date(checkDate); dt.setDate(dt.getDate() - 1)
+      checkDate = dt.toISOString().slice(0, 10)
+    } else break
+  }
+  return streak
+}
+
 export default function HomePage() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest')
+  const [streak, setStreak] = useState(0)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
@@ -73,6 +92,15 @@ export default function HomePage() {
         setSubmissions(subs || [])
       }
     }
+
+    if (user) {
+      const { data: myDates } = await supabase
+        .from('submissions')
+        .select('created_at')
+        .eq('user_id', user.id)
+      setStreak(calcStreak(myDates?.map(s => s.created_at.slice(0, 10)) ?? []))
+    }
+
     setLoading(false)
   }, [])
 
@@ -149,6 +177,12 @@ export default function HomePage() {
           )}
           {user ? (
             <>
+              <Link href="/ranking" style={{ color: '#555588', fontSize: 12, fontWeight: 700, padding: '4px 6px' }}>
+                랭킹
+              </Link>
+              <Link href="/my-videos" style={{ color: '#555588', fontSize: 12, fontWeight: 700, padding: '4px 6px' }}>
+                내 기록
+              </Link>
               <Link href="/groups" style={{
                 padding: '6px 12px', borderRadius: 8,
                 background: 'rgba(99,102,241,0.08)',
@@ -283,22 +317,79 @@ export default function HomePage() {
           )}
         </section>
 
+        {/* Streak banner */}
+        {user && streak > 0 && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: 'rgba(99,102,241,0.05)',
+            border: '1px solid rgba(99,102,241,0.12)',
+            borderRadius: 12, padding: '10px 14px', marginBottom: 28,
+          }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: 8,
+              background: 'rgba(99,102,241,0.1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+            }}>
+              <svg width="13" height="14" viewBox="0 0 13 14" fill="none">
+                <path d="M6.5 1C6.5 1 10 4 10 7.5C10 9.43 8.43 11 6.5 11C4.57 11 3 9.43 3 7.5C3 6 4 5 4 5C4 5 4.5 7 6 7C6 5.5 5.5 3 6.5 1Z" fill="#7777cc"/>
+                <path d="M6.5 11V13" stroke="#7777cc" strokeWidth="1.5" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#8888cc' }}>
+                {streak}일 연속 참여 중
+              </span>
+              <span style={{ fontSize: 12, color: '#444466', marginLeft: 8 }}>
+                {submissions.some(s => s.profiles?.name) ? '오늘도 했어요!' : '오늘도 올려보세요'}
+              </span>
+            </div>
+            <Link href="/my-videos" style={{ fontSize: 11, color: '#4444aa', fontWeight: 700 }}>
+              내 기록 →
+            </Link>
+          </div>
+        )}
+
         {/* Submissions */}
         <section>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-            <span style={{ fontSize: 14, fontWeight: 800, color: '#b0b0d8', letterSpacing: '-0.01em' }}>
-              오늘의 연주
-            </span>
-            {submissions.length > 0 && (
-              <span style={{
-                fontSize: 11, color: '#6366f1', fontWeight: 800,
-                background: 'rgba(99,102,241,0.1)',
-                border: '1px solid rgba(99,102,241,0.18)',
-                padding: '3px 10px', borderRadius: 20,
-              }}>
-                {submissions.length}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 14, fontWeight: 800, color: '#b0b0d8', letterSpacing: '-0.01em' }}>
+                오늘의 연주
               </span>
-            )}
+              {submissions.length > 0 && (
+                <span style={{
+                  fontSize: 11, color: '#6366f1', fontWeight: 800,
+                  background: 'rgba(99,102,241,0.1)',
+                  border: '1px solid rgba(99,102,241,0.18)',
+                  padding: '3px 10px', borderRadius: 20,
+                }}>
+                  {submissions.length}
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button
+                onClick={() => setSortBy('newest')}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px',
+                  fontSize: 12, fontWeight: 700,
+                  color: sortBy === 'newest' ? '#8888cc' : '#333355',
+                }}
+              >
+                최신
+              </button>
+              <span style={{ color: '#222240', fontSize: 11 }}>|</span>
+              <button
+                onClick={() => setSortBy('popular')}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px',
+                  fontSize: 12, fontWeight: 700,
+                  color: sortBy === 'popular' ? '#8888cc' : '#333355',
+                }}
+              >
+                인기
+              </button>
+            </div>
           </div>
 
           {submissions.length === 0 ? (
@@ -308,9 +399,15 @@ export default function HomePage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {submissions.map(sub => (
-                <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)} />
-              ))}
+              {[...submissions]
+                .sort((a, b) => sortBy === 'popular'
+                  ? b.likes_count - a.likes_count
+                  : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                )
+                .map(sub => (
+                  <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)} />
+                ))
+              }
             </div>
           )}
         </section>
