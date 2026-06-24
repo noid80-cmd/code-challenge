@@ -29,32 +29,25 @@ const STYLE_VALUES = STYLE_OPTIONS.map(o => o.value)
 
 // ── Staff ─────────────────────────────────────────────────────────────────────
 
-const LG = 9, STAFF_H = LG * 4, PAD_T = 34, PAD_B = 14
-const ROW_H = PAD_T + STAFF_H + PAD_B, CLEF_W = 40, MW = 68
+const LG = 9, STAFF_H = LG * 4, PAD_T = 28, PAD_B = 12
+const ROW_H = PAD_T + STAFF_H + PAD_B, PAD_L = 10, MW = 72
 
-function StaffRow({ chords, isFirstRow, isLast }: {
-  chords: string[]; isFirstRow: boolean; isLast: boolean
-}) {
+function StaffRow({ chords, isLast }: { chords: string[]; isLast: boolean }) {
   const filled = [...chords]; while (filled.length < 4) filled.push('')
-  const sx = isFirstRow ? CLEF_W : 20
-  const W = sx + 4 * MW + 20
+  const W = PAD_L + 4 * MW + 12
   return (
     <svg width={W} height={ROW_H} style={{ display: 'block', overflow: 'visible' }}>
       {[0,1,2,3,4].map(i => (
-        <line key={i} x1={isFirstRow ? 8 : 0} y1={PAD_T + i * LG} x2={W - 8} y2={PAD_T + i * LG}
+        <line key={i} x1={0} y1={PAD_T + i * LG} x2={W - 4} y2={PAD_T + i * LG}
           stroke="#252545" strokeWidth={1} />
       ))}
-      {isFirstRow && (
-        <text x={14} y={PAD_T + STAFF_H + 8} fontSize={STAFF_H * 1.95} fill="#4a4a80"
-          fontFamily="'Georgia','Times New Roman',serif" style={{ userSelect: 'none' }}>𝄞</text>
-      )}
       {filled.map((chord, col) => {
-        const x = sx + col * MW
+        const x = PAD_L + col * MW
         return (
           <g key={col}>
             <line x1={x} y1={PAD_T} x2={x} y2={PAD_T + STAFF_H} stroke="#252545" strokeWidth={1} />
             {chord && (
-              <text x={x + 7} y={PAD_T - 8} fontSize={12} fontWeight={700}
+              <text x={x + 6} y={PAD_T - 7} fontSize={12} fontWeight={700}
                 fill="#9898c8" fontFamily="'Courier New','SF Mono',monospace">
                 {chord}
               </text>
@@ -62,10 +55,10 @@ function StaffRow({ chords, isFirstRow, isLast }: {
           </g>
         )
       })}
-      <line x1={sx + 4 * MW} y1={PAD_T} x2={sx + 4 * MW} y2={PAD_T + STAFF_H}
+      <line x1={PAD_L + 4 * MW} y1={PAD_T} x2={PAD_L + 4 * MW} y2={PAD_T + STAFF_H}
         stroke="#252545" strokeWidth={isLast ? 3 : 1} />
       {isLast && (
-        <line x1={sx + 4 * MW - 6} y1={PAD_T} x2={sx + 4 * MW - 6} y2={PAD_T + STAFF_H}
+        <line x1={PAD_L + 4 * MW - 5} y1={PAD_T} x2={PAD_L + 4 * MW - 5} y2={PAD_T + STAFF_H}
           stroke="#252545" strokeWidth={1} />
       )}
     </svg>
@@ -103,7 +96,7 @@ export default function ChordPlayer({ progressions, title }: {
                 {row.label}
               </div>
             )}
-            <StaffRow chords={row.chords} isFirstRow={ri === 0 || !!row.label} isLast={ri === rows.length - 1} />
+            <StaffRow chords={row.chords} isLast={ri === rows.length - 1} />
           </div>
         ))}
       </div>

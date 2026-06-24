@@ -177,12 +177,6 @@ export default function HomePage() {
           )}
           {user ? (
             <>
-              <Link href="/ranking" style={{ color: '#555588', fontSize: 12, fontWeight: 700, padding: '4px 6px' }}>
-                랭킹
-              </Link>
-              <Link href="/my-videos" style={{ color: '#555588', fontSize: 12, fontWeight: 700, padding: '4px 6px' }}>
-                내 기록
-              </Link>
               <Link href="/groups" style={{
                 padding: '6px 12px', borderRadius: 8,
                 background: 'rgba(99,102,241,0.08)',
@@ -367,26 +361,22 @@ export default function HomePage() {
                 </span>
               )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <button
-                onClick={() => setSortBy('newest')}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px',
-                  fontSize: 12, fontWeight: 700,
-                  color: sortBy === 'newest' ? '#8888cc' : '#333355',
-                }}
-              >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Link href="/ranking" style={{ fontSize: 12, color: '#444488', fontWeight: 700 }}>
+                주간랭킹
+              </Link>
+              <span style={{ color: '#222240', fontSize: 11 }}>·</span>
+              <button onClick={() => setSortBy('newest')} style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontSize: 12, fontWeight: 700, color: sortBy === 'newest' ? '#8888cc' : '#333355',
+              }}>
                 최신
               </button>
               <span style={{ color: '#222240', fontSize: 11 }}>|</span>
-              <button
-                onClick={() => setSortBy('popular')}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px',
-                  fontSize: 12, fontWeight: 700,
-                  color: sortBy === 'popular' ? '#8888cc' : '#333355',
-                }}
-              >
+              <button onClick={() => setSortBy('popular')} style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontSize: 12, fontWeight: 700, color: sortBy === 'popular' ? '#8888cc' : '#333355',
+              }}>
                 인기
               </button>
             </div>
