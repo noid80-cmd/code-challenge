@@ -7,8 +7,11 @@ import Link from 'next/link'
 
 // chords는 string[][] (마디 배열, 각 마디에 1~4개 코드)
 type Progression = { label: string; chords: string[][]; style?: string; tempo?: number }
-type DraftChallenge = { title: string; description: string; progressions: Progression[] }
-type ExistingChallenge = { id: string; date: string; title: string }
+type DraftChallenge = { title: string; description: string; progressions: Progression[]; level: string }
+type ExistingChallenge = { id: string; date: string; title: string; level: string }
+
+const LEVEL_LABELS: Record<string, string> = { beginner: '초급', intermediate: '중급', advanced: '고급' }
+const LEVEL_COLORS: Record<string, string> = { beginner: '#34d399', intermediate: '#818cf8', advanced: '#f87171' }
 
 function toMeasures(chords: unknown): string[][] {
   if (!chords || !Array.isArray(chords) || chords.length === 0) return [['']]
@@ -46,6 +49,7 @@ const emptyDraft = (): DraftChallenge => ({
   title: '',
   description: '',
   progressions: [{ label: '진행 1', chords: [[''], [''], [''], ['']], style: 'swing', tempo: 120 }],
+  level: 'intermediate',
 })
 
 export default function AdminPage() {
@@ -58,7 +62,6 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [todayExists, setTodayExists] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
   const [challenges, setChallenges] = useState<ExistingChallenge[]>([])
   const [deleting, setDeleting] = useState<string | null>(null)
@@ -66,11 +69,9 @@ export default function AdminPage() {
   const loadChallenges = useCallback(async () => {
     const supabase = createClient()
     const { data } = await supabase
-      .from('challenges').select('id, date, title')
+      .from('challenges').select('id, date, title, level')
       .order('date', { ascending: false }).limit(30)
     setChallenges(data ?? [])
-    const today = new Date().toISOString().slice(0, 10)
-    setTodayExists(!!(data ?? []).find(c => c.date === today))
   }, [])
 
   useEffect(() => {
@@ -93,6 +94,7 @@ export default function AdminPage() {
       setDraft({
         title: data.title,
         description: data.description || '',
+        level: 'intermediate',
         progressions: (data.progressions ?? []).map((p: { label: string; chords: unknown; style?: string; tempo?: number }) => ({
           ...p,
           chords: toMeasures(p.chords),
@@ -119,6 +121,7 @@ export default function AdminPage() {
       title: draft.title.trim(),
       description: draft.description.trim() || null,
       chords: { progressions: validProgressions },
+      level: draft.level || 'intermediate',
     }
     if (editingId) {
       const { error } = await supabase.from('challenges').update(payload).eq('id', editingId)
@@ -128,10 +131,9 @@ export default function AdminPage() {
       const { error } = await supabase.from('challenges').insert({ date: selectedDate, ...payload })
       if (error) {
         setError(error.message.includes('duplicate') || error.message.includes('unique')
-          ? '해당 날짜의 챌린지가 이미 있어요.' : error.message)
+          ? `${selectedDate} ${LEVEL_LABELS[draft.level || 'intermediate']} 챌린지가 이미 있어요.` : error.message)
       } else {
-        setSuccess(`${selectedDate} 챌린지가 저장되었어요!`)
-        if (selectedDate === new Date().toISOString().slice(0, 10)) setTodayExists(true)
+        setSuccess(`${selectedDate} ${LEVEL_LABELS[draft.level || 'intermediate']} 챌린지가 저장되었어요!`)
         setDraft(null); await loadChallenges()
       }
     }
@@ -147,6 +149,7 @@ export default function AdminPage() {
     setDraft({
       title: data.title,
       description: data.description ?? '',
+      level: data.level || 'intermediate',
       progressions: (data.chords?.progressions ?? []).map((p: { label: string; chords: unknown; style?: string; tempo?: number }) => ({
         ...p,
         chords: toMeasures(p.chords),
@@ -260,8 +263,8 @@ export default function AdminPage() {
           <div style={{ background: '#0e0e1a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 20, marginBottom: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#eeeeff', marginBottom: 10 }}>챌린지 날짜</div>
             <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} style={inputStyle} />
-            {todayExists && selectedDate === new Date().toISOString().slice(0, 10) && (
-              <p style={{ color: '#fbbf24', fontSize: 12, marginTop: 8 }}>⚠️ 오늘 챌린지가 이미 있어요.</p>
+            {draft && !editingId && challenges.some(c => c.date === selectedDate && (c.level || 'intermediate') === (draft.level || 'intermediate')) && (
+              <p style={{ color: '#fbbf24', fontSize: 12, marginTop: 8 }}>⚠️ {selectedDate} {LEVEL_LABELS[draft.level || 'intermediate']} 챌린지가 이미 있어요.</p>
             )}
           </div>
         )}
@@ -297,6 +300,24 @@ export default function AdminPage() {
                 <button onClick={() => { setDraft(null); setEditingId(null); setError('') }}
                   style={{ background: 'none', border: 'none', color: '#555570', fontSize: 12, cursor: 'pointer' }}>취소</button>
               )}
+            </div>
+
+            {/* 난이도 선택 */}
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 8 }}>난이도</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {(['beginner', 'intermediate', 'advanced'] as const).map(lv => (
+                  <button key={lv} onClick={() => setDraft({ ...draft, level: lv })}
+                    style={{
+                      flex: 1, padding: '9px 4px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                      background: draft.level === lv ? `${LEVEL_COLORS[lv]}22` : '#111118',
+                      border: draft.level === lv ? `1.5px solid ${LEVEL_COLORS[lv]}88` : '1px solid rgba(255,255,255,0.07)',
+                      color: draft.level === lv ? LEVEL_COLORS[lv] : '#444466',
+                    }}>
+                    {LEVEL_LABELS[lv]}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div style={{ marginBottom: 14 }}>
@@ -427,7 +448,12 @@ export default function AdminPage() {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
                 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11, color: '#5555aa', fontWeight: 700, marginBottom: 2 }}>{ch.date}</div>
+                    <div style={{ fontSize: 11, color: '#5555aa', fontWeight: 700, marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {ch.date}
+                      <span style={{ color: LEVEL_COLORS[ch.level || 'intermediate'], fontSize: 10 }}>
+                        {LEVEL_LABELS[ch.level || 'intermediate']}
+                      </span>
+                    </div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#ccccee', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ch.title}</div>
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>

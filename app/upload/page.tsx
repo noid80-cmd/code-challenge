@@ -8,12 +8,16 @@ import ChordPlayer from '@/app/components/ChordPlayer'
 import { normalizeMeasures } from '@/lib/chords'
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
-type Challenge = { id: string; title: string; description?: string; chords: { progressions: Progression[] } }
+type Challenge = { id: string; title: string; description?: string; level: string; chords: { progressions: Progression[] } }
+
+const LEVEL_LABELS: Record<string, string> = { beginner: '초급', intermediate: '중급', advanced: '고급' }
+const LEVEL_ORDER = ['beginner', 'intermediate', 'advanced']
 type Group = { id: string; name: string }
 
 export default function UploadPage() {
   const router = useRouter()
-  const [challenge, setChallenge] = useState<Challenge | null>(null)
+  const [challengesByLevel, setChallengesByLevel] = useState<Record<string, Challenge>>({})
+  const [selectedLevel, setSelectedLevel] = useState('intermediate')
   const [myGroups, setMyGroups] = useState<Group[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState<string>('public')
   const [file, setFile] = useState<File | null>(null)
@@ -40,8 +44,12 @@ export default function UploadPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
       const today = new Date().toISOString().slice(0, 10)
-      const { data } = await supabase.from('challenges').select('*').eq('date', today).single()
-      setChallenge(data)
+      const { data } = await supabase.from('challenges').select('*').eq('date', today)
+      const byLevel: Record<string, Challenge> = {}
+      ;(data ?? []).forEach((c: Challenge) => { byLevel[c.level || 'intermediate'] = c })
+      setChallengesByLevel(byLevel)
+      const firstLevel = LEVEL_ORDER.find(l => byLevel[l]) || 'intermediate'
+      setSelectedLevel(firstLevel)
       const { data: memberships } = await supabase
         .from('group_members').select('groups(id, name)').eq('user_id', user.id)
       setMyGroups((memberships ?? []).map(m => m.groups as unknown as Group).filter(Boolean))
@@ -117,6 +125,7 @@ export default function UploadPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    const challenge = challengesByLevel[selectedLevel]
     if (!file) { setError('영상을 선택해주세요.'); return }
     if (!challenge) { setError('오늘의 챌린지가 없어요.'); return }
     setError(''); setUploading(true)
@@ -202,9 +211,9 @@ export default function UploadPage() {
           padding: '52px 16px 32px',
         }}>
           <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(240,236,224,0.4)', letterSpacing: '0.12em', marginBottom: 12 }}>
-            {challenge?.title}
+            {challengesByLevel[selectedLevel]?.title}
           </div>
-          {(challenge?.chords?.progressions ?? []).map((prog, pi, arr) => {
+          {(challengesByLevel[selectedLevel]?.chords?.progressions ?? []).map((prog: Progression, pi: number, arr: Progression[]) => {
             const measures = normalizeMeasures(prog.chords)
             return (
               <div key={pi} style={{ marginBottom: pi < arr.length - 1 ? 10 : 0 }}>
@@ -321,28 +330,44 @@ export default function UploadPage() {
       </header>
 
       <main style={{ maxWidth: 480, margin: '0 auto', padding: '28px 16px 100px' }}>
-        {/* 오늘의 챌린지 + 악보 */}
-        {challenge ? (
-          <div style={{
-            background: 'linear-gradient(145deg, #111110, #0d0d0c)',
-            border: '1px solid rgba(240,236,224,0.18)', borderRadius: 18, padding: 18, marginBottom: 20,
-            boxShadow: '0 8px 32px rgba(240,236,224,0.06)',
-          }}>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', color: '#a0988c', marginBottom: 8 }}>
-              오늘의 챌린지
+        {/* 난이도 선택 + 오늘의 챌린지 */}
+        <div style={{ marginBottom: 20 }}>
+          {Object.keys(challengesByLevel).length > 0 && (
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              {LEVEL_ORDER.filter(lv => challengesByLevel[lv]).map(lv => (
+                <button key={lv} onClick={() => setSelectedLevel(lv)} style={{
+                  flex: 1, padding: '9px', borderRadius: 12, cursor: 'pointer', fontSize: 13, fontWeight: 800,
+                  background: selectedLevel === lv ? 'rgba(240,236,224,0.12)' : 'transparent',
+                  border: selectedLevel === lv ? '1px solid rgba(240,236,224,0.35)' : '1px solid rgba(240,236,224,0.08)',
+                  color: selectedLevel === lv ? '#f0ece0' : '#484640',
+                }}>
+                  {LEVEL_LABELS[lv]}
+                </button>
+              ))}
             </div>
-            <div style={{ fontSize: 15, fontWeight: 900, color: '#f0ece0', marginBottom: 16, letterSpacing: '-0.02em' }}>
-              {challenge.title}
+          )}
+          {challengesByLevel[selectedLevel] ? (
+            <div style={{
+              background: 'linear-gradient(145deg, #111110, #0d0d0c)',
+              border: '1px solid rgba(240,236,224,0.18)', borderRadius: 18, padding: 18,
+              boxShadow: '0 8px 32px rgba(240,236,224,0.06)',
+            }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', color: '#a0988c', marginBottom: 8 }}>
+                오늘의 챌린지 · {LEVEL_LABELS[selectedLevel]}
+              </div>
+              <div style={{ fontSize: 15, fontWeight: 900, color: '#f0ece0', marginBottom: 16, letterSpacing: '-0.02em' }}>
+                {challengesByLevel[selectedLevel].title}
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <ChordPlayer progressions={challengesByLevel[selectedLevel].chords.progressions} title={challengesByLevel[selectedLevel].title} />
+              </div>
             </div>
-            <div style={{ overflowX: 'auto' }}>
-              <ChordPlayer progressions={challenge.chords.progressions} title={challenge.title} />
+          ) : (
+            <div style={{ background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: 20, textAlign: 'center' }}>
+              <p style={{ color: '#303028', fontSize: 14 }}>오늘의 챌린지가 아직 없어요.</p>
             </div>
-          </div>
-        ) : (
-          <div style={{ background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: 20, marginBottom: 20, textAlign: 'center' }}>
-            <p style={{ color: '#303028', fontSize: 14 }}>오늘의 챌린지가 아직 없어요.</p>
-          </div>
-        )}
+          )}
+        </div>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <input ref={fileRef} type="file" accept="video/*" onChange={handleFileSelect} style={{ display: 'none' }} />
@@ -445,15 +470,15 @@ export default function UploadPage() {
 
           {error && <p style={{ color: '#f0ece0', fontSize: 13, textAlign: 'center' }}>{error}</p>}
 
-          <button type="submit" disabled={uploading || !file || !challenge} style={{
+          <button type="submit" disabled={uploading || !file || !challengesByLevel[selectedLevel]} style={{
             width: '100%', padding: '15px', borderRadius: 13, border: 'none',
-            background: uploading || !file || !challenge
+            background: uploading || !file || !challengesByLevel[selectedLevel]
               ? 'rgba(240,236,224,0.08)'
               : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-            color: uploading || !file || !challenge ? '#303028' : '#0a0a08',
+            color: uploading || !file || !challengesByLevel[selectedLevel] ? '#303028' : '#0a0a08',
             fontSize: 15, fontWeight: 800,
-            cursor: uploading || !file || !challenge ? 'default' : 'pointer',
-            boxShadow: uploading || !file || !challenge ? 'none' : '0 6px 24px rgba(240,236,224,0.4)',
+            cursor: uploading || !file || !challengesByLevel[selectedLevel] ? 'default' : 'pointer',
+            boxShadow: uploading || !file || !challengesByLevel[selectedLevel] ? 'none' : '0 6px 24px rgba(240,236,224,0.4)',
           }}>
             {uploading ? '업로드 중...' : '연주 올리기'}
           </button>

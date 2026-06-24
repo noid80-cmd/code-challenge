@@ -10,25 +10,86 @@ type Submission = {
   challenges: { title: string; date: string } | null
 }
 
-function calcStreak(submissions: { created_at: string }[]) {
-  const dates = [...new Set(submissions.map(s => s.created_at.slice(0, 10)))].sort().reverse()
-  if (dates.length === 0) return 0
+function calcStreak(dates: string[]) {
+  const uniq = [...new Set(dates)].sort().reverse()
+  if (uniq.length === 0) return 0
   const today = new Date().toISOString().slice(0, 10)
   const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
-  if (dates[0] !== today && dates[0] !== yesterday) return 0
-  let streak = 0, checkDate = dates[0]
-  for (const date of dates) {
-    if (date === checkDate) {
+  if (uniq[0] !== today && uniq[0] !== yesterday) return 0
+  let streak = 0, checkDate = uniq[0]
+  for (const d of uniq) {
+    if (d === checkDate) {
       streak++
-      const d = new Date(checkDate); d.setDate(d.getDate() - 1)
-      checkDate = d.toISOString().slice(0, 10)
+      const dt = new Date(checkDate); dt.setDate(dt.getDate() - 1)
+      checkDate = dt.toISOString().slice(0, 10)
     } else break
   }
   return streak
 }
 
+function CalendarView({ submittedDates }: { submittedDates: Set<string> }) {
+  const [viewDate, setViewDate] = useState(() => new Date())
+  const today = new Date().toISOString().slice(0, 10)
+  const year = viewDate.getFullYear()
+  const month = viewDate.getMonth()
+
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const DAY_LABELS = ['일', '월', '화', '수', '목', '금', '토']
+
+  const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  function prevMonth() { setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1)) }
+  function nextMonth() { setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1)) }
+
+  return (
+    <div>
+      {/* 월 네비게이션 */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+        <button onClick={prevMonth} style={{ background: 'none', border: 'none', color: '#605850', fontSize: 20, cursor: 'pointer', padding: '4px 8px' }}>‹</button>
+        <span style={{ fontSize: 14, fontWeight: 800, color: '#f0ece0' }}>{year}년 {month + 1}월</span>
+        <button onClick={nextMonth} style={{ background: 'none', border: 'none', color: '#605850', fontSize: 20, cursor: 'pointer', padding: '4px 8px' }}>›</button>
+      </div>
+
+      {/* 요일 헤더 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 6 }}>
+        {DAY_LABELS.map(d => (
+          <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#303028', padding: '4px 0' }}>{d}</div>
+        ))}
+      </div>
+
+      {/* 날짜 셀 */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
+        {cells.map((day, i) => {
+          if (!day) return <div key={i} />
+          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+          const submitted = submittedDates.has(dateStr)
+          const isToday = dateStr === today
+          return (
+            <div key={i} style={{
+              aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              borderRadius: '50%', position: 'relative',
+              background: submitted ? 'rgba(240,236,224,0.15)' : 'transparent',
+              border: isToday ? '1.5px solid rgba(240,236,224,0.4)' : 'none',
+            }}>
+              <span style={{ fontSize: 12, fontWeight: submitted ? 800 : 500, color: submitted ? '#f0ece0' : '#303028' }}>
+                {day}
+              </span>
+              {submitted && (
+                <div style={{ position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: '#f0ece0' }} />
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function MyVideosPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [submittedDates, setSubmittedDates] = useState<Set<string>>(new Set())
   const [streak, setStreak] = useState(0)
   const [totalLikes, setTotalLikes] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -43,7 +104,9 @@ export default function MyVideosPage() {
         .eq('user_id', user.id).order('created_at', { ascending: false })
       const subs = (data ?? []) as Submission[]
       setSubmissions(subs)
-      setStreak(calcStreak(subs))
+      const dates = subs.map(s => s.created_at.slice(0, 10))
+      setSubmittedDates(new Set(dates))
+      setStreak(calcStreak(dates))
       setTotalLikes(subs.reduce((sum, s) => sum + s.likes_count, 0))
       setLoading(false)
     }
@@ -110,13 +173,22 @@ export default function MyVideosPage() {
             {streak > 0 && (
               <div style={{
                 background: 'rgba(240,236,224,0.06)', border: '1px solid rgba(240,236,224,0.15)',
-                borderRadius: 14, padding: '12px 16px', marginBottom: 24,
+                borderRadius: 14, padding: '12px 16px', marginBottom: 16,
                 fontSize: 13, color: '#a0988c', fontWeight: 600, lineHeight: 1.6,
               }}>
                 🔥 {streak}일 연속 참여 중이에요.{' '}
                 {uploadsToday ? '내일도 올려보세요!' : `오늘 올리면 ${streak + 1}일이 돼요!`}
               </div>
             )}
+
+            {/* 달력 */}
+            <div style={{
+              background: 'linear-gradient(145deg, #111110, #0d0d0c)',
+              border: '1px solid rgba(240,236,224,0.1)',
+              borderRadius: 18, padding: '18px 16px', marginBottom: 28,
+            }}>
+              <CalendarView submittedDates={submittedDates} />
+            </div>
           </>
         )}
 

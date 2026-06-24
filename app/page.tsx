@@ -9,14 +9,17 @@ const ChordPlayer = dynamic(() => import('./components/ChordPlayer'), { ssr: fal
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type Challenge = {
-  id: string; date: string; title: string; description?: string
+  id: string; date: string; title: string; description?: string; level: string
   chords: { progressions: Progression[] }
 }
 type Submission = {
-  id: string; video_url: string; caption?: string
+  id: string; challenge_id: string; video_url: string; caption?: string
   likes_count: number; created_at: string; user_liked?: boolean
   profiles: { name: string; avatar_url?: string } | null
 }
+
+const LEVEL_LABELS: Record<string, string> = { beginner: '초급', intermediate: '중급', advanced: '고급' }
+const LEVEL_ORDER = ['beginner', 'intermediate', 'advanced']
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -47,8 +50,9 @@ function calcStreak(dates: string[]) {
 
 export default function HomePage() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
-  const [challenge, setChallenge] = useState<Challenge | null>(null)
-  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [challengesByLevel, setChallengesByLevel] = useState<Record<string, Challenge>>({})
+  const [selectedLevel, setSelectedLevel] = useState('intermediate')
+  const [allSubmissions, setAllSubmissions] = useState<Submission[]>([])
   const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest')
   const [streak, setStreak] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -60,21 +64,26 @@ export default function HomePage() {
     setUser(user)
 
     const today = new Date().toISOString().slice(0, 10)
-    const { data: ch } = await supabase.from('challenges').select('*').eq('date', today).single()
-    setChallenge(ch)
+    const { data: chs } = await supabase.from('challenges').select('*').eq('date', today)
+    const byLevel: Record<string, Challenge> = {}
+    ;(chs ?? []).forEach(c => { byLevel[c.level || 'intermediate'] = c })
+    setChallengesByLevel(byLevel)
+    const firstLevel = LEVEL_ORDER.find(l => byLevel[l]) || 'intermediate'
+    setSelectedLevel(firstLevel)
 
-    if (ch) {
+    const challengeIds = Object.values(byLevel).map(c => c.id)
+    if (challengeIds.length > 0) {
       const { data: subs } = await supabase
         .from('submissions').select('*, profiles(name, avatar_url)')
-        .eq('challenge_id', ch.id).is('group_id', null)
+        .in('challenge_id', challengeIds).is('group_id', null)
         .order('created_at', { ascending: false })
 
       if (subs && user) {
         const { data: userLikes } = await supabase.from('likes').select('submission_id').eq('user_id', user.id)
         const likedIds = new Set(userLikes?.map(l => l.submission_id) || [])
-        setSubmissions(subs.map(s => ({ ...s, user_liked: likedIds.has(s.id) })))
+        setAllSubmissions(subs.map(s => ({ ...s, user_liked: likedIds.has(s.id) })))
       } else {
-        setSubmissions(subs || [])
+        setAllSubmissions(subs || [])
       }
     }
 
@@ -98,11 +107,14 @@ export default function HomePage() {
     } else {
       await supabase.from('likes').insert({ submission_id: submissionId, user_id: user.id })
     }
-    setSubmissions(prev => prev.map(s => s.id === submissionId
+    setAllSubmissions(prev => prev.map(s => s.id === submissionId
       ? { ...s, user_liked: !liked, likes_count: liked ? s.likes_count - 1 : s.likes_count + 1 }
       : s
     ))
   }
+
+  const challenge = challengesByLevel[selectedLevel] ?? null
+  const submissions = allSubmissions.filter(s => s.challenge_id === challenge?.id)
 
   async function handleLogout() {
     const supabase = createClient()
@@ -210,6 +222,22 @@ export default function HomePage() {
           </span>
         </div>
 
+        {/* 난이도 탭 */}
+        {Object.keys(challengesByLevel).length > 0 && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            {LEVEL_ORDER.filter(lv => challengesByLevel[lv]).map(lv => (
+              <button key={lv} onClick={() => setSelectedLevel(lv)} style={{
+                flex: 1, padding: '9px', borderRadius: 12, cursor: 'pointer', fontSize: 13, fontWeight: 800,
+                background: selectedLevel === lv ? 'rgba(240,236,224,0.12)' : 'transparent',
+                border: selectedLevel === lv ? '1px solid rgba(240,236,224,0.35)' : '1px solid rgba(240,236,224,0.08)',
+                color: selectedLevel === lv ? '#f0ece0' : '#484640',
+              }}>
+                {LEVEL_LABELS[lv]}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Challenge card */}
         <section style={{ marginBottom: 40 }}>
           {challenge ? (
@@ -258,18 +286,9 @@ export default function HomePage() {
               border: '1px solid rgba(240,236,224,0.08)',
               borderRadius: 22, padding: '48px 20px', textAlign: 'center',
             }}>
-              <div style={{
-                width: 52, height: 52, borderRadius: 16,
-                background: 'rgba(240,236,224,0.06)', border: '1px solid rgba(240,236,224,0.12)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px',
-              }}>
-                <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
-                  {[0,1,2,3,4].map(i => (
-                    <line key={i} x1="1" y1={3 + i * 3.5} x2="21" y2={3 + i * 3.5} stroke="#303028" strokeWidth="1" strokeLinecap="round" />
-                  ))}
-                </svg>
-              </div>
-              <p style={{ color: '#605850', fontSize: 15, fontWeight: 700, marginBottom: 5 }}>오늘의 챌린지를 준비 중이에요</p>
+              <p style={{ color: '#605850', fontSize: 15, fontWeight: 700, marginBottom: 5 }}>
+                {Object.keys(challengesByLevel).length > 0 ? `${LEVEL_LABELS[selectedLevel]} 챌린지를 준비 중이에요` : '오늘의 챌린지를 준비 중이에요'}
+              </p>
               <p style={{ color: '#303028', fontSize: 13 }}>매일 새로운 코드 진행이 올라와요</p>
               {isAdmin && (
                 <Link href="/admin" style={{
