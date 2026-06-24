@@ -1,4 +1,4 @@
-'use client'
+﻿'use client'
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
@@ -61,16 +61,16 @@ export default function RankingPage() {
   const podiumHeights = [80, 52, 36]
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #0d0800 0%, #060400 60%, #0a0600 100%)' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #0e0700 0%, #080300 60%, #0b0400 100%)' }}>
       <header style={{
         position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(8,6,0,0.88)', backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(245,158,11,0.12)',
+        background: 'rgba(10,4,0,0.88)', backdropFilter: 'blur(24px)',
+        borderBottom: '1px solid rgba(224,122,53,0.12)',
         padding: '0 20px', height: 54,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/" style={{ color: '#6b5010', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
-        <span style={{ fontWeight: 800, fontSize: 16, color: '#fef3c7', letterSpacing: '-0.02em' }}>이번 주 랭킹</span>
+        <Link href="/" style={{ color: '#7a4820', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
+        <span style={{ fontWeight: 800, fontSize: 16, color: '#fdf0e8', letterSpacing: '-0.02em' }}>이번 주 랭킹</span>
         <div style={{ width: 48 }} />
       </header>
 
@@ -78,19 +78,19 @@ export default function RankingPage() {
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
           <span style={{
             fontSize: 11, fontWeight: 800, letterSpacing: '0.1em',
-            background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)',
-            color: '#b58a2a', padding: '5px 16px', borderRadius: 20,
+            background: 'rgba(224,122,53,0.1)', border: '1px solid rgba(224,122,53,0.2)',
+            color: '#c07840', padding: '5px 16px', borderRadius: 20,
           }}>
             {weekRange} · 좋아요 기준
           </span>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#2a2000', fontSize: 14 }}>불러오는 중</div>
+          <div style={{ textAlign: 'center', padding: 60, color: '#2a1408', fontSize: 14 }}>불러오는 중</div>
         ) : weekly.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <p style={{ color: '#4a3800', fontSize: 14, fontWeight: 700 }}>이번 주 데이터가 없어요</p>
-            <p style={{ color: '#2a2000', fontSize: 13, marginTop: 5 }}>챌린지에 참여하고 첫 번째가 되어보세요</p>
+            <p style={{ color: '#4a2a10', fontSize: 14, fontWeight: 700 }}>이번 주 데이터가 없어요</p>
+            <p style={{ color: '#2a1408', fontSize: 13, marginTop: 5 }}>챌린지에 참여하고 첫 번째가 되어보세요</p>
           </div>
         ) : (
           <>
@@ -104,9 +104,9 @@ export default function RankingPage() {
                   <div key={idx} style={{ flex: 1, maxWidth: 120, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <div style={{
                       width: isFirst ? 72 : 58, height: isFirst ? 72 : 58, borderRadius: '50%',
-                      background: `linear-gradient(135deg, ${medalColors[idx]}, ${idx === 0 ? '#d97706' : idx === 1 ? '#6b7280' : '#92400e'})`,
+                      background: `linear-gradient(135deg, ${medalColors[idx]}, ${idx === 0 ? '#c26020' : idx === 1 ? '#6b7280' : '#92400e'})`,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: isFirst ? 26 : 20, fontWeight: 900, color: '#080600',
+                      fontSize: isFirst ? 26 : 20, fontWeight: 900, color: '#080400',
                       overflow: 'hidden', flexShrink: 0,
                       boxShadow: `0 8px 24px ${medalGlows[idx]}`,
                       marginBottom: 10,
@@ -119,13 +119,13 @@ export default function RankingPage() {
                       <div style={{ fontSize: 13, fontWeight: 800, color: medalColors[idx], marginBottom: 3 }}>
                         {medalLabels[idx]}
                       </div>
-                      <div style={{ fontSize: isFirst ? 13 : 12, fontWeight: 800, color: '#e8c97a' }}>{u.name}</div>
-                      <div style={{ fontSize: 11, color: '#6b5010', marginTop: 2 }}>♥ {u.total_likes}</div>
+                      <div style={{ fontSize: isFirst ? 13 : 12, fontWeight: 800, color: '#f0c4a0' }}>{u.name}</div>
+                      <div style={{ fontSize: 11, color: '#7a4820', marginTop: 2 }}>♥ {u.total_likes}</div>
                     </div>
                     <div style={{
                       width: '100%', height: podiumHeights[idx],
-                      background: `linear-gradient(to top, rgba(245,158,11,0.08), transparent)`,
-                      border: `1px solid rgba(245,158,11,0.12)`,
+                      background: `linear-gradient(to top, rgba(224,122,53,0.08), transparent)`,
+                      border: `1px solid rgba(224,122,53,0.12)`,
                       borderRadius: '8px 8px 0 0',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
@@ -141,29 +141,29 @@ export default function RankingPage() {
               {weekly.slice(3).map((u, i) => (
                 <div key={u.user_id} style={{
                   display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px',
-                  background: 'linear-gradient(145deg, #130c00, #0c0700)',
-                  border: '1px solid rgba(245,158,11,0.08)', borderRadius: 16,
+                  background: 'linear-gradient(145deg, #140800, #0d0500)',
+                  border: '1px solid rgba(224,122,53,0.08)', borderRadius: 16,
                 }}>
-                  <span style={{ fontSize: 14, fontWeight: 900, color: '#2a2000', width: 22, textAlign: 'center' }}>
+                  <span style={{ fontSize: 14, fontWeight: 900, color: '#2a1408', width: 22, textAlign: 'center' }}>
                     {i + 4}
                   </span>
                   <div style={{
                     width: 38, height: 38, borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #fbbf24, #d97706)',
+                    background: 'linear-gradient(135deg, #f09050, #c26020)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 14, fontWeight: 800, color: '#080600', overflow: 'hidden', flexShrink: 0,
+                    fontSize: 14, fontWeight: 800, color: '#080400', overflow: 'hidden', flexShrink: 0,
                   }}>
                     {u.avatar_url
                       ? <img src={u.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                       : u.name.slice(0, 1).toUpperCase()}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 800, color: '#e8c97a' }}>{u.name}</div>
-                    <div style={{ fontSize: 11, color: '#4a3800', marginTop: 2 }}>{u.submission_count}회 참여</div>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: '#f0c4a0' }}>{u.name}</div>
+                    <div style={{ fontSize: 11, color: '#4a2a10', marginTop: 2 }}>{u.submission_count}회 참여</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 16, fontWeight: 900, color: '#f59e0b' }}>{u.total_likes}</div>
-                    <div style={{ fontSize: 10, color: '#2a2000' }}>likes</div>
+                    <div style={{ fontSize: 16, fontWeight: 900, color: '#e07a35' }}>{u.total_likes}</div>
+                    <div style={{ fontSize: 10, color: '#2a1408' }}>likes</div>
                   </div>
                 </div>
               ))}
