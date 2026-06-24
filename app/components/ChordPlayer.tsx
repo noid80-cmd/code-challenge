@@ -64,9 +64,10 @@ function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean 
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export default function ChordPlayer({ progressions, title }: {
+export default function ChordPlayer({ progressions, title, onIRealClick }: {
   progressions: Progression[]
   title: string
+  onIRealClick?: () => void
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -110,7 +111,7 @@ export default function ChordPlayer({ progressions, title }: {
               }}>
                 {styleLabel}{tempoLabel}
               </div>
-              <a href={iRealUrl} style={{
+              <a href={iRealUrl} onClick={() => onIRealClick?.()} style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 padding: '9px 13px', borderRadius: 10, flexShrink: 0,
                 background: 'rgba(13,13,12,0.8)', border: '1px solid rgba(240,236,224,0.15)',
