@@ -39,16 +39,16 @@ function StaffRow({ chords, isLast }: { chords: string[]; isLast: boolean }) {
     <svg width={W} height={ROW_H} style={{ display: 'block', overflow: 'visible' }}>
       {[0,1,2,3,4].map(i => (
         <line key={i} x1={0} y1={PAD_T + i * LG} x2={W - 4} y2={PAD_T + i * LG}
-          stroke="#252545" strokeWidth={1} />
+          stroke="#2a2000" strokeWidth={1} />
       ))}
       {filled.map((chord, col) => {
         const x = PAD_L + col * MW
         return (
           <g key={col}>
-            <line x1={x} y1={PAD_T} x2={x} y2={PAD_T + STAFF_H} stroke="#252545" strokeWidth={1} />
+            <line x1={x} y1={PAD_T} x2={x} y2={PAD_T + STAFF_H} stroke="#2a2000" strokeWidth={1} />
             {chord && (
               <text x={x + 6} y={PAD_T - 7} fontSize={12} fontWeight={700}
-                fill="#9898c8" fontFamily="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif">
+                fill="#d97706" fontFamily="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif">
                 {chord}
               </text>
             )}
@@ -56,10 +56,10 @@ function StaffRow({ chords, isLast }: { chords: string[]; isLast: boolean }) {
         )
       })}
       <line x1={PAD_L + 4 * MW} y1={PAD_T} x2={PAD_L + 4 * MW} y2={PAD_T + STAFF_H}
-        stroke="#252545" strokeWidth={isLast ? 3 : 1} />
+        stroke="#2a2000" strokeWidth={isLast ? 3 : 1} />
       {isLast && (
         <line x1={PAD_L + 4 * MW - 5} y1={PAD_T} x2={PAD_L + 4 * MW - 5} y2={PAD_T + STAFF_H}
-          stroke="#252545" strokeWidth={1} />
+          stroke="#2a2000" strokeWidth={1} />
       )}
     </svg>
   )
@@ -94,9 +94,9 @@ export default function ChordPlayer({ progressions, title }: {
             {row.label && rows.length > 1 && (
               <div style={{
                 display: 'inline-block',
-                fontSize: 11, fontWeight: 700, color: '#5555a0',
-                background: 'rgba(99,102,241,0.08)',
-                border: '1px solid rgba(99,102,241,0.15)',
+                fontSize: 11, fontWeight: 700, color: '#b58a2a',
+                background: 'rgba(245,158,11,0.08)',
+                border: '1px solid rgba(245,158,11,0.15)',
                 borderRadius: 6, padding: '2px 9px',
                 marginBottom: 8, marginTop: ri > 0 ? 14 : 0,
               }}>
@@ -115,9 +115,9 @@ export default function ChordPlayer({ progressions, title }: {
             onChange={e => setStyle(e.target.value)}
             style={{
               width: '100%', height: '100%',
-              background: '#0c0c1e', border: '1px solid rgba(255,255,255,0.07)',
+              background: 'rgba(20,12,0,0.8)', border: '1px solid rgba(245,158,11,0.15)',
               borderRadius: 10, padding: '10px 36px 10px 13px',
-              fontSize: 13, fontWeight: 600, color: '#8888bb',
+              fontSize: 13, fontWeight: 600, color: '#b58a2a',
               outline: 'none', cursor: 'pointer',
               appearance: 'none',
             }}
@@ -131,14 +131,14 @@ export default function ChordPlayer({ progressions, title }: {
             ))}
           </select>
           <svg width="10" height="6" viewBox="0 0 10 6" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
-            <path d="M1 1l4 4 4-4" stroke="#555580" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M1 1l4 4 4-4" stroke="#6b5010" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
         <a href={iRealUrl} style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: '10px 14px', borderRadius: 10, flexShrink: 0,
-          background: '#0c0c1e', border: '1px solid rgba(255,255,255,0.07)',
-          color: '#6666aa', fontSize: 12, fontWeight: 700,
+          background: 'rgba(20,12,0,0.8)', border: '1px solid rgba(245,158,11,0.15)',
+          color: '#b58a2a', fontSize: 12, fontWeight: 700,
           textDecoration: 'none', whiteSpace: 'nowrap',
         }}>
           iReal Pro
