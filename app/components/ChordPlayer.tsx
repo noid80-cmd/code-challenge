@@ -72,7 +72,7 @@ export default function ChordPlayer({ progressions, title }: {
   title: string
 }) {
   // 어드민이 설정한 스타일·템포를 그대로 사용 (유저가 변경 불가)
-  const style = progressions[0]?.style?.toLowerCase() ?? 'swing'
+  const style = progressions[0]?.style?.toLowerCase() || 'swing'
   const tempo = progressions[0]?.tempo
 
   const allMeasures = progressions.flatMap(p => normalizeMeasures(p.chords))
