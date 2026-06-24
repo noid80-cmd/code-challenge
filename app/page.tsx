@@ -59,6 +59,7 @@ export default function HomePage() {
         .from('submissions')
         .select('*, profiles(name, avatar_url)')
         .eq('challenge_id', ch.id)
+        .is('group_id', null)
         .order('created_at', { ascending: false })
 
       if (subs && user) {
@@ -148,6 +149,14 @@ export default function HomePage() {
           )}
           {user ? (
             <>
+              <Link href="/groups" style={{
+                padding: '6px 12px', borderRadius: 8,
+                background: 'rgba(99,102,241,0.08)',
+                border: '1px solid rgba(99,102,241,0.15)',
+                color: '#8888cc', fontSize: 13, fontWeight: 700,
+              }}>
+                크루
+              </Link>
               <Link href="/upload" style={{
                 padding: '6px 14px', borderRadius: 8,
                 background: '#4f46e5',
