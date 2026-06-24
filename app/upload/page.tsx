@@ -48,6 +48,14 @@ export default function UploadPage() {
     load()
   }, [router])
 
+  // recordMode가 true로 바뀐 뒤 DOM이 커밋되면 video에 stream 연결
+  useEffect(() => {
+    if (recordMode && cameraRef.current && streamRef.current) {
+      cameraRef.current.srcObject = streamRef.current
+      cameraRef.current.play().catch(() => {})
+    }
+  }, [recordMode])
+
   // 카메라 시작
   const startCamera = useCallback(async () => {
     try {
@@ -57,13 +65,6 @@ export default function UploadPage() {
       })
       streamRef.current = stream
       setRecordMode(true)
-      // video element는 다음 render 후 마운트되므로 requestAnimationFrame으로 대기
-      requestAnimationFrame(() => {
-        if (cameraRef.current) {
-          cameraRef.current.srcObject = stream
-          cameraRef.current.play()
-        }
-      })
     } catch {
       setError('카메라 접근 권한이 필요해요. 브라우저 설정에서 허용해주세요.')
     }
@@ -292,7 +293,10 @@ export default function UploadPage() {
               video: { facingMode: nextFacing }, audio: true,
             })
             streamRef.current = stream
-            if (cameraRef.current) { cameraRef.current.srcObject = stream; cameraRef.current.play() }
+            if (cameraRef.current) {
+              cameraRef.current.srcObject = stream
+              cameraRef.current.play().catch(() => {})
+            }
           }} style={{
             width: 48, height: 48, borderRadius: '50%',
             background: 'rgba(255,255,255,0.12)',
