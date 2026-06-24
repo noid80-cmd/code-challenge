@@ -5,13 +5,12 @@ import { buildIRealUrl, normalizeMeasures } from '@/lib/chords'
 type Progression = { label: string; chords: string[] | string[][]; style?: string; tempo?: number }
 
 const STYLE_LABELS: Record<string, string> = {
-  'swing':   '스윙',
-  'bossa':   '보사노바',
-  'samba':   '삼바',
-  'ballad':  '재즈발라드',
-  'pop':     '팝발라드',
-  'shuffle': '셔플',
-  'funk':    '펑크',
+  'slow-swing': '슬로우 스윙', 'swing': '미디엄 스윙', 'fast-swing': '패스트 스윙',
+  'ballad': '재즈발라드', 'jazz-waltz': '재즈왈츠',
+  'bossa': '보사노바', 'samba': '삼바', 'afro-cuban': '아프로쿠반',
+  'mambo': '맘보', 'cha-cha': '차차', 'tango': '탱고',
+  'pop': '팝발라드', 'straight': '스트레이트', 'rock': '록',
+  'funk': '펑크', 'shuffle': '셔플', 'rnb': 'R&B', 'reggae': '레게',
 }
 
 // ── Staff ─────────────────────────────────────────────────────────────────────

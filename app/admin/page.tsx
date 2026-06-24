@@ -22,13 +22,24 @@ function toMeasures(chords: unknown): string[][] {
 }
 
 const STYLE_OPTIONS = [
-  { value: 'swing',   label: '스윙' },
-  { value: 'bossa',   label: '보사노바' },
-  { value: 'samba',   label: '삼바' },
-  { value: 'ballad',  label: '재즈발라드' },
-  { value: 'pop',     label: '팝발라드' },
-  { value: 'shuffle', label: '셔플' },
-  { value: 'funk',    label: '펑크' },
+  { group: '재즈',  value: 'swing',      label: '미디엄 스윙' },
+  { group: '재즈',  value: 'slow-swing', label: '슬로우 스윙' },
+  { group: '재즈',  value: 'fast-swing', label: '패스트 스윙' },
+  { group: '재즈',  value: 'ballad',     label: '재즈발라드' },
+  { group: '재즈',  value: 'jazz-waltz', label: '재즈왈츠' },
+  { group: '라틴',  value: 'bossa',      label: '보사노바' },
+  { group: '라틴',  value: 'samba',      label: '삼바' },
+  { group: '라틴',  value: 'afro-cuban', label: '아프로쿠반' },
+  { group: '라틴',  value: 'mambo',      label: '맘보' },
+  { group: '라틴',  value: 'cha-cha',    label: '차차' },
+  { group: '라틴',  value: 'tango',      label: '탱고' },
+  { group: '팝/록', value: 'pop',        label: '팝발라드' },
+  { group: '팝/록', value: 'straight',   label: '스트레이트' },
+  { group: '팝/록', value: 'rock',       label: '록' },
+  { group: '팝/록', value: 'funk',       label: '펑크' },
+  { group: '팝/록', value: 'shuffle',    label: '셔플' },
+  { group: '팝/록', value: 'rnb',        label: 'R&B' },
+  { group: '팝/록', value: 'reggae',     label: '레게' },
 ]
 
 const emptyDraft = (): DraftChallenge => ({
@@ -319,8 +330,12 @@ export default function AdminPage() {
                       onChange={e => updateProg(pi, 'style', e.target.value)}
                       style={{ ...inputStyle, flex: 1, padding: '7px 10px', fontSize: 12, cursor: 'pointer' }}
                     >
-                      {STYLE_OPTIONS.map(o => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
+                      {['재즈', '라틴', '팝/록'].map(group => (
+                        <optgroup key={group} label={group}>
+                          {STYLE_OPTIONS.filter(o => o.group === group).map(o => (
+                            <option key={o.value} value={o.value}>{o.label}</option>
+                          ))}
+                        </optgroup>
                       ))}
                     </select>
                   </div>
