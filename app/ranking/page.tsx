@@ -126,7 +126,6 @@ export default function RankingPage() {
                       <div style={{
                         width: isFirst ? 72 : 58, height: isFirst ? 72 : 58,
                         borderRadius: '50%',
-                        background: 'linear-gradient(135deg, #7c3aed, #ec4899)',
                         background: rankColors[idx],
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: isFirst ? 26 : 20, fontWeight: 900, color: '#fff',
