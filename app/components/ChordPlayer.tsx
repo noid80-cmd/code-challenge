@@ -4,14 +4,6 @@ import { normalizeMeasures } from '@/lib/chords'
 
 type Progression = { label: string; chords: string[] | string[][]; style?: string; tempo?: number }
 
-const STYLE_LABELS: Record<string, string> = {
-  'slow-swing': '슬로우 스윙', 'swing': '미디엄 스윙', 'fast-swing': '패스트 스윙',
-  'ballad': '재즈발라드', 'jazz-waltz': '재즈왈츠',
-  'bossa': '보사노바', 'samba': '삼바', 'afro-cuban': '아프로쿠반',
-  'mambo': '맘보', 'cha-cha': '차차', 'tango': '탱고',
-  'pop': '팝발라드', 'straight': '스트레이트', 'rock': '록',
-  'funk': '펑크', 'shuffle': '셔플', 'rnb': 'R&B', 'reggae': '레게',
-}
 
 // ── Staff ─────────────────────────────────────────────────────────────────────
 
@@ -72,9 +64,6 @@ export default function ChordPlayer({ progressions, title }: {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
       {progressions.map((prog, pi) => {
         const measures = normalizeMeasures(prog.chords)
-        const style = prog.style?.toLowerCase() || 'swing'
-        const styleLabel = STYLE_LABELS[style] ?? style
-        const tempoLabel = prog.tempo ? ` · ♩${prog.tempo}` : ''
 
         const rows: string[][][] = []
         for (let i = 0; i < measures.length; i += 4) rows.push(measures.slice(i, i + 4))
@@ -100,14 +89,6 @@ export default function ChordPlayer({ progressions, title }: {
               ))}
             </div>
 
-            {/* 리듬 */}
-            <div style={{
-              padding: '9px 13px', borderRadius: 10,
-              background: 'rgba(13,13,12,0.8)', border: '1px solid rgba(240,236,224,0.15)',
-              fontSize: 13, fontWeight: 600, color: '#a0988c',
-            }}>
-              {styleLabel}{tempoLabel}
-            </div>
           </div>
         )
       })}
