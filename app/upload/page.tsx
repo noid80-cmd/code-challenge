@@ -23,9 +23,7 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
-  const [iRealStatus, setIRealStatus] = useState<'idle' | 'opening' | 'not-installed'>('idle')
   const fileRef = useRef<HTMLInputElement>(null)
-  const iRealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // 카메라 녹화 상태
   const [recordMode, setRecordMode] = useState(false)
@@ -36,32 +34,6 @@ export default function UploadPage() {
   const recorderRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  // iReal Pro 열기 → 돌아오면 갤러리 자동 오픈
-  function handleIRealOpen() {
-    setIRealStatus('opening')
-    sessionStorage.setItem('fromIRealPro', '1')
-    // 1.5초 안에 화면이 안 꺼지면 미설치로 판단
-    iRealTimerRef.current = setTimeout(() => {
-      if (document.visibilityState === 'visible') {
-        sessionStorage.removeItem('fromIRealPro')
-        setIRealStatus('not-installed')
-      }
-    }, 1500)
-  }
-
-  useEffect(() => {
-    function onVisibility() {
-      if (!document.hidden && sessionStorage.getItem('fromIRealPro')) {
-        sessionStorage.removeItem('fromIRealPro')
-        if (iRealTimerRef.current) clearTimeout(iRealTimerRef.current)
-        setIRealStatus('idle')
-        setTimeout(() => fileRef.current?.click(), 400)
-      }
-    }
-    document.addEventListener('visibilitychange', onVisibility)
-    return () => document.removeEventListener('visibilitychange', onVisibility)
-  }, [])
 
   useEffect(() => {
     async function load() {
@@ -360,44 +332,12 @@ export default function UploadPage() {
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', color: '#a0988c', marginBottom: 8 }}>오늘의 챌린지</div>
             <div style={{ fontSize: 15, fontWeight: 900, color: '#f0ece0', marginBottom: 16, letterSpacing: '-0.02em' }}>{challenge.title}</div>
             <div style={{ overflowX: 'auto' }}>
-              <ChordPlayer progressions={challenge.chords.progressions} title={challenge.title} onIRealClick={handleIRealOpen} />
+              <ChordPlayer progressions={challenge.chords.progressions} title={challenge.title} />
             </div>
           </div>
         ) : (
           <div style={{ background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: 20, marginBottom: 20, textAlign: 'center' }}>
             <p style={{ color: '#303028', fontSize: 14 }}>오늘의 챌린지가 아직 없어요.</p>
-          </div>
-        )}
-
-        {/* iReal Pro 상태 안내 */}
-        {iRealStatus === 'opening' && (
-          <div style={{
-            padding: '14px 16px', borderRadius: 14, marginBottom: 12,
-            background: 'rgba(240,236,224,0.06)', border: '1px solid rgba(240,236,224,0.15)',
-            fontSize: 13, color: '#a0988c', fontWeight: 600, textAlign: 'center', lineHeight: 1.7,
-          }}>
-            iReal Pro에서 연주 후 돌아오면<br />
-            <span style={{ color: '#f0ece0' }}>갤러리가 자동으로 열려요</span>
-          </div>
-        )}
-        {iRealStatus === 'not-installed' && (
-          <div style={{
-            padding: '16px', borderRadius: 14, marginBottom: 12,
-            background: 'rgba(240,236,224,0.06)', border: '1px solid rgba(240,236,224,0.2)',
-          }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: '#f0ece0', marginBottom: 8 }}>iReal Pro가 설치되어 있지 않아요</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <a href="https://apps.apple.com/app/ireal-pro/id298206806" style={{
-                flex: 1, padding: '9px', borderRadius: 10, textAlign: 'center',
-                background: 'rgba(240,236,224,0.1)', border: '1px solid rgba(240,236,224,0.2)',
-                color: '#f0ece0', fontSize: 12, fontWeight: 700, textDecoration: 'none',
-              }}>App Store</a>
-              <button onClick={() => { setIRealStatus('idle'); startCamera() }} style={{
-                flex: 1, padding: '9px', borderRadius: 10,
-                background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-                border: 'none', color: '#0a0a08', fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              }}>직접 촬영하기</button>
-            </div>
           </div>
         )}
 

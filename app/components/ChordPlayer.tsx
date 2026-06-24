@@ -1,6 +1,6 @@
 'use client'
 
-import { buildIRealUrl, normalizeMeasures } from '@/lib/chords'
+import { normalizeMeasures } from '@/lib/chords'
 
 type Progression = { label: string; chords: string[] | string[][]; style?: string; tempo?: number }
 
@@ -64,10 +64,9 @@ function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean 
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
-export default function ChordPlayer({ progressions, title, onIRealClick }: {
+export default function ChordPlayer({ progressions, title }: {
   progressions: Progression[]
   title: string
-  onIRealClick?: () => void
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -76,7 +75,6 @@ export default function ChordPlayer({ progressions, title, onIRealClick }: {
         const style = prog.style?.toLowerCase() || 'swing'
         const styleLabel = STYLE_LABELS[style] ?? style
         const tempoLabel = prog.tempo ? ` · ♩${prog.tempo}` : ''
-        const iRealUrl = buildIRealUrl(title, measures, style)
 
         const rows: string[][][] = []
         for (let i = 0; i < measures.length; i += 4) rows.push(measures.slice(i, i + 4))
@@ -102,24 +100,13 @@ export default function ChordPlayer({ progressions, title, onIRealClick }: {
               ))}
             </div>
 
-            {/* 리듬 + iReal */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{
-                flex: 1, padding: '9px 13px', borderRadius: 10,
-                background: 'rgba(13,13,12,0.8)', border: '1px solid rgba(240,236,224,0.15)',
-                fontSize: 13, fontWeight: 600, color: '#a0988c',
-              }}>
-                {styleLabel}{tempoLabel}
-              </div>
-              <a href={iRealUrl} onClick={() => onIRealClick?.()} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '9px 13px', borderRadius: 10, flexShrink: 0,
-                background: 'rgba(13,13,12,0.8)', border: '1px solid rgba(240,236,224,0.15)',
-                color: '#a0988c', fontSize: 12, fontWeight: 700,
-                textDecoration: 'none', whiteSpace: 'nowrap',
-              }}>
-                iReal Pro →
-              </a>
+            {/* 리듬 */}
+            <div style={{
+              padding: '9px 13px', borderRadius: 10,
+              background: 'rgba(13,13,12,0.8)', border: '1px solid rgba(240,236,224,0.15)',
+              fontSize: 13, fontWeight: 600, color: '#a0988c',
+            }}>
+              {styleLabel}{tempoLabel}
             </div>
           </div>
         )
