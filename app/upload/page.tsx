@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ChordPlayer from '@/app/components/ChordPlayer'
+import { normalizeMeasures } from '@/lib/chords'
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type Challenge = { id: string; title: string; description?: string; chords: { progressions: Progression[] } }
@@ -198,9 +199,7 @@ export default function UploadPage() {
             {challenge?.title}
           </div>
           {(challenge?.chords?.progressions ?? []).map((prog, pi, arr) => {
-            const valid = prog.chords.filter(c => c.trim())
-            const measures: string[][] = []
-            for (let i = 0; i < valid.length; i += 4) measures.push(valid.slice(i, i + 4))
+            const measures = normalizeMeasures(prog.chords)
             return (
               <div key={pi} style={{ marginBottom: pi < arr.length - 1 ? 10 : 0 }}>
                 {arr.length > 1 && (

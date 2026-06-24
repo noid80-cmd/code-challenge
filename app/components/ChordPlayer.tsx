@@ -1,9 +1,9 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
-import { buildIRealUrl } from '@/lib/chords'
+import { buildIRealUrl, normalizeMeasures } from '@/lib/chords'
 
-type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
+type Progression = { label: string; chords: string[] | string[][]; style?: string; tempo?: number }
 
 const STYLE_OPTIONS = [
   { group: '재즈',   value: 'slow-swing', label: '슬로우 스윙' },
@@ -76,14 +76,14 @@ export default function ChordPlayer({ progressions, title }: {
     STYLE_VALUES.includes(defaultStyle) ? defaultStyle : 'swing'
   )
 
-  const allChords = progressions.flatMap(p => p.chords.filter(c => c.trim()))
-  const iRealUrl = buildIRealUrl(title, allChords, style)
+  const allMeasures = progressions.flatMap(p => normalizeMeasures(p.chords))
+  const iRealUrl = buildIRealUrl(title, allMeasures, style)
 
   const rows: { chords: string[]; label: string }[] = []
   progressions.forEach(prog => {
-    const valid = prog.chords.filter(c => c.trim())
-    for (let i = 0; i < valid.length; i += 4)
-      rows.push({ chords: valid.slice(i, i + 4), label: i === 0 ? prog.label : '' })
+    normalizeMeasures(prog.chords).forEach((measure, mi) => {
+      rows.push({ chords: measure, label: mi === 0 ? prog.label : '' })
+    })
   })
 
   return (

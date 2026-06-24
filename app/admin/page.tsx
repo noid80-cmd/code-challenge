@@ -5,18 +5,26 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
-type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
-type DraftChallenge = {
-  title: string
-  description: string
-  progressions: Progression[]
-}
+// chords는 string[][] (마디 배열, 각 마디에 1~4개 코드)
+type Progression = { label: string; chords: string[][]; style?: string; tempo?: number }
+type DraftChallenge = { title: string; description: string; progressions: Progression[] }
 type ExistingChallenge = { id: string; date: string; title: string }
+
+function toMeasures(chords: unknown): string[][] {
+  if (!chords || !Array.isArray(chords) || chords.length === 0) return [['']]
+  if (Array.isArray(chords[0])) return chords as string[][]
+  // 구버전 string[] → string[][] (4개씩 마디로)
+  const flat = (chords as string[]).filter(c => c.trim())
+  if (flat.length === 0) return [['']]
+  const out: string[][] = []
+  for (let i = 0; i < flat.length; i += 4) out.push(flat.slice(i, i + 4))
+  return out
+}
 
 const emptyDraft = (): DraftChallenge => ({
   title: '',
   description: '',
-  progressions: [{ label: '진행 1', chords: ['', '', '', ''], style: '' }],
+  progressions: [{ label: '진행 1', chords: [[''], [''], [''], ['']], style: '' }],
 })
 
 export default function AdminPage() {
@@ -37,10 +45,8 @@ export default function AdminPage() {
   const loadChallenges = useCallback(async () => {
     const supabase = createClient()
     const { data } = await supabase
-      .from('challenges')
-      .select('id, date, title')
-      .order('date', { ascending: false })
-      .limit(30)
+      .from('challenges').select('id, date, title')
+      .order('date', { ascending: false }).limit(30)
     setChallenges(data ?? [])
     const today = new Date().toISOString().slice(0, 10)
     setTodayExists(!!(data ?? []).find(c => c.date === today))
@@ -50,10 +56,7 @@ export default function AdminPage() {
     async function check() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user || user.email !== 'noid80@hanmail.net') {
-        router.push('/')
-        return
-      }
+      if (!user || user.email !== 'noid80@hanmail.net') { router.push('/'); return }
       await loadChallenges()
       setLoading(false)
     }
@@ -66,7 +69,14 @@ export default function AdminPage() {
       const res = await fetch('/api/generate-challenge', { method: 'POST' })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '생성 실패')
-      setDraft({ title: data.title, description: data.description || '', progressions: data.progressions })
+      setDraft({
+        title: data.title,
+        description: data.description || '',
+        progressions: (data.progressions ?? []).map((p: { label: string; chords: unknown; style?: string; tempo?: number }) => ({
+          ...p,
+          chords: toMeasures(p.chords),
+        })),
+      })
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '생성 실패')
     }
@@ -77,11 +87,10 @@ export default function AdminPage() {
     if (!draft) return
     const validProgressions = draft.progressions.map(p => ({
       ...p,
-      chords: p.chords.filter(c => c.trim()),
+      chords: p.chords.map(m => m.filter(c => c.trim())).filter(m => m.length > 0),
     })).filter(p => p.chords.length > 0)
     if (!draft.title.trim() || validProgressions.length === 0) {
-      setError('제목과 코드를 입력해주세요.')
-      return
+      setError('제목과 코드를 입력해주세요.'); return
     }
     setSaving(true); setError(''); setSuccess('')
     const supabase = createClient()
@@ -92,24 +101,17 @@ export default function AdminPage() {
     }
     if (editingId) {
       const { error } = await supabase.from('challenges').update(payload).eq('id', editingId)
-      if (error) {
-        setError(error.message)
-      } else {
-        setSuccess('챌린지가 수정되었어요!')
-        setDraft(null); setEditingId(null)
-        await loadChallenges()
-      }
+      if (error) { setError(error.message) }
+      else { setSuccess('챌린지가 수정되었어요!'); setDraft(null); setEditingId(null); await loadChallenges() }
     } else {
       const { error } = await supabase.from('challenges').insert({ date: selectedDate, ...payload })
       if (error) {
         setError(error.message.includes('duplicate') || error.message.includes('unique')
-          ? '해당 날짜의 챌린지가 이미 있어요.'
-          : error.message)
+          ? '해당 날짜의 챌린지가 이미 있어요.' : error.message)
       } else {
         setSuccess(`${selectedDate} 챌린지가 저장되었어요!`)
         if (selectedDate === new Date().toISOString().slice(0, 10)) setTodayExists(true)
-        setDraft(null)
-        await loadChallenges()
+        setDraft(null); await loadChallenges()
       }
     }
     setSaving(false)
@@ -124,10 +126,12 @@ export default function AdminPage() {
     setDraft({
       title: data.title,
       description: data.description ?? '',
-      progressions: data.chords?.progressions ?? [{ label: '진행 1', chords: [''], style: '' }],
+      progressions: (data.chords?.progressions ?? []).map((p: { label: string; chords: unknown; style?: string; tempo?: number }) => ({
+        ...p,
+        chords: toMeasures(p.chords),
+      })),
     })
-    setMode('manual')
-    setError(''); setSuccess('')
+    setMode('manual'); setError(''); setSuccess('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -141,46 +145,68 @@ export default function AdminPage() {
     setDeleting(null)
   }
 
-  function updateChord(progIdx: number, chordIdx: number, value: string) {
+  // ── 마디/코드 편집 헬퍼 ────────────────────────────────────────────────────
+
+  function updateProg<K extends keyof Progression>(pi: number, key: K, value: Progression[K]) {
+    if (!draft) return
+    setDraft({ ...draft, progressions: draft.progressions.map((p, i) => i === pi ? { ...p, [key]: value } : p) })
+  }
+
+  function updateChord(pi: number, mi: number, ci: number, value: string) {
     if (!draft) return
     setDraft({
       ...draft,
-      progressions: draft.progressions.map((p, i) => i === progIdx
-        ? { ...p, chords: p.chords.map((c, j) => j === chordIdx ? value : c) }
-        : p
-      )
+      progressions: draft.progressions.map((p, i) => i !== pi ? p : {
+        ...p,
+        chords: p.chords.map((m, j) => j !== mi ? m : m.map((c, k) => k === ci ? value : c)),
+      }),
     })
   }
 
-  function addChord(progIdx: number) {
+  function addChordToMeasure(pi: number, mi: number) {
     if (!draft) return
     setDraft({
       ...draft,
-      progressions: draft.progressions.map((p, i) => i === progIdx
-        ? { ...p, chords: [...p.chords, ''] }
-        : p
-      )
+      progressions: draft.progressions.map((p, i) => i !== pi ? p : {
+        ...p,
+        chords: p.chords.map((m, j) => j !== mi ? m : [...m, '']),
+      }),
     })
   }
 
-  function removeChord(progIdx: number, chordIdx: number) {
+  function removeChordFromMeasure(pi: number, mi: number, ci: number) {
     if (!draft) return
     setDraft({
       ...draft,
-      progressions: draft.progressions.map((p, i) => i === progIdx
-        ? { ...p, chords: p.chords.filter((_, j) => j !== chordIdx) }
-        : p
-      )
+      progressions: draft.progressions.map((p, i) => i !== pi ? p : {
+        ...p,
+        chords: p.chords.map((m, j) => j !== mi ? m : m.filter((_, k) => k !== ci)),
+      }),
+    })
+  }
+
+  function addMeasure(pi: number) {
+    if (!draft) return
+    setDraft({
+      ...draft,
+      progressions: draft.progressions.map((p, i) => i !== pi ? p : { ...p, chords: [...p.chords, ['']] }),
+    })
+  }
+
+  function removeMeasure(pi: number, mi: number) {
+    if (!draft) return
+    setDraft({
+      ...draft,
+      progressions: draft.progressions.map((p, i) => i !== pi ? p : {
+        ...p, chords: p.chords.filter((_, j) => j !== mi),
+      }),
     })
   }
 
   function addProgression() {
     if (!draft) return
     const n = draft.progressions.length + 1
-    setDraft({
-      ...draft,
-      progressions: [...draft.progressions, { label: `진행 ${n}`, chords: ['', '', '', ''], style: '' }]
-    })
+    setDraft({ ...draft, progressions: [...draft.progressions, { label: `진행 ${n}`, chords: [[''], [''], [''], ['']], style: '' }] })
   }
 
   function removeProgression(idx: number) {
@@ -209,7 +235,6 @@ export default function AdminPage() {
 
       <main style={{ maxWidth: 560, margin: '0 auto', padding: '24px 16px 80px' }}>
 
-        {/* 날짜 */}
         {!editingId && (
           <div style={{ background: '#0e0e1a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 20, marginBottom: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#eeeeff', marginBottom: 10 }}>챌린지 날짜</div>
@@ -220,7 +245,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 모드 탭 */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           <button onClick={() => { setMode('manual'); if (!editingId) setDraft(emptyDraft()); setError('') }}
             style={{ flex: 1, padding: '11px', borderRadius: 12, background: mode === 'manual' ? 'rgba(99,102,241,0.2)' : '#0e0e1a', color: mode === 'manual' ? '#a5b4fc' : '#555570', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: mode === 'manual' ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
@@ -232,7 +256,6 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* AI 모드 */}
         {mode === 'ai' && (
           <button onClick={generate} disabled={generating}
             style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: generating ? '#1a1a2e' : 'linear-gradient(135deg, #4f46e5, #6366f1)', color: generating ? '#444466' : '#fff', fontSize: 16, fontWeight: 700, cursor: generating ? 'default' : 'pointer', marginBottom: 16 }}>
@@ -243,7 +266,6 @@ export default function AdminPage() {
         {error && <p style={{ color: '#f87171', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>{error}</p>}
         {success && <p style={{ color: '#34d399', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>{success}</p>}
 
-        {/* 입력/편집 폼 */}
         {draft && (
           <div style={{ background: '#0e0e1a', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
@@ -252,9 +274,7 @@ export default function AdminPage() {
               </div>
               {editingId && (
                 <button onClick={() => { setDraft(null); setEditingId(null); setError('') }}
-                  style={{ background: 'none', border: 'none', color: '#555570', fontSize: 12, cursor: 'pointer' }}>
-                  취소
-                </button>
+                  style={{ background: 'none', border: 'none', color: '#555570', fontSize: 12, cursor: 'pointer' }}>취소</button>
               )}
             </div>
 
@@ -267,39 +287,77 @@ export default function AdminPage() {
             <div style={{ marginBottom: 20 }}>
               <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>설명 (선택)</label>
               <textarea value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })}
-                placeholder="간단한 설명을 입력하세요" rows={2}
-                style={{ ...inputStyle, resize: 'none' }} />
+                placeholder="간단한 설명을 입력하세요" rows={2} style={{ ...inputStyle, resize: 'none' }} />
             </div>
 
             {draft.progressions.map((prog, pi) => (
               <div key={pi} style={{ marginBottom: 20, paddingBottom: 16, borderBottom: pi < draft.progressions.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <div style={{ display: 'flex', gap: 8, flex: 1 }}>
-                    <input value={prog.label} onChange={e => setDraft({ ...draft, progressions: draft.progressions.map((p, i) => i === pi ? { ...p, label: e.target.value } : p) })}
-                      style={{ ...inputStyle, width: 90, padding: '7px 10px', fontSize: 12 }} />
-                    <input value={prog.style || ''} onChange={e => setDraft({ ...draft, progressions: draft.progressions.map((p, i) => i === pi ? { ...p, style: e.target.value } : p) })}
-                      placeholder="장르 (예: Jazz)" style={{ ...inputStyle, padding: '7px 10px', fontSize: 12 }} />
-                  </div>
+                {/* 진행 헤더 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <input value={prog.label}
+                    onChange={e => updateProg(pi, 'label', e.target.value)}
+                    style={{ ...inputStyle, width: 90, padding: '7px 10px', fontSize: 12 }} />
+                  <input value={prog.style || ''} placeholder="장르 (예: Jazz)"
+                    onChange={e => updateProg(pi, 'style', e.target.value)}
+                    style={{ ...inputStyle, padding: '7px 10px', fontSize: 12 }} />
                   {draft.progressions.length > 1 && (
                     <button onClick={() => removeProgression(pi)}
-                      style={{ background: 'none', border: 'none', color: '#f87171', fontSize: 18, cursor: 'pointer', padding: '0 8px', flexShrink: 0 }}>×</button>
+                      style={{ background: 'none', border: 'none', color: '#f87171', fontSize: 18, cursor: 'pointer', padding: '0 4px', flexShrink: 0 }}>×</button>
                   )}
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 8 }}>
-                  {prog.chords.map((chord, ci) => (
-                    <div key={ci} style={{ position: 'relative' }}>
-                      <input value={chord} onChange={e => updateChord(pi, ci, e.target.value)}
-                        placeholder="코드"
-                        style={{ width: 68, padding: '7px 8px', borderRadius: 8, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', fontSize: 14, fontWeight: 800, color: '#c7d2fe', fontFamily: 'monospace', textAlign: 'center', outline: 'none' }} />
+
+                {/* 마디 목록 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {prog.chords.map((measure, mi) => (
+                    <div key={mi} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {/* 마디 번호 */}
+                      <div style={{ fontSize: 10, color: '#333355', fontWeight: 700, width: 32, textAlign: 'right', flexShrink: 0 }}>
+                        {mi + 1}마디
+                      </div>
+                      {/* 세로 구분선 */}
+                      <div style={{ width: 2, height: 28, background: 'rgba(99,102,241,0.3)', borderRadius: 1, flexShrink: 0 }} />
+                      {/* 코드 인풋들 */}
+                      <div style={{ display: 'flex', gap: 4, flex: 1 }}>
+                        {measure.map((chord, ci) => (
+                          <div key={ci} style={{ position: 'relative' }}>
+                            <input
+                              value={chord}
+                              onChange={e => updateChord(pi, mi, ci, e.target.value)}
+                              placeholder="코드"
+                              style={{
+                                width: 58, padding: '6px 4px', borderRadius: 8,
+                                background: chord ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.04)',
+                                border: chord ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.1)',
+                                fontSize: 13, fontWeight: 800, color: '#c7d2fe',
+                                fontFamily: 'monospace', textAlign: 'center', outline: 'none',
+                              }}
+                            />
+                            {measure.length > 1 && (
+                              <button onClick={() => removeChordFromMeasure(pi, mi, ci)}
+                                style={{ position: 'absolute', top: -5, right: -5, width: 14, height: 14, borderRadius: '50%', background: '#f87171', border: 'none', color: '#fff', fontSize: 9, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>×</button>
+                            )}
+                          </div>
+                        ))}
+                        {/* 코드 추가 (최대 4개) */}
+                        {measure.length < 4 && (
+                          <button onClick={() => addChordToMeasure(pi, mi)}
+                            style={{ width: 30, padding: '6px 4px', borderRadius: 8, background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.12)', fontSize: 14, color: '#333355', cursor: 'pointer' }}>+</button>
+                        )}
+                      </div>
+                      {/* 마디 삭제 */}
                       {prog.chords.length > 1 && (
-                        <button onClick={() => removeChord(pi, ci)}
-                          style={{ position: 'absolute', top: -6, right: -6, width: 16, height: 16, borderRadius: '50%', background: '#f87171', border: 'none', color: '#fff', fontSize: 10, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>×</button>
+                        <button onClick={() => removeMeasure(pi, mi)}
+                          style={{ background: 'none', border: 'none', color: '#444466', fontSize: 14, cursor: 'pointer', padding: '0 4px', flexShrink: 0 }}>×</button>
                       )}
                     </div>
                   ))}
-                  <button onClick={() => addChord(pi)}
-                    style={{ width: 68, padding: '7px 8px', borderRadius: 8, background: 'rgba(255,255,255,0.05)', border: '1px dashed rgba(255,255,255,0.15)', fontSize: 18, color: '#444466', cursor: 'pointer' }}>+</button>
                 </div>
+
+                {/* 마디 추가 */}
+                <button onClick={() => addMeasure(pi)}
+                  style={{ marginTop: 8, marginLeft: 40, padding: '5px 12px', borderRadius: 7, border: '1px dashed rgba(99,102,241,0.25)', background: 'none', color: '#555577', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
+                  + 마디 추가
+                </button>
               </div>
             ))}
 
@@ -315,7 +373,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* 직접 입력 모드인데 draft가 없으면 시작 버튼 */}
         {mode === 'manual' && !draft && (
           <button onClick={() => setDraft(emptyDraft())}
             style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', marginBottom: 20 }}>
@@ -323,7 +380,6 @@ export default function AdminPage() {
           </button>
         )}
 
-        {/* 기존 챌린지 목록 */}
         {challenges.length > 0 && (
           <div>
             <div style={{ fontSize: 13, fontWeight: 800, color: '#ccccee', marginBottom: 12 }}>기존 챌린지</div>
@@ -341,9 +397,7 @@ export default function AdminPage() {
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     <button onClick={() => startEdit(ch)}
-                      style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
-                      수정
-                    </button>
+                      style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#818cf8', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>수정</button>
                     <button onClick={() => deleteChallenge(ch.id)} disabled={deleting === ch.id}
                       style={{ padding: '6px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>
                       {deleting === ch.id ? '...' : '삭제'}

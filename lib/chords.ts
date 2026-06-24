@@ -178,7 +178,17 @@ function toIRealChord(name: string): string {
   return bass ? `${root}${q}/${bass}` : `${root}${q}`
 }
 
-export function buildIRealUrl(title: string, chords: string[], style: string): string {
+// string[] (구버전) 또는 string[][] (신버전) 모두 string[][]로 정규화
+export function normalizeMeasures(chords: string[] | string[][]): string[][] {
+  if (!chords || chords.length === 0) return []
+  if (Array.isArray(chords[0])) return (chords as string[][])
+  const flat = (chords as string[]).filter(c => c.trim())
+  const out: string[][] = []
+  for (let i = 0; i < flat.length; i += 4) out.push(flat.slice(i, i + 4))
+  return out
+}
+
+export function buildIRealUrl(title: string, measures: string[][], style: string): string {
   const STYLE_MAP: Record<string, string> = {
     'slow-swing':  'Slow Swing',
     'swing':       'Medium Swing',
@@ -200,8 +210,9 @@ export function buildIRealUrl(title: string, chords: string[], style: string): s
     'reggae':      'Reggae',
   }
   const iRealStyle = STYLE_MAP[style] ?? 'Medium Swing'
-  const keyRoot = chords[0] ? parseChord(chords[0]).root : 'C'
-  const chordStr = chords.filter(c => c.trim()).map(toIRealChord).join(' |')
+  const firstChord = measures[0]?.[0] ?? ''
+  const keyRoot = firstChord ? parseChord(firstChord).root : 'C'
+  const chordStr = measures.map(m => m.filter(c => c.trim()).map(toIRealChord).join(' ')).join(' |')
   return `irealbook://${title}=Code Challenge=${iRealStyle}=${keyRoot}=n=T44{${chordStr} }`
 }
 

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import ChordPlayer from '@/app/components/ChordPlayer'
+import { normalizeMeasures } from '@/lib/chords'
 import Link from 'next/link'
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
@@ -89,7 +90,7 @@ export default function ChartPage() {
                     </div>
                   )}
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {prog.chords.map((chord, j) => (
+                    {normalizeMeasures(prog.chords).flat().map((chord, j) => (
                       <span key={j} style={{
                         padding: '6px 14px', borderRadius: 9,
                         background: 'rgba(240,236,224,0.06)',
