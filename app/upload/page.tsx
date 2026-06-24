@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import ChordPlayer from '@/app/components/ChordPlayer'
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type Challenge = { id: string; title: string; description?: string; chords: { progressions: Progression[] } }
@@ -139,28 +140,29 @@ export default function UploadPage() {
             border: '1px solid rgba(240,236,224,0.18)', borderRadius: 18, padding: 18, marginBottom: 20,
             boxShadow: '0 8px 32px rgba(240,236,224,0.06)',
           }}>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', marginBottom: 8, color: '#a0988c' }}>
-              오늘의 챌린지
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', color: '#a0988c' }}>
+                오늘의 챌린지
+              </div>
+              <Link href="/chart" style={{
+                fontSize: 11, fontWeight: 700, color: '#a0988c',
+                background: 'rgba(240,236,224,0.06)',
+                border: '1px solid rgba(240,236,224,0.12)',
+                borderRadius: 8, padding: '4px 10px',
+                textDecoration: 'none',
+              }}>
+                악보 크게 보기 →
+              </Link>
             </div>
-            <div style={{ fontSize: 15, fontWeight: 900, color: '#f0ece0', marginBottom: 14, letterSpacing: '-0.02em' }}>
+            <div style={{ fontSize: 15, fontWeight: 900, color: '#f0ece0', marginBottom: 16, letterSpacing: '-0.02em' }}>
               {challenge.title}
             </div>
-            {challenge.chords?.progressions?.map((prog, i) => (
-              <div key={i} style={{ marginBottom: i < challenge.chords.progressions.length - 1 ? 12 : 0 }}>
-                {challenge.chords.progressions.length > 1 && (
-                  <div style={{ fontSize: 10, color: '#605850', fontWeight: 700, marginBottom: 6, letterSpacing: '0.06em' }}>{prog.label}</div>
-                )}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                  {prog.chords.map((chord, j) => (
-                    <span key={j} style={{
-                      padding: '5px 11px', borderRadius: 8,
-                      background: 'rgba(240,236,224,0.08)', border: '1px solid rgba(240,236,224,0.18)',
-                      fontSize: 13, fontWeight: 800, color: '#f8f4ec',
-                    }}>{chord}</span>
-                  ))}
-                </div>
-              </div>
-            ))}
+            <div style={{ overflowX: 'auto' }}>
+              <ChordPlayer
+                progressions={challenge.chords.progressions}
+                title={challenge.title}
+              />
+            </div>
           </div>
         ) : (
           <div style={{ background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: 20, marginBottom: 20, textAlign: 'center' }}>
