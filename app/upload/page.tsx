@@ -49,15 +49,8 @@ export default function UploadPage() {
     load()
   }, [router])
 
-  // recordMode가 true로 바뀐 뒤 DOM이 커밋되면 video에 stream 연결
-  useEffect(() => {
-    if (recordMode && cameraRef.current && streamRef.current) {
-      cameraRef.current.srcObject = streamRef.current
-      cameraRef.current.play().catch(() => {})
-    }
-  }, [recordMode])
 
-  // 카메라 시작
+  // 카메라 시작 — 오버레이는 항상 DOM에 있으므로 stream을 바로 연결
   const startCamera = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -65,6 +58,10 @@ export default function UploadPage() {
         audio: true,
       })
       streamRef.current = stream
+      if (cameraRef.current) {
+        cameraRef.current.srcObject = stream
+        cameraRef.current.play().catch(() => {})
+      }
       setRecordMode(true)
     } catch {
       setError('카메라 접근 권한이 필요해요. 브라우저 설정에서 허용해주세요.')
@@ -184,11 +181,20 @@ export default function UploadPage() {
     )
   }
 
-  // 카메라 녹화 화면
-  if (recordMode) {
-    const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-    return (
-      <div style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 100, display: 'flex', flexDirection: 'column' }}>
+  const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', background: 'rgba(13,13,12,0.8)',
+    border: '1px solid rgba(240,236,224,0.15)',
+    borderRadius: 12, padding: '13px 16px',
+    fontSize: 14, color: '#f0ece0', outline: 'none', boxSizing: 'border-box',
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)' }}>
+
+      {/* 카메라 오버레이 — 항상 DOM에 마운트, CSS로만 표시/숨김 */}
+      <div style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 100, display: recordMode ? 'flex' : 'none', flexDirection: 'column' }}>
         {/* 코드 오버레이 */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
@@ -247,7 +253,6 @@ export default function UploadPage() {
           padding: '28px 24px 48px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
-          {/* 취소 */}
           <button onClick={stopCamera} style={{
             width: 48, height: 48, borderRadius: '50%',
             background: 'rgba(255,255,255,0.12)',
@@ -255,7 +260,6 @@ export default function UploadPage() {
             color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
           }}>✕</button>
 
-          {/* 녹화 버튼 */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             {recording && (
               <div style={{ fontSize: 13, fontWeight: 800, color: '#ff4444', letterSpacing: '0.05em' }}>
@@ -283,7 +287,6 @@ export default function UploadPage() {
             </div>
           </div>
 
-          {/* 카메라 전환 (앞/뒤) */}
           <button onClick={async () => {
             const currentFacing = (streamRef.current?.getVideoTracks()[0]?.getSettings() as { facingMode?: string })?.facingMode
             const nextFacing = currentFacing === 'environment' ? 'user' : 'environment'
@@ -304,18 +307,7 @@ export default function UploadPage() {
           }}>⟳</button>
         </div>
       </div>
-    )
-  }
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%', background: 'rgba(13,13,12,0.8)',
-    border: '1px solid rgba(240,236,224,0.15)',
-    borderRadius: 12, padding: '13px 16px',
-    fontSize: 14, color: '#f0ece0', outline: 'none', boxSizing: 'border-box',
-  }
-
-  return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)' }}>
       <header style={{
         position: 'sticky', top: 0, zIndex: 50,
         background: 'rgba(8,8,8,0.88)', backdropFilter: 'blur(24px)',
