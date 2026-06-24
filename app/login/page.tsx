@@ -35,17 +35,17 @@ export default function LoginPage() {
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    background: 'rgba(8,12,0,0.8)',
-    border: '1px solid rgba(170,255,0,0.18)',
+    background: 'rgba(13,13,12,0.8)',
+    border: '1px solid rgba(240,236,224,0.18)',
     borderRadius: 12, padding: '14px 18px',
-    fontSize: 15, color: '#e8ffc0',
+    fontSize: 15, color: '#f0ece0',
     outline: 'none', boxSizing: 'border-box',
   }
 
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(160deg, #060900 0%, #040600 60%, #070a00 100%)',
+      background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
     }}>
       {/* Glow orbs */}
@@ -53,12 +53,12 @@ export default function LoginPage() {
         <div style={{
           position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)',
           width: 600, height: 600, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(170,255,0,0.07) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(240,236,224,0.07) 0%, transparent 70%)',
         }} />
         <div style={{
           position: 'absolute', bottom: '-10%', right: '-10%',
           width: 400, height: 400, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(122,204,0,0.05) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(200,196,176,0.05) 0%, transparent 70%)',
         }} />
       </div>
 
@@ -68,10 +68,10 @@ export default function LoginPage() {
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{
             width: 60, height: 60, borderRadius: 18,
-            background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
+            background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             margin: '0 auto 22px',
-            boxShadow: '0 12px 40px rgba(170,255,0,0.45), 0 4px 12px rgba(122,204,0,0.3)',
+            boxShadow: '0 12px 40px rgba(240,236,224,0.45), 0 4px 12px rgba(200,196,176,0.3)',
           }}>
             <svg width="24" height="20" viewBox="0 0 24 20" fill="none">
               <line x1="1" y1="3.5"  x2="23" y2="3.5"  stroke="rgba(4,7,0,0.9)" strokeWidth="2" strokeLinecap="round" />
@@ -79,10 +79,10 @@ export default function LoginPage() {
               <line x1="1" y1="15.5" x2="16" y2="15.5" stroke="rgba(4,7,0,0.9)" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </div>
-          <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 8, color: '#e8ffc0' }}>
+          <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 8, color: '#f0ece0' }}>
             코드 챌린지
           </h1>
-          <p style={{ color: '#506010', fontSize: 14, fontWeight: 500 }}>
+          <p style={{ color: '#605850', fontSize: 14, fontWeight: 500 }}>
             매일 새로운 코드 진행을 연주하고 공유하세요
           </p>
         </div>
@@ -91,8 +91,8 @@ export default function LoginPage() {
         <button onClick={handleGoogle} style={{
           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           padding: '13px', borderRadius: 13,
-          background: 'rgba(8,12,0,0.7)', border: '1px solid rgba(170,255,0,0.18)',
-          color: '#7aaa18', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 16,
+          background: 'rgba(8,12,0,0.7)', border: '1px solid rgba(240,236,224,0.18)',
+          color: '#a0988c', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 16,
         }}>
           <svg width="18" height="18" viewBox="0 0 48 48">
             <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.9z"/>
@@ -104,9 +104,9 @@ export default function LoginPage() {
         </button>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-          <div style={{ flex: 1, height: 1, background: 'rgba(170,255,0,0.1)' }} />
-          <span style={{ color: '#182400', fontSize: 12, fontWeight: 600 }}>또는</span>
-          <div style={{ flex: 1, height: 1, background: 'rgba(170,255,0,0.1)' }} />
+          <div style={{ flex: 1, height: 1, background: 'rgba(240,236,224,0.1)' }} />
+          <span style={{ color: '#1a1a18', fontSize: 12, fontWeight: 600 }}>또는</span>
+          <div style={{ flex: 1, height: 1, background: 'rgba(240,236,224,0.1)' }} />
         </div>
 
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -114,21 +114,21 @@ export default function LoginPage() {
             placeholder="이메일" required style={inputStyle} />
           <input type="password" value={password} onChange={e => setPassword(e.target.value)}
             placeholder="비밀번호" required style={inputStyle} />
-          {error && <p style={{ color: '#aaff00', fontSize: 13, textAlign: 'center' }}>{error}</p>}
+          {error && <p style={{ color: '#f0ece0', fontSize: 13, textAlign: 'center' }}>{error}</p>}
           <button type="submit" disabled={loading} style={{
             width: '100%', padding: '14px', borderRadius: 13, border: 'none', marginTop: 4,
-            background: loading ? 'rgba(170,255,0,0.12)' : 'linear-gradient(135deg, #c8ff40, #7acc00)',
-            color: loading ? '#2e4008' : '#050800',
+            background: loading ? 'rgba(240,236,224,0.12)' : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+            color: loading ? '#303028' : '#0a0a08',
             fontSize: 15, fontWeight: 800, cursor: loading ? 'default' : 'pointer',
-            boxShadow: loading ? 'none' : '0 6px 24px rgba(170,255,0,0.4)',
+            boxShadow: loading ? 'none' : '0 6px 24px rgba(240,236,224,0.4)',
           }}>
             {loading ? '로그인 중...' : '로그인'}
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', color: '#182400', fontSize: 14, marginTop: 28 }}>
+        <p style={{ textAlign: 'center', color: '#1a1a18', fontSize: 14, marginTop: 28 }}>
           계정이 없으신가요?{' '}
-          <Link href="/signup" style={{ fontWeight: 800, color: '#aaff00' }}>
+          <Link href="/signup" style={{ fontWeight: 800, color: '#f0ece0' }}>
             회원가입
           </Link>
         </p>

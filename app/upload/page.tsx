@@ -69,22 +69,22 @@ export default function UploadPage() {
     const isGroup = selectedGroupId !== 'public'
     const groupName = myGroups.find(g => g.id === selectedGroupId)?.name
     return (
-      <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #060900 0%, #040600 60%, #070a00 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 24 }}>
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 24 }}>
         <div>
           <div style={{
             width: 72, height: 72, borderRadius: 22,
-            background: 'rgba(170,255,0,0.12)', border: '1px solid rgba(170,255,0,0.3)',
+            background: 'rgba(240,236,224,0.12)', border: '1px solid rgba(240,236,224,0.3)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            margin: '0 auto 24px', boxShadow: '0 12px 40px rgba(170,255,0,0.15)',
+            margin: '0 auto 24px', boxShadow: '0 12px 40px rgba(240,236,224,0.15)',
           }}>
             <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-              <path d="M5 14l7 7L23 7" stroke="#aaff00" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M5 14l7 7L23 7" stroke="#f0ece0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <h2 style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 10, color: '#e8ffc0' }}>
+          <h2 style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 10, color: '#f0ece0' }}>
             업로드 완료!
           </h2>
-          <p style={{ color: '#506010', fontSize: 14, marginBottom: 36, lineHeight: 1.8 }}>
+          <p style={{ color: '#605850', fontSize: 14, marginBottom: 36, lineHeight: 1.8 }}>
             {isGroup ? `${groupName} 크루에 올라갔어요.` : '연주가 피드에 올라갔어요.'}<br />
             {isGroup ? '크루 피드에서 확인해보세요.' : '다른 분들의 연주도 확인해보세요.'}
           </p>
@@ -92,18 +92,18 @@ export default function UploadPage() {
             {isGroup && (
               <Link href={`/groups/${selectedGroupId}`} style={{
                 padding: '12px 24px', borderRadius: 12,
-                background: 'linear-gradient(135deg, #c8ff40, #7acc00)',
-                color: '#050800', fontSize: 14, fontWeight: 700,
-                boxShadow: '0 6px 20px rgba(170,255,0,0.35)',
+                background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                color: '#0a0a08', fontSize: 14, fontWeight: 700,
+                boxShadow: '0 6px 20px rgba(240,236,224,0.35)',
               }}>크루 피드 보기</Link>
             )}
             <Link href="/" style={{
               padding: '12px 24px', borderRadius: 12,
-              background: isGroup ? 'rgba(170,255,0,0.08)' : 'linear-gradient(135deg, #c8ff40, #7acc00)',
-              border: isGroup ? '1px solid rgba(170,255,0,0.2)' : 'none',
-              color: isGroup ? '#7aaa18' : '#050800',
+              background: isGroup ? 'rgba(240,236,224,0.08)' : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+              border: isGroup ? '1px solid rgba(240,236,224,0.2)' : 'none',
+              color: isGroup ? '#a0988c' : '#0a0a08',
               fontSize: 14, fontWeight: 700,
-              boxShadow: isGroup ? 'none' : '0 6px 20px rgba(170,255,0,0.35)',
+              boxShadow: isGroup ? 'none' : '0 6px 20px rgba(240,236,224,0.35)',
             }}>피드 보러가기</Link>
           </div>
         </div>
@@ -112,50 +112,50 @@ export default function UploadPage() {
   }
 
   const inputStyle: React.CSSProperties = {
-    width: '100%', background: 'rgba(8,12,0,0.8)',
-    border: '1px solid rgba(170,255,0,0.15)',
+    width: '100%', background: 'rgba(13,13,12,0.8)',
+    border: '1px solid rgba(240,236,224,0.15)',
     borderRadius: 12, padding: '13px 16px',
-    fontSize: 14, color: '#e8ffc0', outline: 'none', boxSizing: 'border-box',
+    fontSize: 14, color: '#f0ece0', outline: 'none', boxSizing: 'border-box',
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #060900 0%, #040600 60%, #070a00 100%)' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)' }}>
       <header style={{
         position: 'sticky', top: 0, zIndex: 50,
-        background: 'rgba(4,7,0,0.88)', backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(170,255,0,0.12)',
+        background: 'rgba(8,8,8,0.88)', backdropFilter: 'blur(24px)',
+        borderBottom: '1px solid rgba(240,236,224,0.12)',
         padding: '0 20px', height: 54,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/" style={{ color: '#506010', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
-        <span style={{ fontWeight: 800, fontSize: 15, color: '#e8ffc0', letterSpacing: '-0.01em' }}>연주 업로드</span>
+        <Link href="/" style={{ color: '#605850', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
+        <span style={{ fontWeight: 800, fontSize: 15, color: '#f0ece0', letterSpacing: '-0.01em' }}>연주 업로드</span>
         <div style={{ width: 48 }} />
       </header>
 
       <main style={{ maxWidth: 480, margin: '0 auto', padding: '28px 16px 100px' }}>
         {challenge ? (
           <div style={{
-            background: 'linear-gradient(145deg, #0c1000, #080c00)',
-            border: '1px solid rgba(170,255,0,0.18)', borderRadius: 18, padding: 18, marginBottom: 20,
-            boxShadow: '0 8px 32px rgba(170,255,0,0.06)',
+            background: 'linear-gradient(145deg, #111110, #0d0d0c)',
+            border: '1px solid rgba(240,236,224,0.18)', borderRadius: 18, padding: 18, marginBottom: 20,
+            boxShadow: '0 8px 32px rgba(240,236,224,0.06)',
           }}>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', marginBottom: 8, color: '#7aaa18' }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', marginBottom: 8, color: '#a0988c' }}>
               오늘의 챌린지
             </div>
-            <div style={{ fontSize: 15, fontWeight: 900, color: '#e8ffc0', marginBottom: 14, letterSpacing: '-0.02em' }}>
+            <div style={{ fontSize: 15, fontWeight: 900, color: '#f0ece0', marginBottom: 14, letterSpacing: '-0.02em' }}>
               {challenge.title}
             </div>
             {challenge.chords?.progressions?.map((prog, i) => (
               <div key={i} style={{ marginBottom: i < challenge.chords.progressions.length - 1 ? 12 : 0 }}>
                 {challenge.chords.progressions.length > 1 && (
-                  <div style={{ fontSize: 10, color: '#506010', fontWeight: 700, marginBottom: 6, letterSpacing: '0.06em' }}>{prog.label}</div>
+                  <div style={{ fontSize: 10, color: '#605850', fontWeight: 700, marginBottom: 6, letterSpacing: '0.06em' }}>{prog.label}</div>
                 )}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
                   {prog.chords.map((chord, j) => (
                     <span key={j} style={{
                       padding: '5px 11px', borderRadius: 8,
-                      background: 'rgba(170,255,0,0.08)', border: '1px solid rgba(170,255,0,0.18)',
-                      fontSize: 13, fontWeight: 800, color: '#c8ff40',
+                      background: 'rgba(240,236,224,0.08)', border: '1px solid rgba(240,236,224,0.18)',
+                      fontSize: 13, fontWeight: 800, color: '#f8f4ec',
                     }}>{chord}</span>
                   ))}
                 </div>
@@ -163,8 +163,8 @@ export default function UploadPage() {
             ))}
           </div>
         ) : (
-          <div style={{ background: 'linear-gradient(145deg, #0c1000, #080c00)', border: '1px solid rgba(170,255,0,0.08)', borderRadius: 18, padding: 20, marginBottom: 20, textAlign: 'center' }}>
-            <p style={{ color: '#2e4008', fontSize: 14 }}>오늘의 챌린지가 아직 없어요.</p>
+          <div style={{ background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: 20, marginBottom: 20, textAlign: 'center' }}>
+            <p style={{ color: '#303028', fontSize: 14 }}>오늘의 챌린지가 아직 없어요.</p>
           </div>
         )}
 
@@ -172,40 +172,40 @@ export default function UploadPage() {
           <input ref={fileRef} type="file" accept="video/*" onChange={handleFileSelect} style={{ display: 'none' }} />
 
           {preview ? (
-            <div style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(170,255,0,0.12)' }}>
+            <div style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(240,236,224,0.12)' }}>
               <video src={preview} controls playsInline
                 style={{ width: '100%', display: 'block', background: '#000', maxHeight: 360, objectFit: 'contain' }} />
               <button type="button" onClick={() => fileRef.current?.click()} style={{
                 width: '100%', padding: '11px', background: 'rgba(8,12,0,0.9)', border: 'none',
-                borderTop: '1px solid rgba(170,255,0,0.08)',
-                color: '#506010', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                borderTop: '1px solid rgba(240,236,224,0.08)',
+                color: '#605850', fontSize: 13, fontWeight: 700, cursor: 'pointer',
               }}>영상 바꾸기</button>
             </div>
           ) : (
             <button type="button" onClick={() => fileRef.current?.click()} style={{
               width: '100%', padding: '48px 20px', borderRadius: 18,
-              border: '1px dashed rgba(170,255,0,0.25)', background: 'rgba(170,255,0,0.03)',
-              color: '#506010', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+              border: '1px dashed rgba(240,236,224,0.25)', background: 'rgba(240,236,224,0.03)',
+              color: '#605850', fontSize: 14, fontWeight: 700, cursor: 'pointer',
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
             }}>
               <div style={{
                 width: 52, height: 52, borderRadius: 16,
-                background: 'rgba(170,255,0,0.08)', border: '1px solid rgba(170,255,0,0.18)',
+                background: 'rgba(240,236,224,0.08)', border: '1px solid rgba(240,236,224,0.18)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                  <path d="M11 16V8M11 8L7 12M11 8L15 12" stroke="#7acc00" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M4 19h14" stroke="#7acc00" strokeWidth="1.8" strokeLinecap="round"/>
+                  <path d="M11 16V8M11 8L7 12M11 8L15 12" stroke="#c8c4b0" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M4 19h14" stroke="#c8c4b0" strokeWidth="1.8" strokeLinecap="round"/>
                 </svg>
               </div>
               영상 선택하기
-              <span style={{ fontSize: 12, color: '#182400', fontWeight: 500 }}>MP4, MOV 등 · 최대 100MB</span>
+              <span style={{ fontSize: 12, color: '#1a1a18', fontWeight: 500 }}>MP4, MOV 등 · 최대 100MB</span>
             </button>
           )}
 
           {myGroups.length > 0 && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 10, color: '#7aaa18' }}>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 10, color: '#a0988c' }}>
                 어디에 올릴까요?
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
@@ -214,17 +214,17 @@ export default function UploadPage() {
                     <input type="radio" name="target" value={g.id}
                       checked={selectedGroupId === g.id}
                       onChange={() => setSelectedGroupId(g.id)}
-                      style={{ accentColor: '#aaff00' }} />
+                      style={{ accentColor: '#f0ece0' }} />
                     <div style={{
                       flex: 1, padding: '10px 14px', borderRadius: 11,
-                      background: selectedGroupId === g.id ? 'rgba(170,255,0,0.08)' : 'rgba(8,12,0,0.6)',
-                      border: selectedGroupId === g.id ? '1px solid rgba(170,255,0,0.3)' : '1px solid rgba(170,255,0,0.06)',
+                      background: selectedGroupId === g.id ? 'rgba(240,236,224,0.08)' : 'rgba(8,12,0,0.6)',
+                      border: selectedGroupId === g.id ? '1px solid rgba(240,236,224,0.3)' : '1px solid rgba(240,236,224,0.06)',
                     }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: selectedGroupId === g.id ? '#c8ff40' : '#2e4008' }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: selectedGroupId === g.id ? '#f8f4ec' : '#303028' }}>
                         {g.name}
                       </span>
                       {g.id !== 'public' && (
-                        <span style={{ fontSize: 11, color: '#182400', marginLeft: 8 }}>크루만 볼 수 있어요</span>
+                        <span style={{ fontSize: 11, color: '#1a1a18', marginLeft: 8 }}>크루만 볼 수 있어요</span>
                       )}
                     </div>
                   </label>
@@ -237,17 +237,17 @@ export default function UploadPage() {
             placeholder="한마디 남겨주세요 (선택)" rows={2}
             style={{ ...inputStyle, resize: 'none' }} />
 
-          {error && <p style={{ color: '#aaff00', fontSize: 13, textAlign: 'center' }}>{error}</p>}
+          {error && <p style={{ color: '#f0ece0', fontSize: 13, textAlign: 'center' }}>{error}</p>}
 
           <button type="submit" disabled={uploading || !file || !challenge} style={{
             width: '100%', padding: '15px', borderRadius: 13, border: 'none',
             background: uploading || !file || !challenge
-              ? 'rgba(170,255,0,0.08)'
-              : 'linear-gradient(135deg, #c8ff40, #7acc00)',
-            color: uploading || !file || !challenge ? '#2e4008' : '#050800',
+              ? 'rgba(240,236,224,0.08)'
+              : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+            color: uploading || !file || !challenge ? '#303028' : '#0a0a08',
             fontSize: 15, fontWeight: 800,
             cursor: uploading || !file || !challenge ? 'default' : 'pointer',
-            boxShadow: uploading || !file || !challenge ? 'none' : '0 6px 24px rgba(170,255,0,0.4)',
+            boxShadow: uploading || !file || !challenge ? 'none' : '0 6px 24px rgba(240,236,224,0.4)',
           }}>
             {uploading ? '업로드 중...' : '연주 올리기'}
           </button>
