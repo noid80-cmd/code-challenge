@@ -93,12 +93,18 @@ export default function MyVideosPage() {
   const [streak, setStreak] = useState(0)
   const [totalLikes, setTotalLikes] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState<{ name: string; avatar_url: string | null } | null>(null)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
     async function load() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { window.location.href = '/login'; return }
+      setUserId(user.id)
+      const { data: prof } = await supabase.from('profiles').select('name, avatar_url').eq('id', user.id).single()
+      setProfile(prof)
       const { data } = await supabase
         .from('submissions').select('*, challenges(title, date)')
         .eq('user_id', user.id).order('created_at', { ascending: false })
@@ -112,6 +118,23 @@ export default function MyVideosPage() {
     }
     load()
   }, [])
+
+  async function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !userId) return
+    setAvatarUploading(true)
+    const supabase = createClient()
+    const ext = file.name.split('.').pop() || 'jpg'
+    const path = `${userId}/avatar.${ext}`
+    const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type })
+    if (!uploadError) {
+      const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
+      const url = `${publicUrl}?t=${Date.now()}`
+      await supabase.from('profiles').update({ avatar_url: url }).eq('id', userId)
+      setProfile(p => p ? { ...p, avatar_url: url } : p)
+    }
+    setAvatarUploading(false)
+  }
 
   const byMonth: Record<string, Submission[]> = {}
   submissions.forEach(s => {
@@ -139,6 +162,40 @@ export default function MyVideosPage() {
       <main style={{ maxWidth: 480, margin: '0 auto', padding: '28px 16px 100px' }}>
         {!loading && (
           <>
+            {/* 프로필 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
+              <label style={{ position: 'relative', cursor: 'pointer', flexShrink: 0 }}>
+                <input type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
+                <div style={{
+                  width: 64, height: 64, borderRadius: '50%', overflow: 'hidden',
+                  background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 24, fontWeight: 800, color: '#0a0a08',
+                  boxShadow: '0 4px 16px rgba(240,236,224,0.25)',
+                  opacity: avatarUploading ? 0.5 : 1,
+                }}>
+                  {profile?.avatar_url
+                    ? <img src={profile.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                    : (profile?.name ?? '?').slice(0, 1).toUpperCase()}
+                </div>
+                <div style={{
+                  position: 'absolute', bottom: 0, right: 0,
+                  width: 22, height: 22, borderRadius: '50%',
+                  background: '#f0ece0', border: '2px solid #0a0a08',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11,
+                }}>
+                  {avatarUploading ? '…' : '✎'}
+                </div>
+              </label>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em' }}>
+                  {profile?.name ?? ''}
+                </div>
+                <div style={{ fontSize: 12, color: '#484640', marginTop: 3 }}>사진을 탭하면 변경할 수 있어요</div>
+              </div>
+            </div>
+
             {/* Stats */}
             <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
               <div style={{
