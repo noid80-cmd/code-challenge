@@ -79,7 +79,7 @@ export default function IntroPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {[
             { icon: '🎹', title: 'AI 코드 챌린지', desc: '매일 낮 12시, 새로운 코드 진행이 올라와요' },
-            { icon: '🎬', title: '연주 영상 공유', desc: '나의 연주를 올리고 다른 사람과 비교해요' },
+            { icon: '🎬', title: '연주 영상 공유', desc: '서로의 연주를 보며 같이 배워가요' },
             { icon: '🔥', title: '연속 참여 기록', desc: '매일 참여해서 스트릭을 이어가세요' },
           ].map((item, i) => (
             <div key={i} style={{
