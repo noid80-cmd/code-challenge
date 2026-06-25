@@ -372,7 +372,8 @@ export default function HomePage() {
 
         {/* Submissions */}
         <section>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          {/* 오늘의 연주 헤더 */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 15, fontWeight: 800, color: '#e0dcd0', letterSpacing: '-0.01em' }}>
                 오늘의 연주
@@ -387,9 +388,30 @@ export default function HomePage() {
                 </span>
               )}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <Link href="/ranking" style={{ fontSize: 12, color: '#303028', fontWeight: 700 }}>주간랭킹</Link>
-              <span style={{ color: '#1a1a18', fontSize: 11 }}>·</span>
+            <Link href="/ranking" style={{ fontSize: 12, color: '#303028', fontWeight: 700 }}>주간랭킹</Link>
+          </div>
+
+          {/* 필터 + 정렬 한 줄 */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            {/* 진행 탭 — 2개 이상일 때만 */}
+            <div style={{ display: 'flex', gap: 6 }}>
+              {(challenge?.chords?.progressions?.length ?? 0) > 1 && (
+                [{ key: 'all' as const, label: '전체' }, ...(challenge?.chords?.progressions ?? []).map((_, i) => ({ key: i as number, label: `진행 ${i + 1}` }))].map(tab => (
+                  <button key={String(tab.key)} onClick={() => setFilterProg(tab.key)} style={{
+                    padding: '5px 12px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                    background: filterProg === tab.key ? 'rgba(240,236,224,0.15)' : 'transparent',
+                    color: filterProg === tab.key ? '#f0ece0' : '#403830',
+                    fontSize: 12, fontWeight: 700,
+                    outline: filterProg === tab.key ? '1px solid rgba(240,236,224,0.25)' : '1px solid transparent',
+                    transition: 'all 0.15s',
+                  }}>
+                    {tab.label}
+                  </button>
+                ))
+              )}
+            </div>
+            {/* 정렬 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <button onClick={() => setSortBy('newest')} style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                 fontSize: 12, fontWeight: 700,
@@ -403,24 +425,6 @@ export default function HomePage() {
               }}>인기</button>
             </div>
           </div>
-
-          {/* 진행 필터 — 진행이 2개 이상일 때만 표시 */}
-          {(challenge?.chords?.progressions?.length ?? 0) > 1 && (
-            <div style={{ display: 'flex', gap: 7, marginBottom: 16 }}>
-              {[{ key: 'all' as const, label: '전체' }, ...(challenge?.chords?.progressions ?? []).map((p, i) => ({ key: i as number, label: p.label || `진행 ${i + 1}` }))].map(tab => (
-                <button key={String(tab.key)} onClick={() => setFilterProg(tab.key)} style={{
-                  padding: '6px 13px', borderRadius: 20, border: 'none', cursor: 'pointer',
-                  background: filterProg === tab.key ? 'rgba(240,236,224,0.15)' : 'transparent',
-                  color: filterProg === tab.key ? '#f0ece0' : '#403830',
-                  fontSize: 12, fontWeight: 700,
-                  outline: filterProg === tab.key ? '1px solid rgba(240,236,224,0.25)' : '1px solid transparent',
-                  transition: 'all 0.15s',
-                }}>
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          )}
 
           {submissions.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
