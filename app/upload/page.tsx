@@ -24,7 +24,6 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
-  const [thumbDebugMsg, setThumbDebugMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   // 카메라 녹화 상태
@@ -204,18 +203,11 @@ export default function UploadPage() {
     if (uploadError) { setError('업로드 실패: ' + uploadError.message); setUploading(false); return }
     const thumbBlob = await generateThumbnail(file)
     let thumbnailUrl: string | null = null
-    let thumbDebug = '생성실패'
     if (thumbBlob) {
-      thumbDebug = `생성OK(${thumbBlob.size}b)`
       const thumbPath = `${user.id}/thumb_${ts}.jpg`
       const { error: thumbErr } = await supabase.storage.from('avatars').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg', upsert: true })
-      if (!thumbErr) {
-        thumbnailUrl = supabase.storage.from('avatars').getPublicUrl(thumbPath).data.publicUrl
-        thumbDebug = '저장OK'
-      }
-      else thumbDebug = `저장실패:${thumbErr.message}`
+      if (!thumbErr) thumbnailUrl = supabase.storage.from('avatars').getPublicUrl(thumbPath).data.publicUrl
     }
-    setThumbDebugMsg(thumbDebug)
     const { error: dbError } = await supabase.from('submissions').insert({
       challenge_id: challenge.id, user_id: user.id, video_url: path,
       caption: caption.trim() || null,
@@ -246,7 +238,6 @@ export default function UploadPage() {
             </svg>
           </div>
           <h2 style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 10, color: '#f0ece0' }}>업로드 완료!</h2>
-          {thumbDebugMsg && <p style={{ fontSize: 11, color: '#605850', marginBottom: 8 }}>[썸네일] {thumbDebugMsg}</p>}
           <p style={{ color: '#605850', fontSize: 14, marginBottom: 36, lineHeight: 1.8 }}>
             {isGroup ? `${groupName} 그룹에 올라갔어요.` : '연주가 피드에 올라갔어요.'}<br />
             {isGroup ? '그룹 피드에서 확인해보세요.' : '다른 분들의 연주도 확인해보세요.'}
@@ -419,7 +410,7 @@ export default function UploadPage() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <Link href="/" style={{ color: '#605850', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
-        <span style={{ fontWeight: 800, fontSize: 15, color: '#f0ece0', letterSpacing: '-0.01em' }}>연주 업로드 v4</span>
+        <span style={{ fontWeight: 800, fontSize: 15, color: '#f0ece0', letterSpacing: '-0.01em' }}>연주 업로드</span>
         <div style={{ width: 48 }} />
       </header>
 
