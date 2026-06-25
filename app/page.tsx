@@ -322,7 +322,7 @@ export default function HomePage() {
               borderRadius: 22, padding: '48px 20px', textAlign: 'center',
             }}>
               <p style={{ color: '#605850', fontSize: 15, fontWeight: 700, marginBottom: 5 }}>오늘의 챌린지를 준비 중이에요</p>
-              <p style={{ color: '#303028', fontSize: 13 }}>매일 새로운 코드 진행이 올라와요</p>
+              <p style={{ color: '#303028', fontSize: 13 }}>매일 낮 12시에 새로운 코드 진행이 올라와요</p>
               {isAdmin && (
                 <Link href="/admin" style={{
                   display: 'inline-block', marginTop: 22, padding: '9px 20px', borderRadius: 10,
