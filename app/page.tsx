@@ -160,6 +160,11 @@ export default function HomePage() {
               color: '#a0988c', fontSize: 12, fontWeight: 700,
             }}>관리</Link>
           )}
+          <Link href="/challenges" style={{
+            padding: '6px 11px', borderRadius: 8,
+            background: 'rgba(240,236,224,0.06)', border: '1px solid rgba(240,236,224,0.12)',
+            color: '#a0988c', fontSize: 12, fontWeight: 700,
+          }}>지난 챌린지</Link>
           {user ? (
             <>
               <Link href="/groups" style={{
