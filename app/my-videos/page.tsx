@@ -156,7 +156,13 @@ export default function MyVideosPage() {
       }}>
         <Link href="/" style={{ color: '#605850', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
         <span style={{ fontWeight: 800, fontSize: 16, color: '#f0ece0', letterSpacing: '-0.02em' }}>내 성장 기록</span>
-        <div style={{ width: 48 }} />
+        <button onClick={async () => {
+          const supabase = createClient()
+          await supabase.auth.signOut()
+          window.location.href = '/'
+        }} style={{ background: 'none', border: 'none', color: '#403830', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+          로그아웃
+        </button>
       </header>
 
       <main style={{ maxWidth: 480, margin: '0 auto', padding: '28px 16px 100px' }}>

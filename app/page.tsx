@@ -224,15 +224,10 @@ export default function HomePage() {
               color: '#a0988c', fontSize: 12, fontWeight: 700,
             }}>관리</Link>
           )}
-          <Link href="/challenges" style={{
-            padding: '6px 11px', borderRadius: 8,
-            background: 'rgba(240,236,224,0.06)', border: '1px solid rgba(240,236,224,0.12)',
-            color: '#a0988c', fontSize: 12, fontWeight: 700,
-          }}>지난 챌린지</Link>
           {user ? (
             <>
               <Link href="/groups" style={{
-                padding: '6px 13px', borderRadius: 8,
+                padding: '6px 12px', borderRadius: 8,
                 background: 'rgba(240,236,224,0.1)', border: '1px solid rgba(240,236,224,0.2)',
                 color: '#f8f4ec', fontSize: 13, fontWeight: 700,
               }}>크루</Link>
@@ -256,10 +251,6 @@ export default function HomePage() {
                     : (profile?.name ?? user.email ?? '?').slice(0, 1).toUpperCase()}
                 </div>
               </Link>
-              <button onClick={handleLogout} style={{
-                background: 'none', border: 'none',
-                color: '#1a1a18', fontSize: 11, cursor: 'pointer', padding: '4px 2px',
-              }}>로그아웃</button>
             </>
           ) : (
             <Link href="/login" style={{
@@ -341,6 +332,14 @@ export default function HomePage() {
             </div>
           )}
         </section>
+
+        {/* 지난 챌린지 */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -28, marginBottom: 28 }}>
+          <Link href="/challenges" style={{
+            fontSize: 12, fontWeight: 700, color: '#403830',
+            display: 'flex', alignItems: 'center', gap: 4,
+          }}>지난 챌린지 보기 →</Link>
+        </div>
 
         {/* 푸시 알림 배너 */}
         {user && <PushBanner user={user} />}
