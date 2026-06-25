@@ -212,6 +212,8 @@ export default function UploadPage() {
             const prog = progressions[selectedProgression]
             if (!prog) return null
             const measures = normalizeMeasures(prog.chords)
+            const rows: string[][][] = []
+            for (let i = 0; i < measures.length; i += 4) rows.push(measures.slice(i, i + 4))
             return (
               <div>
                 {progressions.length > 1 && (
@@ -219,21 +221,25 @@ export default function UploadPage() {
                     {prog.label}
                   </div>
                 )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                  {measures.map((measure, mi) => (
-                    <div key={mi} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      {mi > 0 && (
-                        <div style={{ width: 1.5, height: 28, background: 'rgba(240,236,224,0.35)', margin: '0 3px', borderRadius: 1 }} />
-                      )}
-                      {measure.map((chord, ci) => (
-                        <span key={ci} style={{
-                          padding: '5px 10px', borderRadius: 7,
-                          background: 'rgba(240,236,224,0.13)',
-                          border: '1px solid rgba(240,236,224,0.28)',
-                          backdropFilter: 'blur(8px)',
-                          fontSize: 14, fontWeight: 900, color: '#f8f4ec',
-                          letterSpacing: '-0.01em',
-                        }}>{chord}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {rows.map((row, ri) => (
+                    <div key={ri} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {row.map((measure, mi) => (
+                        <div key={mi} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          {mi > 0 && (
+                            <div style={{ width: 1.5, height: 28, background: 'rgba(240,236,224,0.35)', margin: '0 3px', borderRadius: 1 }} />
+                          )}
+                          {measure.map((chord, ci) => (
+                            <span key={ci} style={{
+                              padding: '5px 10px', borderRadius: 7,
+                              background: 'rgba(240,236,224,0.13)',
+                              border: '1px solid rgba(240,236,224,0.28)',
+                              backdropFilter: 'blur(8px)',
+                              fontSize: 14, fontWeight: 900, color: '#f8f4ec',
+                              letterSpacing: '-0.01em',
+                            }}>{chord}</span>
+                          ))}
+                        </div>
                       ))}
                     </div>
                   ))}

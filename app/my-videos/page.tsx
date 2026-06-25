@@ -127,7 +127,9 @@ export default function MyVideosPage() {
     const ext = file.name.split('.').pop() || 'jpg'
     const path = `${userId}/avatar.${ext}`
     const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type })
-    if (!uploadError) {
+    if (uploadError) {
+      alert('사진 업로드 실패: ' + uploadError.message)
+    } else {
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path)
       const url = `${publicUrl}?t=${Date.now()}`
       await supabase.from('profiles').update({ avatar_url: url }).eq('id', userId)
