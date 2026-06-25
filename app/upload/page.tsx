@@ -123,6 +123,29 @@ export default function UploadPage() {
     setFile(f); setError('')
   }
 
+  async function generateThumbnail(f: File): Promise<Blob | null> {
+    return new Promise((resolve) => {
+      const video = document.createElement('video')
+      const url = URL.createObjectURL(f)
+      video.src = url; video.muted = true; video.playsInline = true
+      video.onloadedmetadata = () => { video.currentTime = 0.5 }
+      video.onseeked = () => {
+        try {
+          const canvas = document.createElement('canvas')
+          const max = 720
+          const ratio = Math.min(max / (video.videoWidth || max), max / (video.videoHeight || max))
+          canvas.width = Math.round((video.videoWidth || max) * ratio)
+          canvas.height = Math.round((video.videoHeight || max) * ratio)
+          canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height)
+          URL.revokeObjectURL(url)
+          canvas.toBlob(b => resolve(b), 'image/jpeg', 0.75)
+        } catch { URL.revokeObjectURL(url); resolve(null) }
+      }
+      video.onerror = () => { URL.revokeObjectURL(url); resolve(null) }
+      video.load()
+    })
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!file) { setError('영상을 선택해주세요.'); return }
@@ -131,16 +154,25 @@ export default function UploadPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login'); return }
+    const ts = Date.now()
     const ext = file.name.split('.').pop() || 'webm'
-    const path = `${user.id}/${Date.now()}.${ext}`
+    const path = `${user.id}/${ts}.${ext}`
     const { error: uploadError } = await supabase.storage.from('videos').upload(path, file, { contentType: file.type, upsert: false })
     if (uploadError) { setError('업로드 실패: ' + uploadError.message); setUploading(false); return }
+    const thumbBlob = await generateThumbnail(file)
+    let thumbnailUrl: string | null = null
+    if (thumbBlob) {
+      const thumbPath = `thumbs/${user.id}/${ts}.jpg`
+      const { error: thumbErr } = await supabase.storage.from('videos').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg', upsert: false })
+      if (!thumbErr) thumbnailUrl = thumbPath
+    }
     const { error: dbError } = await supabase.from('submissions').insert({
       challenge_id: challenge.id, user_id: user.id, video_url: path,
       caption: caption.trim() || null,
       group_id: selectedGroupId === 'public' ? null : selectedGroupId,
       progression_index: selectedProgression,
       is_private: false,
+      thumbnail_url: thumbnailUrl,
     })
     if (dbError) { setError('저장 실패: ' + dbError.message); setUploading(false); return }
     setUploading(false); setDone(true)

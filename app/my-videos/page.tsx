@@ -7,6 +7,7 @@ import Link from 'next/link'
 type Submission = {
   id: string; video_url: string; caption: string | null
   likes_count: number; created_at: string; is_private: boolean
+  thumbnail_url: string | null
   challenges: { title: string; date: string } | null
 }
 
@@ -313,6 +314,11 @@ function VideoCard({ sub, onDelete, onTogglePrivacy }: {
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
+  const posterUrl = sub.thumbnail_url
+    ? sub.thumbnail_url.startsWith('http')
+      ? sub.thumbnail_url
+      : supabase.storage.from('videos').getPublicUrl(sub.thumbnail_url).data.publicUrl
+    : undefined
   const date = new Date(sub.created_at)
 
   async function handleDelete() {
@@ -341,7 +347,7 @@ function VideoCard({ sub, onDelete, onTogglePrivacy }: {
       opacity: deleting ? 0.5 : 1, transition: 'opacity 0.2s',
     }}>
       <div style={{ width: 120, flexShrink: 0, background: '#000', position: 'relative' }}>
-        <video src={videoUrl} preload="metadata"
+        <video src={videoUrl} poster={posterUrl} preload="metadata"
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', minHeight: 80 }} />
         {sub.is_private && (
           <div style={{

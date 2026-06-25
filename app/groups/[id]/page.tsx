@@ -9,7 +9,7 @@ type Group = { id: string; name: string; description: string | null; invite_code
 type Submission = {
   id: string; video_url: string; caption: string | null
   likes_count: number; created_at: string; user_id: string; is_private: boolean
-  challenge_id: string | null
+  challenge_id: string | null; thumbnail_url: string | null
   profiles: { name: string; avatar_url: string | null } | null
   challenges: { title: string; date: string } | null
 }
@@ -97,7 +97,7 @@ export default function GroupPage() {
 
     const { data: subs, error: subsErr } = await supabase
       .from('submissions')
-      .select('id, video_url, caption, likes_count, created_at, user_id, is_private, challenge_id')
+      .select('id, video_url, caption, likes_count, created_at, user_id, is_private, challenge_id, thumbnail_url')
       .eq('group_id', groupId).order('created_at', { ascending: false })
     if (subsErr) { setFeedError('오류: ' + subsErr.message); setLoading(false); return }
     const subList = ((subs ?? []) as Submission[]).filter(s => !s.is_private || s.user_id === user.id)
@@ -299,6 +299,18 @@ export default function GroupPage() {
     setCopied(true); setTimeout(() => setCopied(false), 2000)
   }
 
+  async function deleteGroup() {
+    if (!group) return
+    if (!confirm(`"${group.name}" 그룹을 삭제할까요? 모든 영상과 채팅이 삭제됩니다.`)) return
+    const supabase = createClient()
+    await supabase.from('group_messages').delete().eq('group_id', groupId)
+    await supabase.from('group_announcements').delete().eq('group_id', groupId)
+    await supabase.from('group_members').delete().eq('group_id', groupId)
+    await supabase.from('submissions').update({ group_id: null }).eq('group_id', groupId)
+    await supabase.from('groups').delete().eq('id', groupId)
+    window.location.href = '/groups'
+  }
+
   const isOwner = group?.owner_id === userId
 
   if (loading) return (
@@ -343,6 +355,12 @@ export default function GroupPage() {
           <div>
             {group?.description && <div style={{ fontSize: 13, color: '#a0988c', marginBottom: 4 }}>{group.description}</div>}
             <div style={{ fontSize: 12, color: '#303028', fontWeight: 600 }}>멤버 {memberCount}명</div>
+            {isOwner && (
+              <button onClick={deleteGroup} style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#484640', fontSize: 11, fontWeight: 600, padding: 0, marginTop: 6,
+              }}>그룹 삭제</button>
+            )}
           </div>
           <Link href={`/upload?group=${groupId}`} style={{
             padding: '8px 16px', borderRadius: 10,
@@ -572,6 +590,11 @@ function SubmissionCard({
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
+  const posterUrl = sub.thumbnail_url
+    ? sub.thumbnail_url.startsWith('http')
+      ? sub.thumbnail_url
+      : supabase.storage.from('videos').getPublicUrl(sub.thumbnail_url).data.publicUrl
+    : undefined
 
   const topComments = comments.filter(c => c.parent_id === null)
   const getReplies = (id: string) => comments.filter(c => c.parent_id === id)
@@ -601,7 +624,7 @@ function SubmissionCard({
       border: '1px solid rgba(240,236,224,0.1)', borderRadius: 20, overflow: 'hidden',
       boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
     }}>
-      <video src={videoUrl} controls playsInline preload="metadata"
+      <video src={videoUrl} poster={posterUrl} controls playsInline preload="metadata"
         style={{ width: '100%', display: 'block', background: '#000', maxHeight: 440, objectFit: 'contain' }} />
 
       <div style={{ padding: '14px 16px' }}>

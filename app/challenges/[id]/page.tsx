@@ -13,7 +13,7 @@ type Challenge = { id: string; date: string; title: string; description?: string
 type Submission = {
   id: string; video_url: string; caption?: string
   likes_count: number; created_at: string; user_liked?: boolean
-  progression_index?: number
+  progression_index?: number; thumbnail_url?: string | null
   profiles: { name: string; avatar_url?: string } | null
 }
 
@@ -202,6 +202,11 @@ function SubmissionCard({ sub, onLike, progressions }: { sub: Submission; onLike
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
+  const posterUrl = sub.thumbnail_url
+    ? sub.thumbnail_url.startsWith('http')
+      ? sub.thumbnail_url
+      : supabase.storage.from('videos').getPublicUrl(sub.thumbnail_url).data.publicUrl
+    : undefined
   const initials = (sub.profiles?.name ?? '?').slice(0, 1).toUpperCase()
 
   return (
@@ -222,7 +227,7 @@ function SubmissionCard({ sub, onLike, progressions }: { sub: Submission; onLike
           </span>
         </div>
       )}
-      <video src={videoUrl} controls playsInline preload="metadata"
+      <video src={videoUrl} poster={posterUrl} controls playsInline preload="metadata"
         style={{ width: '100%', display: 'block', background: '#000', maxHeight: 460, objectFit: 'contain' }} />
 
       <div style={{ padding: '14px 16px 16px' }}>
