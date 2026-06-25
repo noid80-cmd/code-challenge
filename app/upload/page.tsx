@@ -24,6 +24,7 @@ export default function UploadPage() {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
+  const [thumbDebugMsg, setThumbDebugMsg] = useState('')
   const fileRef = useRef<HTMLInputElement>(null)
 
   // 카메라 녹화 상태
@@ -211,7 +212,7 @@ export default function UploadPage() {
       if (!thumbErr) { thumbnailUrl = thumbPath; thumbDebug = '저장OK' }
       else thumbDebug = `저장실패:${thumbErr.message}`
     }
-    setError(`[썸네일] ${thumbDebug}`)
+    setThumbDebugMsg(thumbDebug)
     const { error: dbError } = await supabase.from('submissions').insert({
       challenge_id: challenge.id, user_id: user.id, video_url: path,
       caption: caption.trim() || null,
@@ -242,6 +243,7 @@ export default function UploadPage() {
             </svg>
           </div>
           <h2 style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 10, color: '#f0ece0' }}>업로드 완료!</h2>
+          {thumbDebugMsg && <p style={{ fontSize: 11, color: '#605850', marginBottom: 8 }}>[썸네일] {thumbDebugMsg}</p>}
           <p style={{ color: '#605850', fontSize: 14, marginBottom: 36, lineHeight: 1.8 }}>
             {isGroup ? `${groupName} 그룹에 올라갔어요.` : '연주가 피드에 올라갔어요.'}<br />
             {isGroup ? '그룹 피드에서 확인해보세요.' : '다른 분들의 연주도 확인해보세요.'}
