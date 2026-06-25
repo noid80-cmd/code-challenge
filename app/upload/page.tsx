@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ChordPlayer from '@/app/components/ChordPlayer'
 import { normalizeMeasures } from '@/lib/chords'
@@ -14,7 +14,6 @@ type Group = { id: string; name: string }
 
 export default function UploadPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [myGroups, setMyGroups] = useState<Group[]>([])
   const [selectedGroupId, setSelectedGroupId] = useState<string>('public')
