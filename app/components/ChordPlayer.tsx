@@ -2,7 +2,7 @@
 
 import { normalizeMeasures } from '@/lib/chords'
 
-type Progression = { label: string; chords: string[] | string[][]; style?: string; tempo?: number }
+type Progression = { label: string; chords: string[] | string[][]; style?: string; tempo?: number; key?: string }
 
 
 // ── Staff ─────────────────────────────────────────────────────────────────────
@@ -71,16 +71,27 @@ export default function ChordPlayer({ progressions, title }: {
 
         return (
           <div key={pi}>
-            {/* 진행 레이블 */}
-            {progressions.length > 1 && prog.label && (
-              <div style={{
-                display: 'inline-block', fontSize: 11, fontWeight: 700, color: '#a0988c',
-                background: 'rgba(240,236,224,0.08)', border: '1px solid rgba(240,236,224,0.15)',
-                borderRadius: 6, padding: '2px 9px', marginBottom: 8,
-              }}>
-                {prog.label}
-              </div>
-            )}
+            {/* 진행 레이블 + 키 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+              {progressions.length > 1 && prog.label && (
+                <div style={{
+                  display: 'inline-block', fontSize: 11, fontWeight: 700, color: '#a0988c',
+                  background: 'rgba(240,236,224,0.08)', border: '1px solid rgba(240,236,224,0.15)',
+                  borderRadius: 6, padding: '2px 9px',
+                }}>
+                  {prog.label}
+                </div>
+              )}
+              {prog.key && (
+                <div style={{
+                  display: 'inline-block', fontSize: 11, fontWeight: 800, color: '#0a0a08',
+                  background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                  borderRadius: 6, padding: '2px 9px',
+                }}>
+                  Key: {prog.key}
+                </div>
+              )}
+            </div>
 
             {/* 악보 */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 8 }}>

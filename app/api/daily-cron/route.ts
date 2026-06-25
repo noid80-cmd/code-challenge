@@ -42,28 +42,43 @@ export async function GET(req: NextRequest) {
         role: 'user',
         content: `당신은 한국 음악 교육 전문가입니다. 피아노/기타 학생들을 위한 코드초견 챌린지를 생성해주세요.
 
+아래 3가지 유형 중 하나를 랜덤으로 선택해서 생성하세요:
+
+【유형 1: 일반 코드 진행】
+- 8마디 구성, 한 마디에 1~2개 코드
+- 가장 흔한 유형
+
+【유형 2: 모드 초견】
+- 특정 모드를 지속하는 진행 (4마디씩 2개 진행)
+- 코드명에 모드를 괄호로 표기: "Cm7(Dorian)", "Fmaj7(Lydian)"
+- 사용 가능한 모드: Dorian, Lydian, Mixolydian, Phrygian, Aeolian
+
+【유형 3: 도수 초견】
+- 로마 숫자로 코드 표기, progression에 key 명시
+- 표기 예: Imaj7, IIm7, IIIm7, IVmaj7, V7, VIm7, VIIm7b5
+- 8마디 구성
+
+공통 조건:
+- chords는 마디 배열: 각 마디는 1~2개 코드를 담는 배열
+- style은 다음 중 하나: swing, bossa, samba, jazz_ballad, pop_ballad, funk, shuffle, rnb
+- 1~2개의 진행(progression)
+- 자연스럽고 실용적인 코드 진행, 중급 수준 난이도
+
 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 {
-  "title": "챌린지 제목 (예: 재즈 스윙 코드 챌린지)",
-  "description": "간단한 설명 (1-2문장)",
+  "title": "챌린지 제목",
+  "description": "간단한 설명 (1-2문장, 유형 언급 포함)",
   "progressions": [
     {
       "label": "진행 1",
-      "chords": [["Cmaj7", "Am7"], ["Dm7", "G7"], ["Em7", "Am7"], ["Dm7", "G7"]],
-      "style": "swing",
-      "tempo": 80
+      "key": "C",
+      "chords": [["Imaj7"], ["IIm7"], ["V7"], ["Imaj7"], ["IIm7"], ["V7"], ["IVmaj7"], ["Imaj7"]],
+      "style": "swing"
     }
   ]
 }
 
-조건:
-- 1~2개의 코드 진행
-- chords는 마디(measure) 배열: 각 마디는 1~4개의 코드를 담는 배열
-- 총 4~8마디 구성 (장르에 따라 적절히)
-- 재즈: 한 마디에 1~2코드가 자연스러움. 팝/록: 한 마디에 1코드도 많음
-- style은 반드시 다음 7가지 중 하나: swing, bossa, samba, ballad, pop, shuffle, funk
-- 자연스럽고 실용적인 코드 진행
-- 중급 수준 난이도`,
+※ key 필드는 도수 초견일 때만 포함. 일반/모드 초견은 key 생략.`,
       }],
     })
 
