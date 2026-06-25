@@ -504,14 +504,14 @@ export default function GroupPage() {
             {/* 입력창 */}
             <div style={{ borderTop: '1px solid rgba(240,236,224,0.1)', paddingTop: 12, paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
             {chatError && <p style={{ fontSize: 12, color: '#f87171', marginBottom: 6, textAlign: 'center' }}>{chatError}</p>}
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
               <input
                 value={messageText}
                 onChange={e => setMessageText(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
                 placeholder="메시지 입력..."
                 style={{
-                  flex: 1, minWidth: 0, background: 'rgba(240,236,224,0.06)',
+                  flex: 1, minWidth: 0, width: 0, background: 'rgba(240,236,224,0.06)',
                   border: '1px solid rgba(240,236,224,0.15)',
                   borderRadius: 22, padding: '10px 16px',
                   fontSize: 14, color: '#f0ece0', outline: 'none',
@@ -676,7 +676,7 @@ function SubmissionCard({
 
                       {/* 답글 입력 */}
                       {replyToId === c.id && (
-                        <div style={{ display: 'flex', gap: 6 }}>
+                        <div style={{ display: 'flex', gap: 6, width: '100%' }}>
                           <input
                             ref={replyInputRef}
                             value={replyText}
@@ -684,7 +684,7 @@ function SubmissionCard({
                             placeholder="답글을 입력하세요"
                             onKeyDown={e => { if (e.key === 'Enter') handleReply(c.id) }}
                             style={{
-                              flex: 1, minWidth: 0, background: 'rgba(13,13,12,0.8)',
+                              flex: 1, minWidth: 0, width: 0, background: 'rgba(13,13,12,0.8)',
                               border: '1px solid rgba(240,236,224,0.15)',
                               borderRadius: 8, padding: '7px 10px',
                               fontSize: 12, color: '#f0ece0', outline: 'none',
@@ -722,13 +722,13 @@ function SubmissionCard({
             {comments.length > 0 ? `댓글 ${comments.length}` : '댓글 달기'}
           </button>
         ) : (
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
             <input ref={inputRef} value={commentText}
               onChange={e => setCommentText(e.target.value)}
               placeholder="댓글을 입력하세요"
               onKeyDown={e => { if (e.key === 'Enter') handleComment() }}
               style={{
-                flex: 1, minWidth: 0, background: 'rgba(13,13,12,0.8)',
+                flex: 1, minWidth: 0, width: 0, background: 'rgba(13,13,12,0.8)',
                 border: '1px solid rgba(240,236,224,0.2)',
                 borderRadius: 9, padding: '9px 12px',
                 fontSize: 13, color: '#f0ece0', outline: 'none',
