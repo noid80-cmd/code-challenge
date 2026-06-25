@@ -65,12 +65,11 @@ export default function ChordPlayer({ progressions, title }: {
       {progressions.map((prog, pi) => {
         const measures = normalizeMeasures(prog.chords)
 
-        // 모드 초견: 같은 단일 코드가 반복되면 첫 마디에만 표시
-        const allSame = measures.length > 1 &&
-          measures.every(m => m.length === 1 && m[0] === measures[0][0])
-        const displayMeasures = allSame
-          ? [measures[0], ...measures.slice(1).map(() => [] as string[])]
-          : measures
+        // 이전 마디와 같은 코드면 빈 마디로 표시
+        const eq = (a: string[], b: string[]) => a.length === b.length && a.every((c, i) => c === b[i])
+        const displayMeasures = measures.map((m, i) =>
+          i > 0 && eq(m, measures[i - 1]) ? [] as string[] : m
+        )
 
         const rows: string[][][] = []
         for (let i = 0; i < displayMeasures.length; i += 4) rows.push(displayMeasures.slice(i, i + 4))
