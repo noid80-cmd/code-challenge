@@ -34,6 +34,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'ANTHROPIC_API_KEY 없음' }, { status: 500 })
     }
 
+    const rand = Math.random()
+    const type = rand < 0.90 ? 'chord' : rand < 0.95 ? 'mode' : 'degree'
+
+    const typeGuide =
+      type === 'chord'
+        ? `【유형: 일반 코드 진행】
+- 8마디 구성, 한 마디에 1~2개 코드
+- 1~2개의 진행(progression)
+- key 필드 없음`
+        : type === 'mode'
+        ? `【유형: 모드 초견】
+- 4마디씩 2개 진행 (총 2개 progression)
+- 코드명에 모드를 괄호로 표기: "Cm7(Dorian)", "Fmaj7(Lydian)"
+- 사용 가능한 모드: Dorian, Lydian, Mixolydian, Phrygian, Aeolian
+- key 필드 없음`
+        : `【유형: 도수 초견】
+- 8마디 구성, 1~2개의 진행
+- 로마 숫자로 코드 표기: Imaj7, IIm7, IIIm7, IVmaj7, V7, VIm7, VIIm7b5
+- progression마다 key 필드 반드시 포함`
+
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
@@ -42,26 +62,11 @@ export async function GET(req: NextRequest) {
         role: 'user',
         content: `당신은 한국 음악 교육 전문가입니다. 피아노/기타 학생들을 위한 코드초견 챌린지를 생성해주세요.
 
-아래 3가지 유형 중 하나를 랜덤으로 선택해서 생성하세요:
-
-【유형 1: 일반 코드 진행】
-- 8마디 구성, 한 마디에 1~2개 코드
-- 가장 흔한 유형
-
-【유형 2: 모드 초견】
-- 특정 모드를 지속하는 진행 (4마디씩 2개 진행)
-- 코드명에 모드를 괄호로 표기: "Cm7(Dorian)", "Fmaj7(Lydian)"
-- 사용 가능한 모드: Dorian, Lydian, Mixolydian, Phrygian, Aeolian
-
-【유형 3: 도수 초견】
-- 로마 숫자로 코드 표기, progression에 key 명시
-- 표기 예: Imaj7, IIm7, IIIm7, IVmaj7, V7, VIm7, VIIm7b5
-- 8마디 구성
+${typeGuide}
 
 공통 조건:
 - chords는 마디 배열: 각 마디는 1~2개 코드를 담는 배열
 - style은 다음 중 하나: swing, bossa, samba, jazz_ballad, pop_ballad, funk, shuffle, rnb
-- 1~2개의 진행(progression)
 - 자연스럽고 실용적인 코드 진행, 중급 수준 난이도
 
 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
@@ -78,7 +83,7 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
   ]
 }
 
-※ key 필드는 도수 초견일 때만 포함. 일반/모드 초견은 key 생략.`,
+※ key 필드는 도수 초견일 때만 포함.`,
       }],
     })
 
