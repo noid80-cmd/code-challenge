@@ -65,8 +65,15 @@ export default function ChordPlayer({ progressions, title }: {
       {progressions.map((prog, pi) => {
         const measures = normalizeMeasures(prog.chords)
 
+        // 모드 초견: 같은 단일 코드가 반복되면 첫 마디에만 표시
+        const allSame = measures.length > 1 &&
+          measures.every(m => m.length === 1 && m[0] === measures[0][0])
+        const displayMeasures = allSame
+          ? [measures[0], ...measures.slice(1).map(() => [] as string[])]
+          : measures
+
         const rows: string[][][] = []
-        for (let i = 0; i < measures.length; i += 4) rows.push(measures.slice(i, i + 4))
+        for (let i = 0; i < displayMeasures.length; i += 4) rows.push(displayMeasures.slice(i, i + 4))
         const isLastProg = pi === progressions.length - 1
 
         return (
