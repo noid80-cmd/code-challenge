@@ -21,6 +21,7 @@ export default function UploadPage() {
   const [preview, setPreview] = useState<string | null>(null)
   const [caption, setCaption] = useState('')
   const [selectedProgression, setSelectedProgression] = useState(0)
+  const [isPrivate, setIsPrivate] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
   const [done, setDone] = useState(false)
@@ -135,6 +136,7 @@ export default function UploadPage() {
       caption: caption.trim() || null,
       group_id: selectedGroupId === 'public' ? null : selectedGroupId,
       progression_index: selectedProgression,
+      is_private: isPrivate,
     })
     if (dbError) { setError('저장 실패: ' + dbError.message); setUploading(false); return }
     setUploading(false); setDone(true)
@@ -489,6 +491,38 @@ export default function UploadPage() {
           <textarea value={caption} onChange={e => setCaption(e.target.value)}
             placeholder="한마디 남겨주세요 (선택)" rows={2}
             style={{ ...inputStyle, resize: 'none' }} />
+
+          {/* 공개/비공개 */}
+          <button type="button" onClick={() => setIsPrivate(p => !p)} style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            width: '100%', padding: '13px 16px', borderRadius: 12, cursor: 'pointer',
+            background: isPrivate ? 'rgba(240,236,224,0.06)' : 'transparent',
+            border: isPrivate ? '1px solid rgba(240,236,224,0.2)' : '1px solid rgba(240,236,224,0.1)',
+            textAlign: 'left',
+          }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 700, color: isPrivate ? '#e0dcd0' : '#605850' }}>
+                {isPrivate ? '🔒 비공개' : '🔓 공개'}
+              </div>
+              <div style={{ fontSize: 11, color: '#303028', marginTop: 2 }}>
+                {isPrivate ? '나만 볼 수 있어요 (피드에 올라가지 않아요)' : '피드에 공개돼요'}
+              </div>
+            </div>
+            <div style={{
+              width: 40, height: 22, borderRadius: 11,
+              background: isPrivate ? 'rgba(240,236,224,0.3)' : 'rgba(240,236,224,0.1)',
+              border: '1px solid rgba(240,236,224,0.2)',
+              position: 'relative', transition: 'background 0.2s', flexShrink: 0,
+            }}>
+              <div style={{
+                position: 'absolute', top: 2,
+                left: isPrivate ? 20 : 2,
+                width: 16, height: 16, borderRadius: '50%',
+                background: isPrivate ? '#f0ece0' : 'rgba(240,236,224,0.3)',
+                transition: 'left 0.2s, background 0.2s',
+              }} />
+            </div>
+          </button>
 
           {error && <p style={{ color: '#f0ece0', fontSize: 13, textAlign: 'center' }}>{error}</p>}
 

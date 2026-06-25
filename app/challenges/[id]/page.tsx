@@ -46,7 +46,7 @@ export default function ChallengePage() {
     if (ch) {
       const { data: subs } = await supabase
         .from('submissions').select('*, profiles(name, avatar_url)')
-        .eq('challenge_id', ch.id).is('group_id', null)
+        .eq('challenge_id', ch.id).is('group_id', null).eq('is_private', false)
         .order('created_at', { ascending: false })
 
       if (subs && user) {

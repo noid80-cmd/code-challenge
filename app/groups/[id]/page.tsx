@@ -8,7 +8,7 @@ import { useParams } from 'next/navigation'
 type Group = { id: string; name: string; description: string | null; invite_code: string; owner_id: string }
 type Submission = {
   id: string; video_url: string; caption: string | null
-  likes_count: number; created_at: string; user_id: string
+  likes_count: number; created_at: string; user_id: string; is_private: boolean
   profiles: { name: string; avatar_url: string | null } | null
   challenges: { title: string; date: string } | null
 }
@@ -95,7 +95,7 @@ export default function GroupPage() {
     const { data: subs } = await supabase
       .from('submissions').select('*, profiles(name, avatar_url), challenges(title, date)')
       .eq('group_id', groupId).order('created_at', { ascending: false })
-    const subList = (subs ?? []) as Submission[]
+    const subList = ((subs ?? []) as Submission[]).filter(s => !s.is_private || s.user_id === user.id)
     setSubmissions(subList)
 
     const { data: likes } = await supabase.from('likes').select('submission_id').eq('user_id', user.id)

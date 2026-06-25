@@ -6,7 +6,7 @@ import Link from 'next/link'
 
 type Submission = {
   id: string; video_url: string; caption: string | null
-  likes_count: number; created_at: string
+  likes_count: number; created_at: string; is_private: boolean
   challenges: { title: string; date: string } | null
 }
 
@@ -147,6 +147,10 @@ export default function MyVideosPage() {
     setTotalLikes(newSubs.reduce((sum, s) => sum + s.likes_count, 0))
   }
 
+  function handleTogglePrivacy(subId: string, isPrivate: boolean) {
+    setSubmissions(prev => prev.map(s => s.id === subId ? { ...s, is_private: isPrivate } : s))
+  }
+
   const byMonth: Record<string, Submission[]> = {}
   submissions.forEach(s => {
     const d = new Date(s.created_at)
@@ -285,7 +289,12 @@ export default function MyVideosPage() {
                 {month}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {subs.map(sub => <VideoCard key={sub.id} sub={sub} onDelete={() => handleDeleteState(sub.id)} />)}
+                {subs.map(sub => (
+                  <VideoCard key={sub.id} sub={sub}
+                    onDelete={() => handleDeleteState(sub.id)}
+                    onTogglePrivacy={(v) => handleTogglePrivacy(sub.id, v)}
+                  />
+                ))}
               </div>
             </div>
           ))
@@ -295,9 +304,12 @@ export default function MyVideosPage() {
   )
 }
 
-function VideoCard({ sub, onDelete }: { sub: Submission; onDelete: () => void }) {
+function VideoCard({ sub, onDelete, onTogglePrivacy }: {
+  sub: Submission; onDelete: () => void; onTogglePrivacy: (isPrivate: boolean) => void
+}) {
   const supabase = createClient()
   const [deleting, setDeleting] = useState(false)
+  const [toggling, setToggling] = useState(false)
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
@@ -313,16 +325,31 @@ function VideoCard({ sub, onDelete }: { sub: Submission; onDelete: () => void })
     onDelete()
   }
 
+  async function handleToggle() {
+    setToggling(true)
+    const next = !sub.is_private
+    await supabase.from('submissions').update({ is_private: next }).eq('id', sub.id)
+    onTogglePrivacy(next)
+    setToggling(false)
+  }
+
   return (
     <div style={{
       background: 'linear-gradient(145deg, #111110, #0d0d0c)',
-      border: '1px solid rgba(240,236,224,0.08)',
+      border: sub.is_private ? '1px solid rgba(240,236,224,0.18)' : '1px solid rgba(240,236,224,0.08)',
       borderRadius: 18, overflow: 'hidden', display: 'flex',
       opacity: deleting ? 0.5 : 1, transition: 'opacity 0.2s',
     }}>
-      <div style={{ width: 120, flexShrink: 0, background: '#000' }}>
+      <div style={{ width: 120, flexShrink: 0, background: '#000', position: 'relative' }}>
         <video src={videoUrl} preload="metadata"
           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', minHeight: 80 }} />
+        {sub.is_private && (
+          <div style={{
+            position: 'absolute', top: 6, left: 6,
+            background: 'rgba(0,0,0,0.65)', borderRadius: 6,
+            padding: '2px 6px', fontSize: 10, color: '#a0988c', fontWeight: 700,
+          }}>비공개</div>
+        )}
       </div>
       <div style={{ flex: 1, padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <div>
@@ -335,6 +362,12 @@ function VideoCard({ sub, onDelete }: { sub: Submission; onDelete: () => void })
         </div>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
           <span style={{ fontSize: 11, color: '#1a1a18' }}>{date.getMonth() + 1}/{date.getDate()}</span>
+          <button type="button" onClick={handleToggle} disabled={toggling} style={{
+            background: 'none', border: 'none', cursor: toggling ? 'default' : 'pointer',
+            fontSize: 13, padding: 0, color: sub.is_private ? '#a0988c' : '#303028',
+          }}>
+            {toggling ? '...' : sub.is_private ? '🔒' : '🔓'}
+          </button>
           <span style={{ fontSize: 13, color: '#f0ece0', fontWeight: 800 }}>♥ {sub.likes_count}</span>
           <button type="button" onClick={handleDelete} disabled={deleting} style={{
             background: 'none', border: 'none', color: '#604040', fontSize: 12, fontWeight: 700,
