@@ -59,6 +59,7 @@ export default function GroupPage() {
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
   const [userId, setUserId] = useState('')
   const [loading, setLoading] = useState(true)
+  const [feedError, setFeedError] = useState('')
   const [copied, setCopied] = useState(false)
   const [activeTab, setActiveTab] = useState<'feed' | 'chat'>('feed')
 
@@ -93,9 +94,10 @@ export default function GroupPage() {
     const { count } = await supabase.from('group_members').select('id', { count: 'exact', head: true }).eq('group_id', groupId)
     setMemberCount(count ?? 0)
 
-    const { data: subs } = await supabase
+    const { data: subs, error: subsErr } = await supabase
       .from('submissions').select('*, profiles(name, avatar_url), challenges(title, date)')
       .eq('group_id', groupId).order('created_at', { ascending: false })
+    if (subsErr) setFeedError('RLS 오류: ' + subsErr.message)
     const subList = ((subs ?? []) as Submission[]).filter(s => !s.is_private || s.user_id === user.id)
     setSubmissions(subList)
 
@@ -383,7 +385,13 @@ export default function GroupPage() {
               </div>
             )}
 
-            {submissions.length === 0 ? (
+            {feedError && (
+              <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 10, padding: '10px 14px', marginBottom: 12 }}>
+                <p style={{ color: '#f87171', fontSize: 12, margin: 0 }}>{feedError}</p>
+                <p style={{ color: '#f87171', fontSize: 11, margin: '4px 0 0', opacity: 0.7 }}>Supabase SQL Editor에서 RLS 정책을 추가해주세요</p>
+              </div>
+            )}
+            {submissions.length === 0 && !feedError ? (
               <div style={{ textAlign: 'center', padding: '60px 0' }}>
                 <p style={{ color: '#303028', fontSize: 14, fontWeight: 700 }}>아직 연주가 없어요</p>
                 <p style={{ color: '#1a1a18', fontSize: 13, marginTop: 5 }}>첫 번째로 올려보세요</p>
