@@ -151,7 +151,7 @@ export default function GroupPage() {
           .select('*, profiles(name, avatar_url)')
           .eq('id', (payload.new as { id: string }).id).single()
         if (data) {
-          setMessages(prev => [...prev, data as Message])
+          setMessages(prev => prev.some(m => m.id === (data as Message).id) ? prev : [...prev, data as Message])
           setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
         }
       })
@@ -225,10 +225,15 @@ export default function GroupPage() {
     if (!messageText.trim() || sending) return
     setSending(true)
     const supabase = createClient()
-    await supabase.from('group_messages').insert({
-      group_id: groupId, user_id: userId, content: messageText.trim(),
-    })
+    const content = messageText.trim()
     setMessageText('')
+    const { data: msg } = await supabase.from('group_messages')
+      .insert({ group_id: groupId, user_id: userId, content })
+      .select('*, profiles(name, avatar_url)').single()
+    if (msg) {
+      setMessages(prev => prev.some(m => m.id === (msg as Message).id) ? prev : [...prev, msg as Message])
+      setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
+    }
     setSending(false)
   }
 
@@ -283,7 +288,7 @@ export default function GroupPage() {
             {group?.description && <div style={{ fontSize: 13, color: '#a0988c', marginBottom: 4 }}>{group.description}</div>}
             <div style={{ fontSize: 12, color: '#303028', fontWeight: 600 }}>멤버 {memberCount}명</div>
           </div>
-          <Link href="/upload" style={{
+          <Link href={`/upload?group=${groupId}`} style={{
             padding: '8px 16px', borderRadius: 10,
             background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
             color: '#0a0a08', fontSize: 13, fontWeight: 700, textDecoration: 'none',

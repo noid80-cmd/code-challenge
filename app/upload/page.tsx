@@ -49,7 +49,7 @@ export default function UploadPage() {
         .from('group_members').select('groups(id, name)').eq('user_id', user.id)
       const groups = (memberships ?? []).map(m => m.groups as unknown as Group).filter(Boolean)
       setMyGroups(groups)
-      const groupParam = searchParams.get('group')
+      const groupParam = new URLSearchParams(window.location.search).get('group')
       if (groupParam && groups.some(g => g.id === groupParam)) {
         setSelectedGroupId(groupParam)
       }
@@ -171,12 +171,13 @@ export default function UploadPage() {
           </p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
             {isGroup && (
-              <Link href={`/groups/${selectedGroupId}`} style={{
+              <a href={`/groups/${selectedGroupId}`} style={{
                 padding: '12px 24px', borderRadius: 12,
                 background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
                 color: '#0a0a08', fontSize: 14, fontWeight: 700,
                 boxShadow: '0 6px 20px rgba(240,236,224,0.35)',
-              }}>크루 피드 보기</Link>
+                textDecoration: 'none', display: 'inline-block',
+              }}>크루 피드 보기</a>
             )}
             <Link href="/" style={{
               padding: '12px 24px', borderRadius: 12,
