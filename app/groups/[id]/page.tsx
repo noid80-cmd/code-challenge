@@ -510,9 +510,9 @@ function SubmissionCard({
     onComment(replyText, parentId); setReplyText(''); setReplyToId(null)
   }
 
-  function startReply(commentId: string) {
+  function startReply(commentId: string | null) {
     setReplyToId(commentId)
-    setTimeout(() => replyInputRef.current?.focus(), 50)
+    if (commentId) setTimeout(() => replyInputRef.current?.focus(), 50)
   }
 
   const challengeDate = sub.challenges?.date

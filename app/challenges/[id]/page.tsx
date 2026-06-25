@@ -153,7 +153,7 @@ export default function ChallengePage() {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 15, fontWeight: 800, color: '#e0dcd0', letterSpacing: '-0.01em' }}>
-              연주 {submissions.length > 0 ? '' : ''}
+              연주
             </span>
             {submissions.length > 0 && (
               <span style={{

@@ -94,7 +94,7 @@ export default function UploadPage() {
       const ext = blob.type.includes('mp4') ? 'mp4' : 'webm'
       const f = new File([blob], `recording.${ext}`, { type: blob.type })
       setFile(f)
-      setPreview(URL.createObjectURL(blob))
+      setPreview(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(blob) })
       stopCamera()
     }
     recorder.start()
@@ -114,7 +114,8 @@ export default function UploadPage() {
     const f = e.target.files?.[0]
     if (!f) return
     if (f.size > 100 * 1024 * 1024) { setError('파일 크기는 100MB 이하여야 해요.'); return }
-    setFile(f); setError(''); setPreview(URL.createObjectURL(f))
+    setPreview(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(f) })
+    setFile(f); setError('')
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -403,7 +404,7 @@ export default function UploadPage() {
                   borderRight: '1px solid rgba(240,236,224,0.08)',
                   color: '#605850', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                 }}>파일 선택</button>
-                <button type="button" onClick={() => { setFile(null); setPreview(null) }} style={{
+                <button type="button" onClick={() => { setFile(null); setPreview(prev => { if (prev) URL.revokeObjectURL(prev); return null }) }} style={{
                   flex: 1, padding: '11px', background: 'transparent', border: 'none',
                   color: '#604040', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                 }}>취소</button>
