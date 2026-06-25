@@ -16,7 +16,7 @@ function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean 
 
   const W = PAD_L + 4 * MW + 12
   return (
-    <svg width={W} height={ROW_H} style={{ display: 'block', overflow: 'visible' }}>
+    <svg viewBox={`0 0 ${W} ${ROW_H}`} width="100%" style={{ display: 'block' }}>
       {[0,1,2,3,4].map(i => (
         <line key={i} x1={0} y1={PAD_T + i * LG} x2={W - 4} y2={PAD_T + i * LG}
           stroke="rgba(240,236,224,0.12)" strokeWidth={1} />

@@ -30,6 +30,7 @@ export default function UploadPage() {
   const [recordMode, setRecordMode] = useState(false)
   const [recording, setRecording] = useState(false)
   const [recordSecs, setRecordSecs] = useState(0)
+  const [facingMode, setFacingMode] = useState<'environment' | 'user'>('environment')
   const cameraRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
@@ -69,6 +70,7 @@ export default function UploadPage() {
         cameraRef.current.srcObject = stream
         cameraRef.current.play().catch(() => {})
       }
+      setFacingMode('environment')
       setRecordMode(true)
     } catch {
       setError('카메라 접근 권한이 필요해요. 브라우저 설정에서 허용해주세요.')
@@ -263,7 +265,7 @@ export default function UploadPage() {
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {rows.map((row, ri) => (
-                    <div key={ri} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div key={ri} style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
                       {row.map((measure, mi) => (
                         <div key={mi} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                           {mi > 0 && (
@@ -295,7 +297,7 @@ export default function UploadPage() {
           autoPlay
           playsInline
           muted
-          style={{ flex: 1, width: '100%', objectFit: 'cover' }}
+          style={{ flex: 1, width: '100%', objectFit: 'cover', transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
         />
 
         {/* 하단 컨트롤 */}
@@ -340,8 +342,7 @@ export default function UploadPage() {
           </div>
 
           <button onClick={async () => {
-            const currentFacing = (streamRef.current?.getVideoTracks()[0]?.getSettings() as { facingMode?: string })?.facingMode
-            const nextFacing = currentFacing === 'environment' ? 'user' : 'environment'
+            const nextFacing = facingMode === 'environment' ? 'user' : 'environment'
             streamRef.current?.getTracks().forEach(t => t.stop())
             const stream = await navigator.mediaDevices.getUserMedia({
               video: { facingMode: nextFacing }, audio: true,
@@ -351,6 +352,7 @@ export default function UploadPage() {
               cameraRef.current.srcObject = stream
               cameraRef.current.play().catch(() => {})
             }
+            setFacingMode(nextFacing)
           }} style={{
             width: 48, height: 48, borderRadius: '50%',
             background: 'rgba(255,255,255,0.12)',
