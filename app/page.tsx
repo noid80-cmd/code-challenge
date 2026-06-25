@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
+import { localDate } from '@/lib/date'
 const ChordPlayer = dynamic(() => import('./components/ChordPlayer'), { ssr: false })
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
@@ -97,15 +98,15 @@ function timeAgo(dateStr: string) {
 function calcStreak(dates: string[]) {
   const uniq = [...new Set(dates)].sort().reverse()
   if (uniq.length === 0) return 0
-  const today = new Date().toISOString().slice(0, 10)
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+  const today = localDate()
+  const yesterday = localDate(new Date(Date.now() - 86400000))
   if (uniq[0] !== today && uniq[0] !== yesterday) return 0
   let streak = 0, checkDate = uniq[0]
   for (const d of uniq) {
     if (d === checkDate) {
       streak++
       const dt = new Date(checkDate); dt.setDate(dt.getDate() - 1)
-      checkDate = dt.toISOString().slice(0, 10)
+      checkDate = localDate(dt)
     } else break
   }
   return streak
@@ -126,7 +127,7 @@ export default function HomePage() {
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = localDate()
     const { data: ch } = await supabase.from('challenges').select('*').eq('date', today).order('created_at', { ascending: false }).limit(1).single()
     setChallenge(ch)
 
@@ -147,7 +148,7 @@ export default function HomePage() {
 
     if (user) {
       const { data: myDates } = await supabase.from('submissions').select('created_at').eq('user_id', user.id)
-      setStreak(calcStreak(myDates?.map(s => s.created_at.slice(0, 10)) ?? []))
+      setStreak(calcStreak(myDates?.map(s => localDate(new Date(s.created_at))) ?? []))
       const { data: prof } = await supabase.from('profiles').select('name, avatar_url').eq('id', user.id).single()
       setProfile(prof)
     }

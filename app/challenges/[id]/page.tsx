@@ -7,6 +7,7 @@ import { useParams } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
 const ChordPlayer = dynamic(() => import('@/app/components/ChordPlayer'), { ssr: false })
+import { localDate } from '@/lib/date'
 
 type Progression = { label: string; chords: string[] | string[][]; style?: string; tempo?: number }
 type Challenge = { id: string; date: string; title: string; description?: string; chords: { progressions: Progression[] } }
@@ -89,7 +90,7 @@ export default function ChallengePage() {
     </div>
   )
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDate()
   const isToday = challenge.date === today
   const progressions = challenge.chords?.progressions ?? []
 

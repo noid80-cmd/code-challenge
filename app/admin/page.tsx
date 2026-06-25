@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { localDate } from '@/lib/date'
 
 // chords는 string[][] (마디 배열, 각 마디에 1~4개 코드)
 type Progression = { label: string; chords: string[][]; style?: string; tempo?: number }
@@ -64,7 +65,7 @@ export default function AdminPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
+  const [selectedDate, setSelectedDate] = useState(localDate())
   const [challenges, setChallenges] = useState<ExistingChallenge[]>([])
   const [deleting, setDeleting] = useState<string | null>(null)
   const [members, setMembers] = useState<Member[]>([])

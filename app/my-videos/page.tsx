@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { localDate } from '@/lib/date'
 
 type Submission = {
   id: string; video_url: string; caption: string | null
@@ -14,15 +15,15 @@ type Submission = {
 function calcStreak(dates: string[]) {
   const uniq = [...new Set(dates)].sort().reverse()
   if (uniq.length === 0) return 0
-  const today = new Date().toISOString().slice(0, 10)
-  const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+  const today = localDate()
+  const yesterday = localDate(new Date(Date.now() - 86400000))
   if (uniq[0] !== today && uniq[0] !== yesterday) return 0
   let streak = 0, checkDate = uniq[0]
   for (const d of uniq) {
     if (d === checkDate) {
       streak++
       const dt = new Date(checkDate); dt.setDate(dt.getDate() - 1)
-      checkDate = dt.toISOString().slice(0, 10)
+      checkDate = localDate(dt)
     } else break
   }
   return streak
@@ -30,7 +31,7 @@ function calcStreak(dates: string[]) {
 
 function CalendarView({ submittedDates }: { submittedDates: Set<string> }) {
   const [viewDate, setViewDate] = useState(() => new Date())
-  const today = new Date().toISOString().slice(0, 10)
+  const today = localDate()
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
 
@@ -111,7 +112,7 @@ export default function MyVideosPage() {
         .eq('user_id', user.id).order('created_at', { ascending: false })
       const subs = (data ?? []) as Submission[]
       setSubmissions(subs)
-      const dates = subs.map(s => s.created_at.slice(0, 10))
+      const dates = subs.map(s => localDate(new Date(s.created_at)))
       setSubmittedDates(new Set(dates))
       setStreak(calcStreak(dates))
       setTotalLikes(subs.reduce((sum, s) => sum + s.likes_count, 0))
@@ -142,7 +143,7 @@ export default function MyVideosPage() {
   function handleDeleteState(subId: string) {
     const newSubs = submissions.filter(s => s.id !== subId)
     setSubmissions(newSubs)
-    const dates = newSubs.map(s => s.created_at.slice(0, 10))
+    const dates = newSubs.map(s => localDate(new Date(s.created_at)))
     setSubmittedDates(new Set(dates))
     setStreak(calcStreak(dates))
     setTotalLikes(newSubs.reduce((sum, s) => sum + s.likes_count, 0))
@@ -159,7 +160,7 @@ export default function MyVideosPage() {
     if (!byMonth[key]) byMonth[key] = []
     byMonth[key].push(s)
   })
-  const uploadsToday = submissions[0]?.created_at.slice(0, 10) === new Date().toISOString().slice(0, 10)
+  const uploadsToday = submissions[0] ? localDate(new Date(submissions[0].created_at)) === localDate() : false
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)' }}>

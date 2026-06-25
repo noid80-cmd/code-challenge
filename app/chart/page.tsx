@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import ChordPlayer from '@/app/components/ChordPlayer'
 import { normalizeMeasures } from '@/lib/chords'
 import Link from 'next/link'
+import { localDate } from '@/lib/date'
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type Challenge = { id: string; title: string; description?: string; chords: { progressions: Progression[] } }
@@ -15,7 +16,7 @@ export default function ChartPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient()
-      const today = new Date().toISOString().slice(0, 10)
+      const today = localDate()
       const { data } = await supabase.from('challenges').select('*').eq('date', today).single()
       setChallenge(data)
     }
