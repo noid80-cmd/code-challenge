@@ -45,10 +45,14 @@ function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean 
       })}
 
       <line x1={PAD_L + 4 * MW} y1={PAD_T} x2={PAD_L + 4 * MW} y2={PAD_T + STAFF_H}
-        stroke="rgba(240,236,224,0.45)" strokeWidth={isLast ? 3 : 1.5} />
+        stroke="rgba(240,236,224,0.45)" strokeWidth={isLast ? 3.5 : 1.5} />
       {isLast && (
-        <line x1={PAD_L + 4 * MW - 5} y1={PAD_T} x2={PAD_L + 4 * MW - 5} y2={PAD_T + STAFF_H}
-          stroke="rgba(240,236,224,0.45)" strokeWidth={1.5} />
+        <>
+          <line x1={PAD_L + 4 * MW - 6} y1={PAD_T} x2={PAD_L + 4 * MW - 6} y2={PAD_T + STAFF_H}
+            stroke="rgba(240,236,224,0.45)" strokeWidth={1.5} />
+          <circle cx={PAD_L + 4 * MW - 13} cy={PAD_T + 1.5 * LG} r={2.5} fill="rgba(240,236,224,0.7)" />
+          <circle cx={PAD_L + 4 * MW - 13} cy={PAD_T + 2.5 * LG} r={2.5} fill="rgba(240,236,224,0.7)" />
+        </>
       )}
     </svg>
   )
@@ -73,7 +77,6 @@ export default function ChordPlayer({ progressions, title }: {
 
         const rows: string[][][] = []
         for (let i = 0; i < displayMeasures.length; i += 4) rows.push(displayMeasures.slice(i, i + 4))
-        const isLastProg = pi === progressions.length - 1
 
         return (
           <div key={pi}>
@@ -102,7 +105,7 @@ export default function ChordPlayer({ progressions, title }: {
             {/* 악보 */}
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 8 }}>
               {rows.map((row, ri) => (
-                <StaffRow key={ri} measures={row} isLast={ri === rows.length - 1 && isLastProg} />
+                <StaffRow key={ri} measures={row} isLast={ri === rows.length - 1} />
               ))}
             </div>
 
