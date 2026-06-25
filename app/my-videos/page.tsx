@@ -311,6 +311,7 @@ function VideoCard({ sub, onDelete, onTogglePrivacy }: {
   const supabase = createClient()
   const [deleting, setDeleting] = useState(false)
   const [toggling, setToggling] = useState(false)
+  const [expanded, setExpanded] = useState(false)
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
@@ -343,46 +344,73 @@ function VideoCard({ sub, onDelete, onTogglePrivacy }: {
     <div style={{
       background: 'linear-gradient(145deg, #111110, #0d0d0c)',
       border: sub.is_private ? '1px solid rgba(240,236,224,0.18)' : '1px solid rgba(240,236,224,0.08)',
-      borderRadius: 18, overflow: 'hidden', display: 'flex',
+      borderRadius: 18, overflow: 'hidden',
       opacity: deleting ? 0.5 : 1, transition: 'opacity 0.2s',
     }}>
-      <div style={{ width: 120, flexShrink: 0, background: '#000', position: 'relative' }}>
-        <video src={videoUrl} poster={posterUrl} preload="metadata"
-          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', minHeight: 80 }} />
-        {sub.is_private && (
-          <div style={{
-            position: 'absolute', top: 6, left: 6,
-            background: 'rgba(0,0,0,0.65)', borderRadius: 6,
-            padding: '2px 6px', fontSize: 10, color: '#a0988c', fontWeight: 700,
-          }}>비공개</div>
-        )}
-      </div>
-      <div style={{ flex: 1, padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <div>
-          {sub.challenges?.title && (
-            <div style={{ fontSize: 13, fontWeight: 800, color: '#e0dcd0', marginBottom: 4, lineHeight: 1.3 }}>
-              {sub.challenges.title}
+      {expanded ? (
+        <>
+          <video src={videoUrl} poster={posterUrl} controls autoPlay playsInline
+            style={{ width: '100%', display: 'block', background: '#000', maxHeight: 400, objectFit: 'contain' }} />
+          <button type="button" onClick={() => setExpanded(false)} style={{
+            width: '100%', padding: '9px', background: 'rgba(240,236,224,0.05)',
+            border: 'none', borderTop: '1px solid rgba(240,236,224,0.08)',
+            color: '#484640', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+          }}>접기 ▲</button>
+        </>
+      ) : (
+        <div style={{ display: 'flex', cursor: 'pointer' }} onClick={() => setExpanded(true)}>
+          <div style={{ width: 120, flexShrink: 0, background: '#000', position: 'relative' }}>
+            <video src={videoUrl} poster={posterUrl} preload="metadata"
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', minHeight: 80 }} />
+            <div style={{
+              position: 'absolute', inset: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(0,0,0,0.25)',
+            }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: '50%',
+                background: 'rgba(255,255,255,0.85)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <div style={{ width: 0, height: 0, borderStyle: 'solid', borderWidth: '6px 0 6px 11px', borderColor: 'transparent transparent transparent #0a0a08', marginLeft: 2 }} />
+              </div>
             </div>
-          )}
-          {sub.caption && <div style={{ fontSize: 12, color: '#303028', lineHeight: 1.5 }}>{sub.caption}</div>}
+            {sub.is_private && (
+              <div style={{
+                position: 'absolute', top: 6, left: 6,
+                background: 'rgba(0,0,0,0.65)', borderRadius: 6,
+                padding: '2px 6px', fontSize: 10, color: '#a0988c', fontWeight: 700,
+              }}>비공개</div>
+            )}
+          </div>
+          <div style={{ flex: 1, padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              {sub.challenges?.title && (
+                <div style={{ fontSize: 13, fontWeight: 800, color: '#e0dcd0', marginBottom: 4, lineHeight: 1.3 }}>
+                  {sub.challenges.title}
+                </div>
+              )}
+              {sub.caption && <div style={{ fontSize: 12, color: '#303028', lineHeight: 1.5 }}>{sub.caption}</div>}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
+              <span style={{ fontSize: 11, color: '#1a1a18' }}>{date.getMonth() + 1}/{date.getDate()}</span>
+              <button type="button" onClick={e => { e.stopPropagation(); handleToggle() }} disabled={toggling} style={{
+                background: 'none', border: 'none', cursor: toggling ? 'default' : 'pointer',
+                fontSize: 13, padding: 0, color: sub.is_private ? '#a0988c' : '#303028',
+              }}>
+                {toggling ? '...' : sub.is_private ? '🔒' : '🔓'}
+              </button>
+              <span style={{ fontSize: 13, color: '#f0ece0', fontWeight: 800 }}>♥ {sub.likes_count}</span>
+              <button type="button" onClick={e => { e.stopPropagation(); handleDelete() }} disabled={deleting} style={{
+                background: 'none', border: 'none', color: '#604040', fontSize: 12, fontWeight: 700,
+                cursor: deleting ? 'default' : 'pointer', padding: 0,
+              }}>
+                {deleting ? '...' : '삭제'}
+              </button>
+            </div>
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-          <span style={{ fontSize: 11, color: '#1a1a18' }}>{date.getMonth() + 1}/{date.getDate()}</span>
-          <button type="button" onClick={handleToggle} disabled={toggling} style={{
-            background: 'none', border: 'none', cursor: toggling ? 'default' : 'pointer',
-            fontSize: 13, padding: 0, color: sub.is_private ? '#a0988c' : '#303028',
-          }}>
-            {toggling ? '...' : sub.is_private ? '🔒' : '🔓'}
-          </button>
-          <span style={{ fontSize: 13, color: '#f0ece0', fontWeight: 800 }}>♥ {sub.likes_count}</span>
-          <button type="button" onClick={handleDelete} disabled={deleting} style={{
-            background: 'none', border: 'none', color: '#604040', fontSize: 12, fontWeight: 700,
-            cursor: deleting ? 'default' : 'pointer', padding: 0,
-          }}>
-            {deleting ? '...' : '삭제'}
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   )
 }
