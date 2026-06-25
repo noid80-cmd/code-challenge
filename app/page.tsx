@@ -134,7 +134,7 @@ export default function HomePage() {
         padding: '0 20px', height: 54,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
           <div style={{
             width: 30, height: 30, borderRadius: 9,
             background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
@@ -150,7 +150,7 @@ export default function HomePage() {
           <span style={{ fontWeight: 900, fontSize: 16, color: '#f0ece0', letterSpacing: '-0.03em' }}>
             코드 챌린지
           </span>
-        </div>
+        </Link>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {isAdmin && (
