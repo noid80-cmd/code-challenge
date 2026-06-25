@@ -360,17 +360,8 @@ function VideoCard({ sub, onDelete, onTogglePrivacy }: {
       ) : (
         <div style={{ display: 'flex', cursor: 'pointer', height: 90 }} onClick={() => setExpanded(true)}>
           <div style={{ width: 110, flexShrink: 0, background: '#111', position: 'relative', overflow: 'hidden' }}>
-            {posterUrl ? (
-              <img src={posterUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-            ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(145deg, #1a1a18, #111110)' }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M9 18V6l13-3v12" stroke="rgba(240,236,224,0.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <circle cx="6" cy="18" r="3" stroke="rgba(240,236,224,0.2)" strokeWidth="1.5"/>
-                  <circle cx="19" cy="15" r="3" stroke="rgba(240,236,224,0.2)" strokeWidth="1.5"/>
-                </svg>
-              </div>
-            )}
+            <video src={videoUrl} poster={posterUrl} preload="metadata" muted playsInline
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
             <div style={{
               position: 'absolute', inset: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',

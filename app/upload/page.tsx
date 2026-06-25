@@ -131,11 +131,16 @@ export default function UploadPage() {
       const url = URL.createObjectURL(f)
       let done = false
 
+      // iOS Safari requires video to be in the DOM for canvas.drawImage to work
+      video.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;'
+      document.body.appendChild(video)
+
       function finish(blob: Blob | null) {
         if (done) return
         done = true
         clearTimeout(timer)
         URL.revokeObjectURL(url)
+        try { document.body.removeChild(video) } catch {}
         resolve(blob)
       }
 
@@ -155,7 +160,6 @@ export default function UploadPage() {
         } catch { finish(null) }
       }
 
-      // iOS: onseeked may not fire — use timeupdate as fallback
       video.onseeked = capture
       video.ontimeupdate = () => {
         if (video.currentTime > 0) { video.ontimeupdate = null; capture() }
@@ -163,8 +167,7 @@ export default function UploadPage() {
       video.onloadeddata = () => { video.currentTime = 0.1 }
       video.onerror = () => finish(null)
 
-      // Hard timeout: give up after 6 seconds
-      const timer = setTimeout(() => finish(null), 6000)
+      const timer = setTimeout(() => finish(null), 8000)
 
       video.muted = true
       video.playsInline = true
