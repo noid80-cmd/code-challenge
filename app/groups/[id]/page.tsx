@@ -127,20 +127,31 @@ export default function GroupPage() {
 
     if (subList.length > 0) {
       const { data: comments } = await supabase
-        .from('comments').select('*, profiles(name, avatar_url)')
+        .from('comments').select('id, content, created_at, user_id, parent_id, submission_id')
         .in('submission_id', subList.map(s => s.id)).order('created_at', { ascending: true })
+      const cUids = [...new Set((comments ?? []).map(c => c.user_id))]
+      const { data: cProfs } = cUids.length > 0
+        ? await supabase.from('profiles').select('id, name, avatar_url').in('id', cUids)
+        : { data: [] }
+      const cProfMap = Object.fromEntries((cProfs ?? []).map(p => [p.id, p]))
       const byId: Record<string, Comment[]> = {}
-      ;(comments ?? []).forEach((c: Comment & { submission_id: string }) => {
+      ;(comments ?? []).forEach((c) => {
+        const enriched = { ...c, profiles: cProfMap[c.user_id] ?? null }
         if (!byId[c.submission_id]) byId[c.submission_id] = []
-        byId[c.submission_id].push(c)
+        byId[c.submission_id].push(enriched as unknown as Comment & { submission_id: string })
       })
       setCommentsBySubId(byId)
     }
 
     const { data: announces } = await supabase
-      .from('group_announcements').select('*, profiles(name, avatar_url)')
+      .from('group_announcements').select('id, content, created_at, user_id')
       .eq('group_id', groupId).order('created_at', { ascending: false })
-    setAnnouncements((announces ?? []) as Announcement[])
+    const aUids = [...new Set((announces ?? []).map(a => a.user_id))]
+    const { data: aProfs } = aUids.length > 0
+      ? await supabase.from('profiles').select('id, name, avatar_url').in('id', aUids)
+      : { data: [] }
+    const aProfMap = Object.fromEntries((aProfs ?? []).map(p => [p.id, p]))
+    setAnnouncements(((announces ?? []).map(a => ({ ...a, profiles: aProfMap[a.user_id] ?? null }))) as Announcement[])
 
     setLoading(false)
   }, [groupId])
@@ -155,12 +166,15 @@ export default function GroupPage() {
     if (!chatLoadedRef.current) {
       chatLoadedRef.current = true
       supabase.from('group_messages')
-        .select('*, profiles(name, avatar_url)')
-        .eq('group_id', groupId)
-        .order('created_at', { ascending: true })
-        .limit(100)
-        .then(({ data }) => {
-          setMessages((data ?? []) as Message[])
+        .select('id, content, created_at, user_id')
+        .eq('group_id', groupId).order('created_at', { ascending: true }).limit(100)
+        .then(async ({ data: msgs }) => {
+          const mUids = [...new Set((msgs ?? []).map(m => m.user_id))]
+          const { data: mProfs } = mUids.length > 0
+            ? await supabase.from('profiles').select('id, name, avatar_url').in('id', mUids)
+            : { data: [] }
+          const mProfMap = Object.fromEntries((mProfs ?? []).map(p => [p.id, p]))
+          setMessages((msgs ?? []).map(m => ({ ...m, profiles: mProfMap[m.user_id] ?? null })) as Message[])
           setTimeout(() => messagesEndRef.current?.scrollIntoView(), 100)
         })
     }
@@ -171,13 +185,11 @@ export default function GroupPage() {
         event: 'INSERT', schema: 'public', table: 'group_messages',
         filter: `group_id=eq.${groupId}`,
       }, async (payload) => {
-        const { data } = await supabase.from('group_messages')
-          .select('*, profiles(name, avatar_url)')
-          .eq('id', (payload.new as { id: string }).id).single()
-        if (data) {
-          setMessages(prev => prev.some(m => m.id === (data as Message).id) ? prev : [...prev, data as Message])
-          setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
-        }
+        const newMsg = payload.new as { id: string; user_id: string; content: string; created_at: string }
+        const { data: prof } = await supabase.from('profiles').select('name, avatar_url').eq('id', newMsg.user_id).single()
+        const enriched: Message = { ...newMsg, profiles: prof ?? null }
+        setMessages(prev => prev.some(m => m.id === enriched.id) ? prev : [...prev, enriched])
+        setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
       })
       .subscribe()
 
@@ -205,11 +217,14 @@ export default function GroupPage() {
         submission_id: subId, user_id: userId, content: content.trim(),
         parent_id: parentId ?? null,
       })
-      .select('*, profiles(name, avatar_url)').single()
+      .select('id, content, created_at, user_id, parent_id').single()
     if (comment) {
+      const { data: profile } = await supabase
+        .from('profiles').select('name, avatar_url').eq('id', userId).single()
+      const full = { ...comment, profiles: profile ?? null, submission_id: subId }
       setCommentsBySubId(prev => ({
         ...prev,
-        [subId]: [...(prev[subId] ?? []), comment as Comment & { submission_id: string }],
+        [subId]: [...(prev[subId] ?? []), full as Comment & { submission_id: string }],
       }))
     }
   }
@@ -230,9 +245,10 @@ export default function GroupPage() {
     const { data } = await supabase
       .from('group_announcements')
       .insert({ group_id: groupId, user_id: userId, content: announcementText.trim() })
-      .select('*, profiles(name, avatar_url)').single()
+      .select('id, content, created_at, user_id').single()
     if (data) {
-      setAnnouncements(prev => [data as Announcement, ...prev])
+      const { data: prof } = await supabase.from('profiles').select('name, avatar_url').eq('id', userId).single()
+      setAnnouncements(prev => [{ ...data, profiles: prof ?? null } as Announcement, ...prev])
       setAnnouncementText('')
       setShowAnnounceInput(false)
     }
@@ -253,13 +269,15 @@ export default function GroupPage() {
     setMessageText('')
     const { data: msg, error: sendErr } = await supabase.from('group_messages')
       .insert({ group_id: groupId, user_id: userId, content })
-      .select('*, profiles(name, avatar_url)').single()
+      .select('id, content, created_at, user_id').single()
     if (sendErr) {
       setChatError('전송 실패: ' + sendErr.message)
       setTimeout(() => setChatError(''), 3000)
     } else if (msg) {
       setChatError('')
-      setMessages(prev => prev.some(m => m.id === (msg as Message).id) ? prev : [...prev, msg as Message])
+      const { data: prof } = await supabase.from('profiles').select('name, avatar_url').eq('id', userId).single()
+      const enriched: Message = { ...msg, profiles: prof ?? null }
+      setMessages(prev => prev.some(m => m.id === enriched.id) ? prev : [...prev, enriched])
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
     }
     setSending(false)
@@ -436,7 +454,7 @@ export default function GroupPage() {
 
         {/* ── 채팅 탭 ── */}
         {activeTab === 'chat' && (
-          <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 220px)', minHeight: 400 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100svh - 260px)', minHeight: 360 }}>
             {/* 메시지 목록 */}
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 8 }}>
               {messages.length === 0 && (
