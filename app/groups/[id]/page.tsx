@@ -357,7 +357,7 @@ export default function GroupPage() {
         </div>
       </div>
 
-      <main style={{ maxWidth: 560, margin: '0 auto', padding: '0 16px 100px' }}>
+      <main style={{ maxWidth: 560, margin: '0 auto', padding: '0 16px max(120px, calc(100px + env(safe-area-inset-bottom)))' }}>
 
         {/* ── 피드 탭 ── */}
         {activeTab === 'feed' && (

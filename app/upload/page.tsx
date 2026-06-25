@@ -340,7 +340,7 @@ export default function UploadPage() {
         <div style={{ width: 48 }} />
       </header>
 
-      <main style={{ maxWidth: 480, margin: '0 auto', padding: '28px 16px 100px' }}>
+      <main style={{ maxWidth: 480, margin: '0 auto', padding: '28px 16px max(120px, calc(100px + env(safe-area-inset-bottom)))' }}>
         {/* 오늘의 챌린지 */}
         {challenge ? (
           <div style={{

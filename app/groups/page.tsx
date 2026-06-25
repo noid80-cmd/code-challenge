@@ -78,7 +78,7 @@ export default function GroupsPage() {
         <div style={{ width: 48 }} />
       </header>
 
-      <main style={{ maxWidth: 560, margin: '0 auto', padding: '28px 16px 100px' }}>
+      <main style={{ maxWidth: 560, margin: '0 auto', padding: '28px 16px max(120px, calc(100px + env(safe-area-inset-bottom)))' }}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
           <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
             placeholder="초대 코드 입력"

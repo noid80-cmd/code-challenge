@@ -113,7 +113,7 @@ export default function ChallengePage() {
         <div style={{ width: 60 }} />
       </header>
 
-      <main style={{ maxWidth: 560, margin: '0 auto', padding: '28px 16px 100px' }}>
+      <main style={{ maxWidth: 560, margin: '0 auto', padding: '28px 16px max(120px, calc(100px + env(safe-area-inset-bottom)))' }}>
 
         {/* 챌린지 카드 */}
         <div style={{
