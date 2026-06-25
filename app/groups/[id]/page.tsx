@@ -9,6 +9,7 @@ type Group = { id: string; name: string; description: string | null; invite_code
 type Submission = {
   id: string; video_url: string; caption: string | null
   likes_count: number; created_at: string; user_id: string; is_private: boolean
+  challenge_id: string | null
   profiles: { name: string; avatar_url: string | null } | null
   challenges: { title: string; date: string } | null
 }
@@ -95,11 +96,31 @@ export default function GroupPage() {
     setMemberCount(count ?? 0)
 
     const { data: subs, error: subsErr } = await supabase
-      .from('submissions').select('*, profiles(name, avatar_url), challenges(title, date)')
+      .from('submissions')
+      .select('id, video_url, caption, likes_count, created_at, user_id, is_private, challenge_id')
       .eq('group_id', groupId).order('created_at', { ascending: false })
-    if (subsErr) setFeedError('RLS 오류: ' + subsErr.message)
+    if (subsErr) { setFeedError('오류: ' + subsErr.message); setLoading(false); return }
     const subList = ((subs ?? []) as Submission[]).filter(s => !s.is_private || s.user_id === user.id)
-    setSubmissions(subList)
+
+    if (subList.length > 0) {
+      const userIds = [...new Set(subList.map(s => s.user_id))]
+      const challengeIds = [...new Set(subList.map(s => s.challenge_id).filter(Boolean))] as string[]
+      const [{ data: profs }, { data: chals }] = await Promise.all([
+        supabase.from('profiles').select('id, name, avatar_url').in('id', userIds),
+        challengeIds.length > 0
+          ? supabase.from('challenges').select('id, title, date').in('id', challengeIds)
+          : Promise.resolve({ data: [] }),
+      ])
+      const profilesMap = Object.fromEntries((profs ?? []).map(p => [p.id, p]))
+      const challengesMap = Object.fromEntries((chals ?? []).map(c => [c.id, c]))
+      setSubmissions(subList.map(s => ({
+        ...s,
+        profiles: profilesMap[s.user_id] ?? null,
+        challenges: s.challenge_id ? (challengesMap[s.challenge_id] ?? null) : null,
+      })))
+    } else {
+      setSubmissions([])
+    }
 
     const { data: likes } = await supabase.from('likes').select('submission_id').eq('user_id', user.id)
     setLikedIds(new Set(likes?.map(l => l.submission_id) ?? []))
