@@ -18,9 +18,11 @@ export async function POST() {
 - key 필드 없음`
         : type === 'mode'
         ? `【유형: 모드 초견】
-- 4마디씩 2개 진행 (총 2개 progression)
-- 코드명에 모드를 괄호로 표기: "Cm7(Dorian)", "Fmaj7(Lydian)"
+- 진행 2개, 각 4마디 구성
+- 각 진행은 코드 1개를 4마디 반복 (다른 코드 절대 섞지 말 것)
+- 코드명에 모드를 괄호로 표기: "Dm7(Dorian)", "F7(Mixolydian)"
 - 사용 가능한 모드: Dorian, Lydian, Mixolydian, Phrygian, Aeolian
+- 예시: [["Dm7(Dorian)"], ["Dm7(Dorian)"], ["Dm7(Dorian)"], ["Dm7(Dorian)"]]
 - key 필드 없음`
         : `【유형: 도수 초견】
 - 8마디 구성, 1~2개의 진행
