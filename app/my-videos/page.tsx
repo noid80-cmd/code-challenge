@@ -358,52 +358,58 @@ function VideoCard({ sub, onDelete, onTogglePrivacy }: {
           }}>접기 ▲</button>
         </>
       ) : (
-        <div style={{ display: 'flex', cursor: 'pointer' }} onClick={() => setExpanded(true)}>
-          <div style={{ width: 120, flexShrink: 0, background: '#000', position: 'relative' }}>
-            <video src={videoUrl} poster={posterUrl} preload="metadata"
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', minHeight: 80 }} />
+        <div style={{ display: 'flex', cursor: 'pointer', height: 90 }} onClick={() => setExpanded(true)}>
+          <div style={{ width: 110, flexShrink: 0, background: '#111', position: 'relative', overflow: 'hidden' }}>
+            {posterUrl ? (
+              <img src={posterUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(145deg, #1a1a18, #111110)' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M9 18V6l13-3v12" stroke="rgba(240,236,224,0.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <circle cx="6" cy="18" r="3" stroke="rgba(240,236,224,0.2)" strokeWidth="1.5"/>
+                  <circle cx="19" cy="15" r="3" stroke="rgba(240,236,224,0.2)" strokeWidth="1.5"/>
+                </svg>
+              </div>
+            )}
             <div style={{
               position: 'absolute', inset: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: 'rgba(0,0,0,0.25)',
+              background: 'rgba(0,0,0,0.2)',
             }}>
               <div style={{
-                width: 32, height: 32, borderRadius: '50%',
+                width: 28, height: 28, borderRadius: '50%',
                 background: 'rgba(255,255,255,0.85)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
-                <div style={{ width: 0, height: 0, borderStyle: 'solid', borderWidth: '6px 0 6px 11px', borderColor: 'transparent transparent transparent #0a0a08', marginLeft: 2 }} />
+                <div style={{ width: 0, height: 0, borderStyle: 'solid', borderWidth: '5px 0 5px 9px', borderColor: 'transparent transparent transparent #0a0a08', marginLeft: 2 }} />
               </div>
             </div>
             {sub.is_private && (
               <div style={{
-                position: 'absolute', top: 6, left: 6,
-                background: 'rgba(0,0,0,0.65)', borderRadius: 6,
-                padding: '2px 6px', fontSize: 10, color: '#a0988c', fontWeight: 700,
+                position: 'absolute', top: 5, left: 5,
+                background: 'rgba(0,0,0,0.7)', borderRadius: 5,
+                padding: '2px 5px', fontSize: 9, color: '#a0988c', fontWeight: 700,
               }}>비공개</div>
             )}
           </div>
-          <div style={{ flex: 1, padding: '14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div>
-              {sub.challenges?.title && (
-                <div style={{ fontSize: 13, fontWeight: 800, color: '#e0dcd0', marginBottom: 4, lineHeight: 1.3 }}>
-                  {sub.challenges.title}
-                </div>
-              )}
-              {sub.caption && <div style={{ fontSize: 12, color: '#303028', lineHeight: 1.5 }}>{sub.caption}</div>}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
-              <span style={{ fontSize: 11, color: '#1a1a18' }}>{date.getMonth() + 1}/{date.getDate()}</span>
+          <div style={{ flex: 1, padding: '12px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6, minWidth: 0 }}>
+            {sub.challenges?.title && (
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#e0dcd0', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                {sub.challenges.title}
+              </div>
+            )}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 11, color: '#303028' }}>{date.getMonth() + 1}/{date.getDate()}</span>
               <button type="button" onClick={e => { e.stopPropagation(); handleToggle() }} disabled={toggling} style={{
                 background: 'none', border: 'none', cursor: toggling ? 'default' : 'pointer',
                 fontSize: 13, padding: 0, color: sub.is_private ? '#a0988c' : '#303028',
               }}>
                 {toggling ? '...' : sub.is_private ? '🔒' : '🔓'}
               </button>
-              <span style={{ fontSize: 13, color: '#f0ece0', fontWeight: 800 }}>♥ {sub.likes_count}</span>
+              <span style={{ fontSize: 12, color: '#a0988c', fontWeight: 700 }}>♥ {sub.likes_count}</span>
               <button type="button" onClick={e => { e.stopPropagation(); handleDelete() }} disabled={deleting} style={{
                 background: 'none', border: 'none', color: '#604040', fontSize: 12, fontWeight: 700,
-                cursor: deleting ? 'default' : 'pointer', padding: 0,
+                cursor: deleting ? 'default' : 'pointer', padding: 0, marginLeft: 'auto',
               }}>
                 {deleting ? '...' : '삭제'}
               </button>
