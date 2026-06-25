@@ -203,11 +203,15 @@ export default function UploadPage() {
     if (uploadError) { setError('업로드 실패: ' + uploadError.message); setUploading(false); return }
     const thumbBlob = await generateThumbnail(file)
     let thumbnailUrl: string | null = null
+    let thumbDebug = '생성실패'
     if (thumbBlob) {
+      thumbDebug = `생성OK(${thumbBlob.size}b)`
       const thumbPath = `${user.id}/thumb_${ts}.jpg`
       const { error: thumbErr } = await supabase.storage.from('videos').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg', upsert: true })
-      if (!thumbErr) thumbnailUrl = thumbPath
+      if (!thumbErr) { thumbnailUrl = thumbPath; thumbDebug = '저장OK' }
+      else thumbDebug = `저장실패:${thumbErr.message}`
     }
+    setError(`[썸네일] ${thumbDebug}`)
     const { error: dbError } = await supabase.from('submissions').insert({
       challenge_id: challenge.id, user_id: user.id, video_url: path,
       caption: caption.trim() || null,
