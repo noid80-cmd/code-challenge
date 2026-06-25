@@ -9,6 +9,7 @@ import Link from 'next/link'
 type Progression = { label: string; chords: string[][]; style?: string; tempo?: number }
 type DraftChallenge = { title: string; description: string; progressions: Progression[]; level: string }
 type ExistingChallenge = { id: string; date: string; title: string; level: string }
+type Member = { id: string; name: string; avatar_url: string | null; created_at: string; submissionCount: number; lastSubmission: string | null }
 
 const LEVEL_LABELS: Record<string, string> = { beginner: '초급', intermediate: '중급', advanced: '고급' }
 const LEVEL_COLORS: Record<string, string> = { beginner: '#34d399', intermediate: '#818cf8', advanced: '#f87171' }
@@ -55,6 +56,7 @@ const emptyDraft = (): DraftChallenge => ({
 export default function AdminPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
+  const [adminTab, setAdminTab] = useState<'challenges' | 'members'>('challenges')
   const [mode, setMode] = useState<'ai' | 'manual'>('manual')
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -65,6 +67,8 @@ export default function AdminPage() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().slice(0, 10))
   const [challenges, setChallenges] = useState<ExistingChallenge[]>([])
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [members, setMembers] = useState<Member[]>([])
+  const [membersLoaded, setMembersLoaded] = useState(false)
 
   const loadChallenges = useCallback(async () => {
     const supabase = createClient()
@@ -157,6 +161,25 @@ export default function AdminPage() {
     })
     setMode('manual'); setError(''); setSuccess('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function loadMembers() {
+    if (membersLoaded) return
+    const supabase = createClient()
+    const { data: profiles } = await supabase.from('profiles').select('id, name, avatar_url, created_at').order('created_at', { ascending: false })
+    const { data: subs } = await supabase.from('submissions').select('user_id, created_at').order('created_at', { ascending: false })
+    const countMap: Record<string, number> = {}
+    const lastMap: Record<string, string> = {}
+    ;(subs ?? []).forEach(s => {
+      countMap[s.user_id] = (countMap[s.user_id] ?? 0) + 1
+      if (!lastMap[s.user_id]) lastMap[s.user_id] = s.created_at
+    })
+    setMembers((profiles ?? []).map(p => ({
+      ...p,
+      submissionCount: countMap[p.id] ?? 0,
+      lastSubmission: lastMap[p.id] ?? null,
+    })))
+    setMembersLoaded(true)
   }
 
   async function deleteChallenge(id: string) {
@@ -253,13 +276,73 @@ export default function AdminPage() {
     <div style={{ minHeight: '100vh', background: '#09090f' }}>
       <header style={{ position: 'sticky', top: 0, zIndex: 50, background: 'rgba(9,9,15,0.92)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.06)', padding: '0 16px', height: 54, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/" style={{ color: '#818cf8', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
-        <span style={{ fontWeight: 800, fontSize: 15, color: '#eeeeff' }}>챌린지 관리</span>
+        <span style={{ fontWeight: 800, fontSize: 15, color: '#eeeeff' }}>관리자</span>
         <div style={{ width: 48 }} />
       </header>
 
       <main style={{ maxWidth: 560, margin: '0 auto', padding: '24px 16px 80px' }}>
+        {/* 탭 */}
+        <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
+          {(['challenges', 'members'] as const).map(tab => (
+            <button key={tab} onClick={() => { setAdminTab(tab); if (tab === 'members') loadMembers() }} style={{
+              flex: 1, padding: '8px', borderRadius: 9, border: 'none', cursor: 'pointer',
+              background: adminTab === tab ? 'rgba(99,102,241,0.2)' : 'transparent',
+              color: adminTab === tab ? '#a5b4fc' : '#555570',
+              fontSize: 13, fontWeight: 800,
+            }}>
+              {tab === 'challenges' ? '챌린지' : '회원 명단'}
+            </button>
+          ))}
+        </div>
 
-        {!editingId && (
+        {/* ── 회원 명단 ── */}
+        {adminTab === 'members' && (
+          <div>
+            <div style={{ fontSize: 12, color: '#555577', fontWeight: 600, marginBottom: 14 }}>
+              총 {members.length}명
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {members.map(m => (
+                <div key={m.id} style={{
+                  background: '#0d0d1a', border: '1px solid rgba(255,255,255,0.07)',
+                  borderRadius: 14, padding: '12px 14px',
+                  display: 'flex', alignItems: 'center', gap: 12,
+                }}>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+                    background: 'linear-gradient(135deg, #6366f1, #818cf8)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 15, fontWeight: 800, color: '#fff', overflow: 'hidden',
+                  }}>
+                    {m.avatar_url
+                      ? <img src={m.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                      : (m.name ?? '?').slice(0, 1).toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#ccccee', marginBottom: 2 }}>{m.name ?? '이름없음'}</div>
+                    <div style={{ fontSize: 11, color: '#444466' }}>
+                      가입 {new Date(m.created_at).toLocaleDateString('ko-KR')}
+                      {m.lastSubmission && (
+                        <span style={{ marginLeft: 8 }}>
+                          · 마지막 업로드 {new Date(m.lastSubmission).toLocaleDateString('ko-KR')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: m.submissionCount > 0 ? '#818cf8' : '#333355' }}>{m.submissionCount}</div>
+                    <div style={{ fontSize: 10, color: '#333355', fontWeight: 600 }}>영상</div>
+                  </div>
+                </div>
+              ))}
+              {members.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#333355', fontSize: 14 }}>회원이 없어요</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {adminTab === 'challenges' && !editingId && (
           <div style={{ background: '#0e0e1a', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16, padding: 20, marginBottom: 16 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: '#eeeeff', marginBottom: 10 }}>챌린지 날짜</div>
             <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} style={inputStyle} />
@@ -269,6 +352,7 @@ export default function AdminPage() {
           </div>
         )}
 
+        {adminTab === 'challenges' && <>
         <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
           <button onClick={() => { setMode('manual'); if (!editingId) setDraft(emptyDraft()); setError('') }}
             style={{ flex: 1, padding: '11px', borderRadius: 12, background: mode === 'manual' ? 'rgba(99,102,241,0.2)' : '#0e0e1a', color: mode === 'manual' ? '#a5b4fc' : '#555570', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: mode === 'manual' ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
@@ -451,6 +535,7 @@ export default function AdminPage() {
             </div>
           </div>
         )}
+        </>}
       </main>
     </div>
   )
