@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
-import { localDate } from '@/lib/date'
+import { localDate, challengeDate } from '@/lib/date'
 const ChordPlayer = dynamic(() => import('./components/ChordPlayer'), { ssr: false })
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
@@ -120,6 +120,7 @@ export default function HomePage() {
   const [filterProg, setFilterProg] = useState<number | 'all'>('all')
   const [streak, setStreak] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [isBeforeNoon, setIsBeforeNoon] = useState(false)
   const [profile, setProfile] = useState<{ name: string; avatar_url: string | null } | null>(null)
 
   const load = useCallback(async () => {
@@ -127,8 +128,9 @@ export default function HomePage() {
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
 
-    const today = localDate()
-    const { data: ch } = await supabase.from('challenges').select('*').eq('date', today).order('created_at', { ascending: false }).limit(1).single()
+    const { date: chDate, isBeforeNoon } = challengeDate()
+    setIsBeforeNoon(isBeforeNoon)
+    const { data: ch } = await supabase.from('challenges').select('*').eq('date', chDate).order('created_at', { ascending: false }).limit(1).single()
     setChallenge(ch)
 
     if (ch) {
@@ -273,6 +275,22 @@ export default function HomePage() {
             오늘의 챌린지 · {dateStr}
           </span>
         </div>
+
+        {/* 낮 12시 전 안내 배너 */}
+        {isBeforeNoon && (
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10,
+            background: 'rgba(240,236,224,0.05)',
+            border: '1px solid rgba(240,236,224,0.12)',
+            borderRadius: 14, padding: '11px 16px', marginBottom: 16,
+          }}>
+            <span style={{ fontSize: 15 }}>🌅</span>
+            <div>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#a0988c' }}>오늘의 챌린지는 낮 12시에 올라와요</span>
+              <span style={{ fontSize: 12, color: '#484640', marginLeft: 8 }}>지금은 어제 챌린지예요</span>
+            </div>
+          </div>
+        )}
 
         {/* Challenge card */}
         <section style={{ marginBottom: 40 }}>

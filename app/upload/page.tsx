@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ChordPlayer from '@/app/components/ChordPlayer'
 import { normalizeMeasures } from '@/lib/chords'
-import { localDate } from '@/lib/date'
+import { challengeDate } from '@/lib/date'
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type Challenge = { id: string; title: string; description?: string; level: string; chords: { progressions: Progression[] } }
@@ -43,7 +43,7 @@ export default function UploadPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
-      const today = localDate()
+      const { date: today } = challengeDate()
       const { data } = await supabase.from('challenges').select('*').eq('date', today).order('created_at', { ascending: false }).limit(1).single()
       setChallenge(data)
       const { data: memberships } = await supabase
