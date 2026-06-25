@@ -454,7 +454,7 @@ export default function GroupPage() {
 
         {/* ── 채팅 탭 ── */}
         {activeTab === 'chat' && (
-          <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100svh - 260px)', minHeight: 360 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100dvh - 260px)', minHeight: 360 }}>
             {/* 메시지 목록 */}
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 8 }}>
               {messages.length === 0 && (
@@ -502,9 +502,9 @@ export default function GroupPage() {
             </div>
 
             {/* 입력창 */}
-            <div style={{ borderTop: '1px solid rgba(240,236,224,0.1)', paddingTop: 12 }}>
+            <div style={{ borderTop: '1px solid rgba(240,236,224,0.1)', paddingTop: 12, paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}>
             {chatError && <p style={{ fontSize: 12, color: '#f87171', marginBottom: 6, textAlign: 'center' }}>{chatError}</p>}
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <input
                 value={messageText}
                 onChange={e => setMessageText(e.target.value)}
