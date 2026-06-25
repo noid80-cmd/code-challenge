@@ -34,8 +34,9 @@ export default function ChartPage() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: '1px solid rgba(240,236,224,0.08)',
       }}>
-        <Link href="/upload" style={{ fontSize: 13, fontWeight: 700, color: '#605850', textDecoration: 'none' }}>
-          ← 업로드
+        <Link href="/upload" style={{ fontSize: 13, fontWeight: 700, color: '#605850', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
+          <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          업로드
         </Link>
         <span style={{ fontSize: 11, color: '#303028', fontWeight: 600, letterSpacing: '0.08em' }}>
           악보 보기

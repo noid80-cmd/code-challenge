@@ -108,7 +108,10 @@ export default function ChallengePage() {
         padding: '0 20px', height: 54,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/challenges" style={{ color: '#605850', fontSize: 13, fontWeight: 700 }}>← 아카이브</Link>
+        <Link href="/challenges" style={{ color: '#605850', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+          <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          아카이브
+        </Link>
         <span style={{ fontSize: 11, fontWeight: 700, color: '#403830', letterSpacing: '0.04em' }}>{challenge.date}</span>
         <div style={{ width: 60 }} />
       </header>

@@ -46,7 +46,10 @@ export default function ChallengesPage() {
         padding: '0 20px', height: 54,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/" style={{ color: '#605850', fontSize: 13, fontWeight: 700 }}>← 홈</Link>
+        <Link href="/" style={{ color: '#605850', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+          <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          홈
+        </Link>
         <span style={{ fontWeight: 800, fontSize: 15, color: '#f0ece0', letterSpacing: '-0.01em' }}>챌린지 아카이브</span>
         <div style={{ width: 48 }} />
       </header>
