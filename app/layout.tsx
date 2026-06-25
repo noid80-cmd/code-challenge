@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   title: '코드 챌린지',
   description: '매일 코드초견 챌린지 — 연주하고 공유하세요',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icon-192.png',
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 export const viewport: Viewport = {
