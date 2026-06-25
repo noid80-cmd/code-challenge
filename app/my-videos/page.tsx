@@ -138,6 +138,15 @@ export default function MyVideosPage() {
     setAvatarUploading(false)
   }
 
+  function handleDeleteState(subId: string) {
+    const newSubs = submissions.filter(s => s.id !== subId)
+    setSubmissions(newSubs)
+    const dates = newSubs.map(s => s.created_at.slice(0, 10))
+    setSubmittedDates(new Set(dates))
+    setStreak(calcStreak(dates))
+    setTotalLikes(newSubs.reduce((sum, s) => sum + s.likes_count, 0))
+  }
+
   const byMonth: Record<string, Submission[]> = {}
   submissions.forEach(s => {
     const d = new Date(s.created_at)
@@ -276,7 +285,7 @@ export default function MyVideosPage() {
                 {month}
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {subs.map(sub => <VideoCard key={sub.id} sub={sub} />)}
+                {subs.map(sub => <VideoCard key={sub.id} sub={sub} onDelete={() => handleDeleteState(sub.id)} />)}
               </div>
             </div>
           ))
@@ -286,17 +295,30 @@ export default function MyVideosPage() {
   )
 }
 
-function VideoCard({ sub }: { sub: Submission }) {
+function VideoCard({ sub, onDelete }: { sub: Submission; onDelete: () => void }) {
   const supabase = createClient()
+  const [deleting, setDeleting] = useState(false)
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
   const date = new Date(sub.created_at)
+
+  async function handleDelete() {
+    if (!confirm('이 영상을 삭제할까요?')) return
+    setDeleting(true)
+    if (!sub.video_url.startsWith('http')) {
+      await supabase.storage.from('videos').remove([sub.video_url])
+    }
+    await supabase.from('submissions').delete().eq('id', sub.id)
+    onDelete()
+  }
+
   return (
     <div style={{
       background: 'linear-gradient(145deg, #111110, #0d0d0c)',
       border: '1px solid rgba(240,236,224,0.08)',
       borderRadius: 18, overflow: 'hidden', display: 'flex',
+      opacity: deleting ? 0.5 : 1, transition: 'opacity 0.2s',
     }}>
       <div style={{ width: 120, flexShrink: 0, background: '#000' }}>
         <video src={videoUrl} preload="metadata"
@@ -314,6 +336,12 @@ function VideoCard({ sub }: { sub: Submission }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 10 }}>
           <span style={{ fontSize: 11, color: '#1a1a18' }}>{date.getMonth() + 1}/{date.getDate()}</span>
           <span style={{ fontSize: 13, color: '#f0ece0', fontWeight: 800 }}>♥ {sub.likes_count}</span>
+          <button type="button" onClick={handleDelete} disabled={deleting} style={{
+            background: 'none', border: 'none', color: '#604040', fontSize: 12, fontWeight: 700,
+            cursor: deleting ? 'default' : 'pointer', padding: 0,
+          }}>
+            {deleting ? '...' : '삭제'}
+          </button>
         </div>
       </div>
     </div>

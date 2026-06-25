@@ -400,8 +400,13 @@ export default function UploadPage() {
                 }}>다시 촬영</button>
                 <button type="button" onClick={() => fileRef.current?.click()} style={{
                   flex: 1, padding: '11px', background: 'transparent', border: 'none',
+                  borderRight: '1px solid rgba(240,236,224,0.08)',
                   color: '#605850', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                 }}>파일 선택</button>
+                <button type="button" onClick={() => { setFile(null); setPreview(null) }} style={{
+                  flex: 1, padding: '11px', background: 'transparent', border: 'none',
+                  color: '#604040', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}>취소</button>
               </div>
             </div>
           ) : (
