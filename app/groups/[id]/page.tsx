@@ -511,7 +511,7 @@ export default function GroupPage() {
                 onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }}
                 placeholder="메시지 입력..."
                 style={{
-                  flex: 1, background: 'rgba(240,236,224,0.06)',
+                  flex: 1, minWidth: 0, background: 'rgba(240,236,224,0.06)',
                   border: '1px solid rgba(240,236,224,0.15)',
                   borderRadius: 22, padding: '10px 16px',
                   fontSize: 14, color: '#f0ece0', outline: 'none',
@@ -684,7 +684,7 @@ function SubmissionCard({
                             placeholder="답글을 입력하세요"
                             onKeyDown={e => { if (e.key === 'Enter') handleReply(c.id) }}
                             style={{
-                              flex: 1, background: 'rgba(13,13,12,0.8)',
+                              flex: 1, minWidth: 0, background: 'rgba(13,13,12,0.8)',
                               border: '1px solid rgba(240,236,224,0.15)',
                               borderRadius: 8, padding: '7px 10px',
                               fontSize: 12, color: '#f0ece0', outline: 'none',
@@ -728,7 +728,7 @@ function SubmissionCard({
               placeholder="댓글을 입력하세요"
               onKeyDown={e => { if (e.key === 'Enter') handleComment() }}
               style={{
-                flex: 1, background: 'rgba(13,13,12,0.8)',
+                flex: 1, minWidth: 0, background: 'rgba(13,13,12,0.8)',
                 border: '1px solid rgba(240,236,224,0.2)',
                 borderRadius: 9, padding: '9px 12px',
                 fontSize: 13, color: '#f0ece0', outline: 'none',
