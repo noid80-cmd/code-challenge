@@ -48,44 +48,6 @@ export default function IntroPage() {
           연주 영상을 올려 함께 연습해요
         </p>
 
-        {/* 미리보기 카드 */}
-        <div style={{
-          width: '100%', maxWidth: 340,
-          background: 'linear-gradient(145deg, #111110, #0d0d0c)',
-          border: '1px solid rgba(240,236,224,0.15)',
-          borderRadius: 20, padding: '20px 20px 16px',
-          marginBottom: 40,
-          boxShadow: '0 16px 48px rgba(0,0,0,0.6)',
-        }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: '#605850', letterSpacing: '0.12em', marginBottom: 12, textAlign: 'left' }}>
-            TODAY&apos;S CHALLENGE
-          </div>
-
-          {/* 가짜 악보 */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-            {['Cmaj7', 'Am7', 'Dm7', 'G7'].map((chord, i) => (
-              <div key={i} style={{
-                flex: 1, padding: '10px 4px',
-                background: 'rgba(240,236,224,0.06)',
-                border: '1px solid rgba(240,236,224,0.12)',
-                borderRadius: 10, textAlign: 'center',
-              }}>
-                <div style={{ fontSize: 13, fontWeight: 900, color: '#f8f4ec', letterSpacing: '-0.02em' }}>{chord}</div>
-                <div style={{ fontSize: 9, color: '#403830', marginTop: 3 }}>♩</div>
-              </div>
-            ))}
-          </div>
-
-          {/* 가짜 업로드 버튼 */}
-          <div style={{
-            padding: '11px', borderRadius: 12, textAlign: 'center',
-            background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-            color: '#0a0a08', fontSize: 13, fontWeight: 800,
-          }}>
-            챌린지 참여하기
-          </div>
-        </div>
-
         {/* CTA */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%', maxWidth: 340 }}>
           <Link href="/login" style={{
