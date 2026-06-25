@@ -116,6 +116,7 @@ export default function HomePage() {
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest')
+  const [filterProg, setFilterProg] = useState<number | 'all'>('all')
   const [streak, setStreak] = useState(0)
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<{ name: string; avatar_url: string | null } | null>(null)
@@ -371,7 +372,7 @@ export default function HomePage() {
 
         {/* Submissions */}
         <section>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 15, fontWeight: 800, color: '#e0dcd0', letterSpacing: '-0.01em' }}>
                 오늘의 연주
@@ -403,6 +404,24 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* 진행 필터 — 진행이 2개 이상일 때만 표시 */}
+          {(challenge?.chords?.progressions?.length ?? 0) > 1 && (
+            <div style={{ display: 'flex', gap: 7, marginBottom: 16 }}>
+              {[{ key: 'all' as const, label: '전체' }, ...(challenge?.chords?.progressions ?? []).map((p, i) => ({ key: i as number, label: p.label || `진행 ${i + 1}` }))].map(tab => (
+                <button key={String(tab.key)} onClick={() => setFilterProg(tab.key)} style={{
+                  padding: '6px 13px', borderRadius: 20, border: 'none', cursor: 'pointer',
+                  background: filterProg === tab.key ? 'rgba(240,236,224,0.15)' : 'transparent',
+                  color: filterProg === tab.key ? '#f0ece0' : '#403830',
+                  fontSize: 12, fontWeight: 700,
+                  outline: filterProg === tab.key ? '1px solid rgba(240,236,224,0.25)' : '1px solid transparent',
+                  transition: 'all 0.15s',
+                }}>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {submissions.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 0' }}>
               <p style={{ color: '#303028', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>아직 연주가 없어요</p>
@@ -411,6 +430,7 @@ export default function HomePage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {[...submissions]
+                .filter(s => filterProg === 'all' || s.progression_index === filterProg)
                 .sort((a, b) => sortBy === 'popular'
                   ? b.likes_count - a.likes_count
                   : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
