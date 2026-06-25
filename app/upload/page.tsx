@@ -131,8 +131,7 @@ export default function UploadPage() {
       const url = URL.createObjectURL(f)
       let done = false
 
-      // iOS Safari requires video to be in the DOM for canvas.drawImage to work
-      video.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;'
+      video.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;'
       document.body.appendChild(video)
 
       function finish(blob: Blob | null) {
@@ -160,14 +159,26 @@ export default function UploadPage() {
         } catch { finish(null) }
       }
 
-      video.onseeked = capture
-      video.ontimeupdate = () => {
-        if (video.currentTime > 0) { video.ontimeupdate = null; capture() }
+      video.onloadeddata = () => {
+        // Muted videos can play() without user gesture on iOS Safari
+        // This is the only reliable way to get onseeked/frames on iOS
+        video.play().then(() => {
+          video.ontimeupdate = () => {
+            if (video.currentTime > 0) {
+              video.ontimeupdate = null
+              video.pause()
+              setTimeout(capture, 50)
+            }
+          }
+        }).catch(() => {
+          // Non-iOS fallback: seek directly
+          video.onseeked = capture
+          video.currentTime = 0.1
+        })
       }
-      video.onloadeddata = () => { video.currentTime = 0.1 }
-      video.onerror = () => finish(null)
 
-      const timer = setTimeout(() => finish(null), 8000)
+      video.onerror = () => finish(null)
+      const timer = setTimeout(() => finish(null), 10000)
 
       video.muted = true
       video.playsInline = true
