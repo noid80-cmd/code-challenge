@@ -229,6 +229,16 @@ export default function GroupPage() {
     }
   }
 
+  async function deleteSubmission(subId: string, videoUrl: string) {
+    const supabase = createClient()
+    if (!videoUrl.startsWith('http')) {
+      await supabase.storage.from('videos').remove([videoUrl])
+    }
+    await supabase.from('submissions').delete().eq('id', subId)
+    setSubmissions(prev => prev.filter(s => s.id !== subId))
+    setCommentsBySubId(prev => { const next = { ...prev }; delete next[subId]; return next })
+  }
+
   async function deleteComment(subId: string, commentId: string) {
     const supabase = createClient()
     await supabase.from('comments').delete().eq('id', commentId)
@@ -445,6 +455,7 @@ export default function GroupPage() {
                     onLike={() => toggleLike(sub.id)}
                     onComment={(text, parentId) => addComment(sub.id, text, parentId)}
                     onDeleteComment={cid => deleteComment(sub.id, cid)}
+                    onDeleteSubmission={() => deleteSubmission(sub.id, sub.video_url)}
                   />
                 ))}
               </div>
@@ -535,20 +546,28 @@ export default function GroupPage() {
 }
 
 function SubmissionCard({
-  sub, liked, comments, currentUserId, onLike, onComment, onDeleteComment,
+  sub, liked, comments, currentUserId, onLike, onComment, onDeleteComment, onDeleteSubmission,
 }: {
   sub: Submission; liked: boolean; comments: Comment[]
   currentUserId: string; onLike: () => void
   onComment: (text: string, parentId?: string) => void
   onDeleteComment: (id: string) => void
+  onDeleteSubmission: () => void
 }) {
   const supabase = createClient()
   const [commentText, setCommentText] = useState('')
   const [showInput, setShowInput] = useState(false)
   const [replyToId, setReplyToId] = useState<string | null>(null)
   const [replyText, setReplyText] = useState('')
+  const [deleting, setDeleting] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const replyInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleDelete() {
+    if (!confirm('이 영상을 삭제할까요?')) return
+    setDeleting(true)
+    onDeleteSubmission()
+  }
 
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
@@ -597,17 +616,25 @@ function SubmissionCard({
               </div>
             </div>
           </div>
-          <button onClick={onLike} style={{
-            background: liked ? 'rgba(240,236,224,0.12)' : 'rgba(255,255,255,0.02)',
-            border: liked ? '1px solid rgba(240,236,224,0.4)' : '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 10, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 6,
-            color: liked ? '#f0ece0' : '#303028',
-            fontSize: 14, fontWeight: 800, padding: '7px 12px',
-          }}>
-            {liked ? '♥' : '♡'}
-            <span style={{ fontSize: 12 }}>{sub.likes_count}</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {sub.user_id === currentUserId && (
+              <button onClick={handleDelete} disabled={deleting} style={{
+                background: 'none', border: 'none', cursor: deleting ? 'default' : 'pointer',
+                color: '#484640', fontSize: 12, fontWeight: 600, padding: '4px 6px',
+              }}>{deleting ? '...' : '삭제'}</button>
+            )}
+            <button onClick={onLike} style={{
+              background: liked ? 'rgba(240,236,224,0.12)' : 'rgba(255,255,255,0.02)',
+              border: liked ? '1px solid rgba(240,236,224,0.4)' : '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 10, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
+              color: liked ? '#f0ece0' : '#303028',
+              fontSize: 14, fontWeight: 800, padding: '7px 12px',
+            }}>
+              {liked ? '♥' : '♡'}
+              <span style={{ fontSize: 12 }}>{sub.likes_count}</span>
+            </button>
+          </div>
         </div>
 
         {sub.caption && <p style={{ fontSize: 13, color: '#605850', marginBottom: 10, lineHeight: 1.6 }}>{sub.caption}</p>}
