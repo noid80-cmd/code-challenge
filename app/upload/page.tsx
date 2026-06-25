@@ -129,21 +129,47 @@ export default function UploadPage() {
     return new Promise((resolve) => {
       const video = document.createElement('video')
       const url = URL.createObjectURL(f)
-      video.src = url; video.muted = true; video.playsInline = true
-      video.onloadedmetadata = () => { video.currentTime = 0.5 }
-      video.onseeked = () => {
+      let done = false
+
+      function finish(blob: Blob | null) {
+        if (done) return
+        done = true
+        clearTimeout(timer)
+        URL.revokeObjectURL(url)
+        resolve(blob)
+      }
+
+      function capture() {
         try {
+          const w = video.videoWidth, h = video.videoHeight
+          if (!w || !h) { finish(null); return }
           const canvas = document.createElement('canvas')
           const max = 720
-          const ratio = Math.min(max / (video.videoWidth || max), max / (video.videoHeight || max))
-          canvas.width = Math.round((video.videoWidth || max) * ratio)
-          canvas.height = Math.round((video.videoHeight || max) * ratio)
-          canvas.getContext('2d')?.drawImage(video, 0, 0, canvas.width, canvas.height)
-          URL.revokeObjectURL(url)
-          canvas.toBlob(b => resolve(b), 'image/jpeg', 0.75)
-        } catch { URL.revokeObjectURL(url); resolve(null) }
+          const ratio = Math.min(max / w, max / h, 1)
+          canvas.width = Math.round(w * ratio)
+          canvas.height = Math.round(h * ratio)
+          const ctx = canvas.getContext('2d')
+          if (!ctx) { finish(null); return }
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+          canvas.toBlob(b => finish(b), 'image/jpeg', 0.75)
+        } catch { finish(null) }
       }
-      video.onerror = () => { URL.revokeObjectURL(url); resolve(null) }
+
+      // iOS: onseeked may not fire — use timeupdate as fallback
+      video.onseeked = capture
+      video.ontimeupdate = () => {
+        if (video.currentTime > 0) { video.ontimeupdate = null; capture() }
+      }
+      video.onloadeddata = () => { video.currentTime = 0.1 }
+      video.onerror = () => finish(null)
+
+      // Hard timeout: give up after 6 seconds
+      const timer = setTimeout(() => finish(null), 6000)
+
+      video.muted = true
+      video.playsInline = true
+      video.preload = 'auto'
+      video.src = url
       video.load()
     })
   }
