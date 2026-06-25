@@ -208,8 +208,11 @@ export default function UploadPage() {
     if (thumbBlob) {
       thumbDebug = `생성OK(${thumbBlob.size}b)`
       const thumbPath = `${user.id}/thumb_${ts}.jpg`
-      const { error: thumbErr } = await supabase.storage.from('videos').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg', upsert: true })
-      if (!thumbErr) { thumbnailUrl = thumbPath; thumbDebug = '저장OK' }
+      const { error: thumbErr } = await supabase.storage.from('avatars').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg', upsert: true })
+      if (!thumbErr) {
+        thumbnailUrl = supabase.storage.from('avatars').getPublicUrl(thumbPath).data.publicUrl
+        thumbDebug = '저장OK'
+      }
       else thumbDebug = `저장실패:${thumbErr.message}`
     }
     setThumbDebugMsg(thumbDebug)
