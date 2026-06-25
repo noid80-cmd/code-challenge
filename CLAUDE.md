@@ -3,7 +3,7 @@
 # 코드 챌린지
 
 ## 배포 & 저장소
-- **URL**: (미정 — Vercel 배포 예정)
+- **URL**: code.vercel.app
 - **GitHub**: noid80-cmd/code-challenge
 - **플랫폼**: Vercel
 - **commit/push는 허락 없이 바로 진행**
