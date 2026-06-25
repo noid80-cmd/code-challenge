@@ -231,7 +231,7 @@ export default function HomePage() {
                 padding: '6px 12px', borderRadius: 8,
                 background: 'rgba(240,236,224,0.1)', border: '1px solid rgba(240,236,224,0.2)',
                 color: '#f8f4ec', fontSize: 13, fontWeight: 700,
-              }}>크루</Link>
+              }}>그룹</Link>
               <Link href="/upload" style={{
                 padding: '6px 14px', borderRadius: 8,
                 background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',

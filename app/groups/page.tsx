@@ -41,7 +41,7 @@ export default function GroupsPage() {
     if (err || !group) { setError('생성 실패: ' + (err?.message ?? '')); return }
     await supabase.from('group_members').insert({ group_id: group.id, user_id: user.id })
     setNewName(''); setNewDesc(''); setShowCreate(false); setError('')
-    flash('크루가 만들어졌어요!'); load()
+    flash('그룹이 만들어졌어요!'); load()
   }
 
   async function joinGroup() {
@@ -52,8 +52,8 @@ export default function GroupsPage() {
     const { data: group } = await supabase.from('groups').select('id').eq('invite_code', joinCode.trim().toUpperCase()).single()
     if (!group) { setError('초대 코드를 찾을 수 없어요'); return }
     const { error: err } = await supabase.from('group_members').insert({ group_id: group.id, user_id: user.id })
-    if (err) { setError(err.message.includes('unique') ? '이미 참가한 크루예요' : '참가 실패'); return }
-    setJoinCode(''); setError(''); flash('크루에 참가했어요!'); load()
+    if (err) { setError(err.message.includes('unique') ? '이미 참가한 그룹이에요' : '참가 실패'); return }
+    setJoinCode(''); setError(''); flash('그룹에 참가했어요!'); load()
   }
 
   function flash(text: string) { setMsg(text); setTimeout(() => setMsg(''), 2500) }
@@ -74,7 +74,7 @@ export default function GroupsPage() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <Link href="/" style={{ color: '#605850', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
-        <span style={{ fontWeight: 800, fontSize: 16, color: '#f0ece0', letterSpacing: '-0.02em' }}>내 크루</span>
+        <span style={{ fontWeight: 800, fontSize: 16, color: '#f0ece0', letterSpacing: '-0.02em' }}>내 그룹</span>
         <div style={{ width: 48 }} />
       </header>
 
@@ -97,7 +97,7 @@ export default function GroupsPage() {
           background: 'transparent', border: '1px dashed rgba(240,236,224,0.2)',
           color: '#605850', fontSize: 14, fontWeight: 700, cursor: 'pointer',
         }}>
-          {showCreate ? '취소' : '+ 크루 만들기'}
+          {showCreate ? '취소' : '+ 그룹 만들기'}
         </button>
 
         {showCreate && (
@@ -107,7 +107,7 @@ export default function GroupsPage() {
             boxShadow: '0 8px 32px rgba(240,236,224,0.06)',
           }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="크루 이름"
+              <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="그룹 이름"
                 style={inputStyle} autoFocus onKeyDown={e => e.key === 'Enter' && createGroup()} />
               <input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="한 줄 소개 (선택)" style={inputStyle} />
               <button onClick={createGroup} style={{
@@ -139,8 +139,8 @@ export default function GroupsPage() {
                 <path d="M18 16c2.761 0 5 1.567 5 3.5" stroke="#303028" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
             </div>
-            <p style={{ color: '#303028', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>참가한 크루가 없어요</p>
-            <p style={{ color: '#1a1a18', fontSize: 13 }}>크루를 만들거나 초대 코드로 참가해보세요</p>
+            <p style={{ color: '#303028', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>참가한 그룹이 없어요</p>
+            <p style={{ color: '#1a1a18', fontSize: 13 }}>그룹을 만들거나 초대 코드로 참가해보세요</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

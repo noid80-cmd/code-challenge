@@ -72,6 +72,7 @@ export default function GroupPage() {
   const [messages, setMessages] = useState<Message[]>([])
   const [messageText, setMessageText] = useState('')
   const [sending, setSending] = useState(false)
+  const [chatError, setChatError] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatLoadedRef = useRef(false)
 
@@ -227,10 +228,14 @@ export default function GroupPage() {
     const supabase = createClient()
     const content = messageText.trim()
     setMessageText('')
-    const { data: msg } = await supabase.from('group_messages')
+    const { data: msg, error: sendErr } = await supabase.from('group_messages')
       .insert({ group_id: groupId, user_id: userId, content })
       .select('*, profiles(name, avatar_url)').single()
-    if (msg) {
+    if (sendErr) {
+      setChatError('전송 실패: ' + sendErr.message)
+      setTimeout(() => setChatError(''), 3000)
+    } else if (msg) {
+      setChatError('')
       setMessages(prev => prev.some(m => m.id === (msg as Message).id) ? prev : [...prev, msg as Message])
       setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
     }
@@ -261,7 +266,7 @@ export default function GroupPage() {
         padding: '0 20px', height: 54,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/groups" style={{ color: '#605850', fontSize: 13, fontWeight: 700 }}>← 크루</Link>
+        <Link href="/groups" style={{ color: '#605850', fontSize: 13, fontWeight: 700 }}>← 그룹</Link>
         <span style={{ fontWeight: 800, fontSize: 15, color: '#f0ece0', letterSpacing: '-0.02em', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
           {group?.name}
         </span>
@@ -450,10 +455,9 @@ export default function GroupPage() {
             </div>
 
             {/* 입력창 */}
-            <div style={{
-              borderTop: '1px solid rgba(240,236,224,0.1)',
-              paddingTop: 12, display: 'flex', gap: 8,
-            }}>
+            <div style={{ borderTop: '1px solid rgba(240,236,224,0.1)', paddingTop: 12 }}>
+            {chatError && <p style={{ fontSize: 12, color: '#f87171', marginBottom: 6, textAlign: 'center' }}>{chatError}</p>}
+            <div style={{ display: 'flex', gap: 8 }}>
               <input
                 value={messageText}
                 onChange={e => setMessageText(e.target.value)}
@@ -474,6 +478,7 @@ export default function GroupPage() {
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s',
               }}>↑</button>
+            </div>
             </div>
           </div>
         )}

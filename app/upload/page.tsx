@@ -165,8 +165,8 @@ export default function UploadPage() {
           </div>
           <h2 style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 10, color: '#f0ece0' }}>업로드 완료!</h2>
           <p style={{ color: '#605850', fontSize: 14, marginBottom: 36, lineHeight: 1.8 }}>
-            {isGroup ? `${groupName} 크루에 올라갔어요.` : '연주가 피드에 올라갔어요.'}<br />
-            {isGroup ? '크루 피드에서 확인해보세요.' : '다른 분들의 연주도 확인해보세요.'}
+            {isGroup ? `${groupName} 그룹에 올라갔어요.` : '연주가 피드에 올라갔어요.'}<br />
+            {isGroup ? '그룹 피드에서 확인해보세요.' : '다른 분들의 연주도 확인해보세요.'}
           </p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
             {isGroup && (
@@ -176,7 +176,7 @@ export default function UploadPage() {
                 color: '#0a0a08', fontSize: 14, fontWeight: 700,
                 boxShadow: '0 6px 20px rgba(240,236,224,0.35)',
                 textDecoration: 'none', display: 'inline-block',
-              }}>크루 피드 보기</a>
+              }}>그룹 피드 보기</a>
             )}
             <Link href="/" style={{
               padding: '12px 24px', borderRadius: 12,
@@ -484,7 +484,7 @@ export default function UploadPage() {
                         {g.name}
                       </span>
                       {g.id !== 'public' && (
-                        <span style={{ fontSize: 11, color: '#1a1a18', marginLeft: 8 }}>크루만 볼 수 있어요</span>
+                        <span style={{ fontSize: 11, color: '#1a1a18', marginLeft: 8 }}>그룹만 볼 수 있어요</span>
                       )}
                     </div>
                   </label>
