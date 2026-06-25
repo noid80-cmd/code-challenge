@@ -7,6 +7,70 @@ import type { User } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
 const ChordPlayer = dynamic(() => import('./components/ChordPlayer'), { ssr: false })
 
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)))
+}
+
+function PushBanner({ user }: { user: User }) {
+  const [state, setState] = useState<'idle' | 'loading' | 'done'>('idle')
+  const [supported, setSupported] = useState(false)
+  const [alreadyGranted, setAlreadyGranted] = useState(false)
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+    setSupported(true)
+    if (Notification.permission === 'granted') setAlreadyGranted(true)
+  }, [])
+
+  if (!supported || alreadyGranted || state === 'done') return null
+
+  async function subscribe() {
+    setState('loading')
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      })
+      await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub),
+      })
+      setState('done')
+    } catch {
+      setState('idle')
+    }
+  }
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      background: 'rgba(240,236,224,0.06)', border: '1px solid rgba(240,236,224,0.15)',
+      borderRadius: 14, padding: '12px 16px', marginBottom: 20,
+    }}>
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 800, color: '#f0ece0', marginBottom: 2 }}>매일 알림 받기</div>
+        <div style={{ fontSize: 11, color: '#605850' }}>낮 12시에 오늘의 챌린지를 알려드려요</div>
+      </div>
+      <button onClick={subscribe} disabled={state === 'loading'} style={{
+        padding: '8px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
+        background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+        color: '#0a0a08', fontSize: 12, fontWeight: 800,
+        opacity: state === 'loading' ? 0.6 : 1,
+        flexShrink: 0,
+      }}>
+        {state === 'loading' ? '설정 중...' : '알림 켜기'}
+      </button>
+    </div>
+  )
+}
+
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type Challenge = {
   id: string; date: string; title: string; description?: string; level: string
@@ -277,6 +341,9 @@ export default function HomePage() {
             </div>
           )}
         </section>
+
+        {/* 푸시 알림 배너 */}
+        {user && <PushBanner user={user} />}
 
         {/* Streak */}
         {user && streak > 0 && (
