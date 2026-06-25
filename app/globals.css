@@ -16,6 +16,8 @@ body {
 
 a { text-decoration: none; color: inherit; }
 button, input, textarea, select { font-family: inherit; }
+/* iOS Safari auto-zooms when input font-size < 16px — prevent by enforcing minimum */
+input, textarea, select { font-size: max(16px, 1em) !important; }
 input::placeholder, textarea::placeholder { color: #444466; }
 
 button { transition: opacity 0.15s, transform 0.1s, background 0.15s; }
