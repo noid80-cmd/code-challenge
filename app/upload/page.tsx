@@ -416,7 +416,7 @@ export default function UploadPage() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <Link href="/" style={{ color: '#605850', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
-        <span style={{ fontWeight: 800, fontSize: 15, color: '#f0ece0', letterSpacing: '-0.01em' }}>연주 업로드</span>
+        <span style={{ fontWeight: 800, fontSize: 15, color: '#f0ece0', letterSpacing: '-0.01em' }}>연주 업로드 v4</span>
         <div style={{ width: 48 }} />
       </header>
 
