@@ -193,8 +193,8 @@ export default function UploadPage() {
     const thumbBlob = await generateThumbnail(file)
     let thumbnailUrl: string | null = null
     if (thumbBlob) {
-      const thumbPath = `thumbs/${user.id}/${ts}.jpg`
-      const { error: thumbErr } = await supabase.storage.from('videos').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg', upsert: false })
+      const thumbPath = `${user.id}/thumb_${ts}.jpg`
+      const { error: thumbErr } = await supabase.storage.from('videos').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg', upsert: true })
       if (!thumbErr) thumbnailUrl = thumbPath
     }
     const { error: dbError } = await supabase.from('submissions').insert({

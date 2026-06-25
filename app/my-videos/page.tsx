@@ -1,6 +1,6 @@
 ﻿'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 
@@ -312,6 +312,11 @@ function VideoCard({ sub, onDelete, onTogglePrivacy }: {
   const [deleting, setDeleting] = useState(false)
   const [toggling, setToggling] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [localPoster, setLocalPoster] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? localStorage.getItem(`thumb_${sub.id}`) : null
+  )
+  const expandedVideoRef = useRef<HTMLVideoElement>(null)
+
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
@@ -320,7 +325,27 @@ function VideoCard({ sub, onDelete, onTogglePrivacy }: {
       ? sub.thumbnail_url
       : supabase.storage.from('videos').getPublicUrl(sub.thumbnail_url).data.publicUrl
     : undefined
+  const displayPoster = posterUrl ?? localPoster ?? undefined
   const date = new Date(sub.created_at)
+
+  function captureFrame() {
+    if (localPoster || posterUrl) return
+    const vid = expandedVideoRef.current
+    if (!vid || !vid.videoWidth) return
+    try {
+      const canvas = document.createElement('canvas')
+      const max = 220
+      const ratio = Math.min(max / vid.videoWidth, max / vid.videoHeight)
+      canvas.width = Math.round(vid.videoWidth * ratio)
+      canvas.height = Math.round(vid.videoHeight * ratio)
+      canvas.getContext('2d')?.drawImage(vid, 0, 0, canvas.width, canvas.height)
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.6)
+      if (dataUrl && dataUrl.length > 100) {
+        localStorage.setItem(`thumb_${sub.id}`, dataUrl)
+        setLocalPoster(dataUrl)
+      }
+    } catch {}
+  }
 
   async function handleDelete() {
     if (!confirm('이 영상을 삭제할까요?')) return
@@ -349,7 +374,8 @@ function VideoCard({ sub, onDelete, onTogglePrivacy }: {
     }}>
       {expanded ? (
         <>
-          <video src={videoUrl} poster={posterUrl} controls autoPlay playsInline
+          <video ref={expandedVideoRef} src={videoUrl} poster={displayPoster} controls autoPlay playsInline
+            onTimeUpdate={captureFrame}
             style={{ width: '100%', display: 'block', background: '#000', maxHeight: 400, objectFit: 'contain' }} />
           <button type="button" onClick={() => setExpanded(false)} style={{
             width: '100%', padding: '9px', background: 'rgba(240,236,224,0.05)',
@@ -360,8 +386,13 @@ function VideoCard({ sub, onDelete, onTogglePrivacy }: {
       ) : (
         <div style={{ display: 'flex', cursor: 'pointer', height: 90 }} onClick={() => setExpanded(true)}>
           <div style={{ width: 110, flexShrink: 0, background: '#111', position: 'relative', overflow: 'hidden' }}>
-            <video src={videoUrl} poster={posterUrl} preload="metadata" muted playsInline
-              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            {displayPoster ? (
+              <img src={displayPoster} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+            ) : (
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(145deg, #1a1a18, #111)' }}>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M9 18V6l13-3v12" stroke="rgba(240,236,224,0.2)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><circle cx="6" cy="18" r="3" stroke="rgba(240,236,224,0.2)" strokeWidth="1.5"/><circle cx="19" cy="15" r="3" stroke="rgba(240,236,224,0.2)" strokeWidth="1.5"/></svg>
+              </div>
+            )}
             <div style={{
               position: 'absolute', inset: 0,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
