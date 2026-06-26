@@ -17,7 +17,7 @@ export default function UploadPage() {
   const router = useRouter()
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [myGroups, setMyGroups] = useState<Group[]>([])
-  const [selectedGroupId, setSelectedGroupId] = useState<string>('public')
+  const [selectedDestinations, setSelectedDestinations] = useState<string[]>(['public'])
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [caption, setCaption] = useState('')
@@ -52,7 +52,7 @@ export default function UploadPage() {
       setMyGroups(groups)
       const groupParam = new URLSearchParams(window.location.search).get('group')
       if (groupParam && groups.some(g => g.id === groupParam)) {
-        setSelectedGroupId(groupParam)
+        setSelectedDestinations(['public', groupParam])
       }
     }
     load()
@@ -229,22 +229,24 @@ export default function UploadPage() {
       const { error: thumbErr } = await supabase.storage.from('avatars').upload(thumbPath, thumbBlob, { contentType: 'image/jpeg', upsert: true })
       if (!thumbErr) thumbnailUrl = supabase.storage.from('avatars').getPublicUrl(thumbPath).data.publicUrl
     }
-    const { error: dbError } = await supabase.from('submissions').insert({
+    const destinations = selectedDestinations.length > 0 ? selectedDestinations : ['public']
+    const rows = destinations.map(dest => ({
       challenge_id: challenge.id, user_id: user.id, video_url: path,
       caption: caption.trim() || null,
-      group_id: selectedGroupId === 'public' ? null : selectedGroupId,
+      group_id: dest === 'public' ? null : dest,
       progression_index: selectedProgression,
       is_private: false,
       thumbnail_url: thumbnailUrl,
-    })
+    }))
+    const { error: dbError } = await supabase.from('submissions').insert(rows)
     if (dbError) { setError('저장 실패: ' + dbError.message); setUploading(false); return }
     setUploading(false); setDone(true)
   }
 
   // 완료 화면
   if (done) {
-    const isGroup = selectedGroupId !== 'public'
-    const groupName = myGroups.find(g => g.id === selectedGroupId)?.name
+    const hasPublic = selectedDestinations.includes('public')
+    const selectedGroups = myGroups.filter(g => selectedDestinations.includes(g.id))
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 24 }}>
         <div>
@@ -260,26 +262,22 @@ export default function UploadPage() {
           </div>
           <h2 style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 10, color: '#f0ece0' }}>업로드 완료!</h2>
           <p style={{ color: '#605850', fontSize: 14, marginBottom: 36, lineHeight: 1.8 }}>
-            {isGroup ? `${groupName} 그룹에 올라갔어요.` : '연주가 피드에 올라갔어요.'}<br />
-            {isGroup ? '그룹 피드에서 확인해보세요.' : '다른 분들의 연주도 확인해보세요.'}
+            {[hasPublic && '전체 피드', ...selectedGroups.map(g => g.name)].filter(Boolean).join(', ')}에 올라갔어요.
           </p>
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-            {isGroup && (
-              <a href={`/groups/${selectedGroupId}`} style={{
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+            {selectedGroups.map(g => (
+              <a key={g.id} href={`/groups/${g.id}`} style={{
                 padding: '12px 24px', borderRadius: 12,
-                background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-                color: '#0a0a08', fontSize: 14, fontWeight: 700,
-                boxShadow: '0 6px 20px rgba(240,236,224,0.35)',
+                background: 'rgba(240,236,224,0.08)', border: '1px solid rgba(240,236,224,0.2)',
+                color: '#a0988c', fontSize: 14, fontWeight: 700,
                 textDecoration: 'none', display: 'inline-block',
-              }}>그룹 피드 보기</a>
-            )}
+              }}>{g.name} 보기</a>
+            ))}
             <Link href="/" style={{
               padding: '12px 24px', borderRadius: 12,
-              background: isGroup ? 'rgba(240,236,224,0.08)' : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-              border: isGroup ? '1px solid rgba(240,236,224,0.2)' : 'none',
-              color: isGroup ? '#a0988c' : '#0a0a08',
-              fontSize: 14, fontWeight: 700,
-              boxShadow: isGroup ? 'none' : '0 6px 20px rgba(240,236,224,0.35)',
+              background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+              color: '#0a0a08', fontSize: 14, fontWeight: 700,
+              boxShadow: '0 6px 20px rgba(240,236,224,0.35)',
             }}>피드 보러가기</Link>
           </div>
         </div>
@@ -567,28 +565,41 @@ export default function UploadPage() {
 
           {myGroups.length > 0 && (
             <div>
-              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 10, color: '#a0988c' }}>어디에 올릴까요?</div>
+              <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 10, color: '#a0988c' }}>어디에 올릴까요? (복수 선택 가능)</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-                {[{ id: 'public', name: '전체 공개 피드' }, ...myGroups].map(g => (
-                  <label key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-                    <input type="radio" name="target" value={g.id}
-                      checked={selectedGroupId === g.id}
-                      onChange={() => setSelectedGroupId(g.id)}
-                      style={{ accentColor: '#f0ece0' }} />
-                    <div style={{
-                      flex: 1, padding: '10px 14px', borderRadius: 11,
-                      background: selectedGroupId === g.id ? 'rgba(240,236,224,0.08)' : 'rgba(8,12,0,0.6)',
-                      border: selectedGroupId === g.id ? '1px solid rgba(240,236,224,0.3)' : '1px solid rgba(240,236,224,0.06)',
-                    }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: selectedGroupId === g.id ? '#f8f4ec' : '#303028' }}>
-                        {g.name}
-                      </span>
-                      {g.id !== 'public' && (
-                        <span style={{ fontSize: 11, color: '#1a1a18', marginLeft: 8 }}>그룹만 볼 수 있어요</span>
-                      )}
-                    </div>
-                  </label>
-                ))}
+                {[{ id: 'public', name: '전체 공개 피드', sub: '' }, ...myGroups.map(g => ({ id: g.id, name: g.name, sub: '그룹만 볼 수 있어요' }))].map(g => {
+                  const checked = selectedDestinations.includes(g.id)
+                  return (
+                    <label key={g.id} style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                      <div style={{
+                        width: 20, height: 20, borderRadius: 6, flexShrink: 0,
+                        background: checked ? '#f0ece0' : 'transparent',
+                        border: checked ? 'none' : '1.5px solid rgba(240,236,224,0.25)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        transition: 'all 0.15s',
+                      }} onClick={() => setSelectedDestinations(prev =>
+                        checked ? prev.filter(d => d !== g.id) : [...prev, g.id]
+                      )}>
+                        {checked && <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4l3 3 6-6" stroke="#0a0a08" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                      </div>
+                      <div style={{
+                        flex: 1, padding: '10px 14px', borderRadius: 11,
+                        background: checked ? 'rgba(240,236,224,0.08)' : 'rgba(8,12,0,0.6)',
+                        border: checked ? '1px solid rgba(240,236,224,0.3)' : '1px solid rgba(240,236,224,0.06)',
+                        cursor: 'pointer',
+                      }} onClick={() => setSelectedDestinations(prev =>
+                        checked ? prev.filter(d => d !== g.id) : [...prev, g.id]
+                      )}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: checked ? '#f8f4ec' : '#303028' }}>
+                          {g.name}
+                        </span>
+                        {g.sub && (
+                          <span style={{ fontSize: 11, color: '#1a1a18', marginLeft: 8 }}>{g.sub}</span>
+                        )}
+                      </div>
+                    </label>
+                  )
+                })}
               </div>
             </div>
           )}

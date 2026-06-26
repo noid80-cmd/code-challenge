@@ -354,10 +354,13 @@ function VideoCard({ sub, onDelete, onTogglePrivacy }: {
   async function handleDelete() {
     if (!confirm('이 영상을 삭제할까요?')) return
     setDeleting(true)
-    if (!sub.video_url.startsWith('http')) {
-      await supabase.storage.from('videos').remove([sub.video_url])
-    }
     await supabase.from('submissions').delete().eq('id', sub.id)
+    if (!sub.video_url.startsWith('http')) {
+      const { data: others } = await supabase.from('submissions').select('id').eq('video_url', sub.video_url).limit(1)
+      if (!others || others.length === 0) {
+        await supabase.storage.from('videos').remove([sub.video_url])
+      }
+    }
     onDelete()
   }
 
