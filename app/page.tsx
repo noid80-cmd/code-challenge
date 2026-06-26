@@ -301,10 +301,28 @@ export default function HomePage() {
               borderRadius: 22, padding: 22,
               boxShadow: '0 0 0 1px rgba(240,236,224,0.06), 0 24px 60px rgba(240,236,224,0.1)',
             }}>
-              <h2 style={{ fontSize: 20, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.025em',
-                marginBottom: challenge.description && challenge.description !== challenge.title ? 6 : 18 }}>
-                {challenge.title}
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: challenge.description && challenge.description !== challenge.title ? 6 : 18 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.025em', margin: 0, flex: 1 }}>
+                  {challenge.title}
+                </h2>
+                {challenge.level && (() => {
+                  const levelMap: Record<string, { label: string; color: string; bg: string; border: string }> = {
+                    beginner:     { label: '초급', color: '#6fcf8a', bg: 'rgba(111,207,138,0.12)', border: 'rgba(111,207,138,0.3)' },
+                    intermediate: { label: '중급', color: '#f0c060', bg: 'rgba(240,192,96,0.12)',  border: 'rgba(240,192,96,0.3)'  },
+                    advanced:     { label: '고급', color: '#e07060', bg: 'rgba(224,112,96,0.12)',  border: 'rgba(224,112,96,0.3)'  },
+                  }
+                  const lv = levelMap[challenge.level] ?? levelMap.intermediate
+                  return (
+                    <span style={{
+                      flexShrink: 0, fontSize: 11, fontWeight: 800,
+                      color: lv.color, background: lv.bg,
+                      border: `1px solid ${lv.border}`,
+                      borderRadius: 7, padding: '3px 9px',
+                      letterSpacing: '0.04em',
+                    }}>{lv.label}</span>
+                  )
+                })()}
+              </div>
               {challenge.description && challenge.description !== challenge.title && (
                 <p style={{ fontSize: 13, color: '#605850', lineHeight: 1.7, marginBottom: 18 }}>
                   {challenge.description}

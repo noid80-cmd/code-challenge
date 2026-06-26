@@ -39,6 +39,16 @@ export async function GET(req: NextRequest) {
     const keys = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
     const randomKey = keys[Math.floor(Math.random() * keys.length)]
 
+    const levels = ['beginner', 'intermediate', 'advanced'] as const
+    const levelWeights = [0.25, 0.5, 0.25]
+    const levelRand = Math.random()
+    const level = levelWeights[0] > levelRand ? levels[0] : levelWeights[0] + levelWeights[1] > levelRand ? levels[1] : levels[2]
+    const levelGuide = level === 'beginner'
+      ? '초급 수준: 기본 코드(maj7, m7, 7)만 사용, 흔한 키, 단순한 진행'
+      : level === 'advanced'
+      ? '고급 수준: 대리화음, 전조, 복잡한 텐션(b9, #11, 13 등) 적극 활용'
+      : '중급 수준: 세컨더리 도미넌트, 투파이브 진행 포함, 적당한 복잡도'
+
     const typeGuide =
       type === 'chord'
         ? `【유형: 일반 코드 진행】
@@ -72,7 +82,7 @@ ${typeGuide}
 - 오늘의 키: **${randomKey}** (반드시 이 키로 진행을 만들어야 함)
 - chords는 마디 배열: 각 마디는 1~2개 코드를 담는 배열
 - style은 다음 중 하나: swing, bossa, samba, jazz_ballad, pop_ballad, funk, shuffle, rnb
-- 자연스럽고 실용적인 코드 진행, 중급 수준 난이도
+- 난이도: **${levelGuide}**
 
 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 ※ title은 장르나 리듬 스타일 기반으로 지을 것 (예: "보사노바 & 재즈 코드 챌린지", "펑크 리듬 초견"). 분위기/감성 표현(미드나잇, 드리밍 등) 사용 금지.
@@ -104,7 +114,7 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
       date: today,
       title: data.title,
       description: data.description,
-      level: 'intermediate',
+      level,
       chords: { progressions: data.progressions },
     })
 
