@@ -36,6 +36,9 @@ export async function GET(req: NextRequest) {
     const rand = Math.random()
     const type = rand < 0.90 ? 'chord' : rand < 0.95 ? 'mode' : 'degree'
 
+    const keys = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
+    const randomKey = keys[Math.floor(Math.random() * keys.length)]
+
     const typeGuide =
       type === 'chord'
         ? `【유형: 일반 코드 진행】
@@ -66,6 +69,7 @@ export async function GET(req: NextRequest) {
 ${typeGuide}
 
 공통 조건:
+- 오늘의 키: **${randomKey}** (반드시 이 키로 진행을 만들어야 함)
 - chords는 마디 배열: 각 마디는 1~2개 코드를 담는 배열
 - style은 다음 중 하나: swing, bossa, samba, jazz_ballad, pop_ballad, funk, shuffle, rnb
 - 자연스럽고 실용적인 코드 진행, 중급 수준 난이도
