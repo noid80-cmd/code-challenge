@@ -30,16 +30,19 @@ function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean 
           <g key={col}>
             <line x1={mx} y1={PAD_T} x2={mx} y2={PAD_T + STAFF_H}
               stroke="rgba(240,236,224,0.45)" strokeWidth={1.5} />
-            {chords.filter(c => c.trim()).map((chord, ci) => (
-              <text key={ci}
-                x={mx + ci * slotW + 5}
-                y={PAD_T - 7}
-                fontSize={12} fontWeight={700}
-                fill="#c8c4b0"
-                fontFamily="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif">
-                {chord}
-              </text>
-            ))}
+            {chords.filter(c => c.trim()).map((chord, ci) => {
+              const multi = chords.filter(c => c.trim()).length > 1
+              return (
+                <text key={ci}
+                  x={mx + ci * slotW + (multi ? 2 : 5)}
+                  y={multi ? PAD_T - (ci === 0 ? 14 : 3) : PAD_T - 7}
+                  fontSize={multi ? 10 : 12} fontWeight={700}
+                  fill="#c8c4b0"
+                  fontFamily="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif">
+                  {chord}
+                </text>
+              )
+            })}
           </g>
         )
       })}
