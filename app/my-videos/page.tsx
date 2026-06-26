@@ -111,7 +111,9 @@ export default function MyVideosPage() {
         .from('submissions').select('*, challenges(title, date)')
         .eq('user_id', user.id).order('created_at', { ascending: false })
       const subs = (data ?? []) as Submission[]
-      setSubmissions(subs)
+      const seen = new Set<string>()
+      const deduped = subs.filter(s => { if (seen.has(s.video_url)) return false; seen.add(s.video_url); return true })
+      setSubmissions(deduped)
       const dates = subs.map(s => localDate(new Date(s.created_at)))
       setSubmittedDates(new Set(dates))
       setStreak(calcStreak(dates))
@@ -295,7 +297,7 @@ export default function MyVideosPage() {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {subs.map(sub => (
-                  <VideoCard key={sub.id} sub={sub}
+                  <VideoCard key={sub.id} sub={sub} userId={userId ?? ''}
                     onDelete={() => handleDeleteState(sub.id)}
                     onTogglePrivacy={(v) => handleTogglePrivacy(sub.id, v)}
                   />
@@ -309,8 +311,8 @@ export default function MyVideosPage() {
   )
 }
 
-function VideoCard({ sub, onDelete, onTogglePrivacy }: {
-  sub: Submission; onDelete: () => void; onTogglePrivacy: (isPrivate: boolean) => void
+function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
+  sub: Submission; userId: string; onDelete: () => void; onTogglePrivacy: (isPrivate: boolean) => void
 }) {
   const supabase = createClient()
   const [deleting, setDeleting] = useState(false)
@@ -354,12 +356,9 @@ function VideoCard({ sub, onDelete, onTogglePrivacy }: {
   async function handleDelete() {
     if (!confirm('이 영상을 삭제할까요?')) return
     setDeleting(true)
-    await supabase.from('submissions').delete().eq('id', sub.id)
+    await supabase.from('submissions').delete().eq('video_url', sub.video_url).eq('user_id', userId)
     if (!sub.video_url.startsWith('http')) {
-      const { data: others } = await supabase.from('submissions').select('id').eq('video_url', sub.video_url).limit(1)
-      if (!others || others.length === 0) {
-        await supabase.storage.from('videos').remove([sub.video_url])
-      }
+      await supabase.storage.from('videos').remove([sub.video_url])
     }
     onDelete()
   }
