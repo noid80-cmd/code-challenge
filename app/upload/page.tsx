@@ -64,7 +64,12 @@ export default function UploadPage() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
-        audio: true,
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          sampleRate: 48000,
+        },
       })
       streamRef.current = stream
       if (cameraRef.current) {
@@ -406,7 +411,8 @@ export default function UploadPage() {
             const nextFacing = facingMode === 'environment' ? 'user' : 'environment'
             streamRef.current?.getTracks().forEach(t => t.stop())
             const stream = await navigator.mediaDevices.getUserMedia({
-              video: { facingMode: nextFacing }, audio: true,
+              video: { facingMode: nextFacing },
+              audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false, sampleRate: 48000 },
             })
             streamRef.current = stream
             if (cameraRef.current) {
