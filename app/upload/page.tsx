@@ -95,7 +95,11 @@ export default function UploadPage() {
     const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
       ? 'video/webm;codecs=vp8,opus'
       : MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : ''
-    const recorder = new MediaRecorder(streamRef.current, mimeType ? { mimeType } : undefined)
+    const recorder = new MediaRecorder(streamRef.current, {
+      ...(mimeType ? { mimeType } : {}),
+      videoBitsPerSecond: 1_800_000,
+      audioBitsPerSecond: 192_000,
+    })
     recorder.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data) }
     recorder.onstop = () => {
       const blob = new Blob(chunksRef.current, { type: recorder.mimeType || 'video/webm' })
@@ -126,7 +130,7 @@ export default function UploadPage() {
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (!f) return
-    if (f.size > 200 * 1024 * 1024) { setError('파일 크기는 200MB 이하여야 해요.'); return }
+    if (f.size > 50 * 1024 * 1024) { setError('파일이 너무 커요. 앱에서 직접 촬영하면 자동으로 최적화돼요.'); return }
     const url = URL.createObjectURL(f)
     const duration = await new Promise<number>(resolve => {
       const v = document.createElement('video')
