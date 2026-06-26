@@ -35,8 +35,8 @@ function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean 
               return (
                 <text key={ci}
                   x={mx + ci * slotW + (multi ? 2 : 5)}
-                  y={multi ? PAD_T - (ci === 0 ? 14 : 3) : PAD_T - 7}
-                  fontSize={multi ? 10 : 12} fontWeight={700}
+                  y={PAD_T - 7}
+                  fontSize={multi ? 9 : 12} fontWeight={700}
                   fill="#c8c4b0"
                   fontFamily="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif">
                   {chord}
