@@ -4,6 +4,12 @@ import { normalizeMeasures } from '@/lib/chords'
 
 type Progression = { label: string; chords: string[] | string[][]; style?: string; tempo?: number; key?: string }
 
+const STYLE_NAMES: Record<string, string> = {
+  swing: 'Swing', bossa: 'Bossa Nova', samba: 'Samba',
+  jazz_ballad: 'Jazz Ballad', pop_ballad: 'Pop Ballad',
+  funk: 'Funk', shuffle: 'Shuffle', rnb: 'R&B',
+}
+
 
 // ── Staff ─────────────────────────────────────────────────────────────────────
 
@@ -89,13 +95,16 @@ export default function ChordPlayer({ progressions, title }: {
           <div key={pi}>
             {/* 진행 레이블 + 키 */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-              {progressions.length > 1 && prog.label && (
+              {prog.label && (
                 <div style={{
                   display: 'inline-block', fontSize: 11, fontWeight: 700, color: '#a0988c',
                   background: 'rgba(240,236,224,0.08)', border: '1px solid rgba(240,236,224,0.15)',
                   borderRadius: 6, padding: '2px 9px',
                 }}>
-                  {prog.label}
+                  {progressions.length > 1 ? prog.label : ''}
+                  {prog.style && (STYLE_NAMES[prog.style] ?? prog.style)
+                    ? (progressions.length > 1 ? ' — ' : '') + (STYLE_NAMES[prog.style] ?? prog.style)
+                    : ''}
                 </div>
               )}
               {prog.key && (
