@@ -109,7 +109,12 @@ export default function UploadPage() {
     recorderRef.current = recorder
     setRecording(true)
     setRecordSecs(0)
-    timerRef.current = setInterval(() => setRecordSecs(s => s + 1), 1000)
+    timerRef.current = setInterval(() => {
+      setRecordSecs(s => {
+        if (s + 1 >= 180) { recorderRef.current?.stop(); if (timerRef.current) clearInterval(timerRef.current) }
+        return s + 1
+      })
+    }, 1000)
   }
 
   // 녹화 중지
@@ -118,11 +123,22 @@ export default function UploadPage() {
     if (timerRef.current) clearInterval(timerRef.current)
   }
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0]
     if (!f) return
-    if (f.size > 100 * 1024 * 1024) { setError('파일 크기는 100MB 이하여야 해요.'); return }
-    setPreview(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(f) })
+    if (f.size > 200 * 1024 * 1024) { setError('파일 크기는 200MB 이하여야 해요.'); return }
+    const url = URL.createObjectURL(f)
+    const duration = await new Promise<number>(resolve => {
+      const v = document.createElement('video')
+      v.onloadedmetadata = () => { URL.revokeObjectURL(url); resolve(v.duration) }
+      v.onerror = () => { URL.revokeObjectURL(url); resolve(0) }
+      v.preload = 'metadata'; v.src = url
+    })
+    if (duration > 300) {
+      setError(`영상이 너무 길어요 (${Math.round(duration)}초). 5분 이하로 잘라서 올려주세요.`)
+      return
+    }
+    setPreview(URL.createObjectURL(f))
     setFile(f); setError('')
   }
 
@@ -357,8 +373,10 @@ export default function UploadPage() {
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             {recording && (
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#ff4444', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: 13, fontWeight: 800, color: recordSecs >= 150 ? '#ff4444' : 'rgba(255,255,255,0.7)', letterSpacing: '0.05em', textAlign: 'center' }}>
                 ● {fmt(recordSecs)}
+                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginLeft: 4 }}>/ 3:00</span>
+                {recordSecs >= 150 && <div style={{ fontSize: 10, marginTop: 2 }}>곧 자동 종료돼요</div>}
               </div>
             )}
             <button

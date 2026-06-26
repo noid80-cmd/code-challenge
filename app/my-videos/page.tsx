@@ -418,9 +418,14 @@ function VideoCard({ sub, onDelete, onTogglePrivacy }: {
               }}>비공개</div>
             )}
           </div>
-          <div style={{ flex: 1, padding: '12px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6, minWidth: 0 }}>
+          <div style={{ flex: 1, padding: '12px 14px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 4, minWidth: 0 }}>
+            {sub.caption && (
+              <div style={{ fontSize: 13, fontWeight: 800, color: '#f0ece0', lineHeight: 1.3, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                {sub.caption}
+              </div>
+            )}
             {sub.challenges?.title && (
-              <div style={{ fontSize: 13, fontWeight: 800, color: '#e0dcd0', lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+              <div style={{ fontSize: 11, color: sub.caption ? '#484640' : '#e0dcd0', fontWeight: sub.caption ? 600 : 800, lineHeight: 1.3, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                 {sub.challenges.title}
               </div>
             )}
