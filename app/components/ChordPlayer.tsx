@@ -33,6 +33,7 @@ function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean 
             {chords.filter(c => c.trim()).map((chord, ci) => {
               const multi = chords.filter(c => c.trim()).length > 1
               const maxW = slotW - 4
+              const overflow = multi && chord.length * 7 > maxW
               return (
                 <text key={ci}
                   x={mx + ci * slotW + 2}
@@ -40,8 +41,8 @@ function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean 
                   fontSize={12} fontWeight={700}
                   fill="#c8c4b0"
                   fontFamily="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif"
-                  textLength={multi ? maxW : undefined}
-                  lengthAdjust={multi ? 'spacingAndGlyphs' : undefined}>
+                  textLength={overflow ? maxW : undefined}
+                  lengthAdjust={overflow ? 'spacingAndGlyphs' : undefined}>
                   {chord}
                 </text>
               )
