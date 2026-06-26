@@ -32,13 +32,16 @@ function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean 
               stroke="rgba(240,236,224,0.45)" strokeWidth={1.5} />
             {chords.filter(c => c.trim()).map((chord, ci) => {
               const multi = chords.filter(c => c.trim()).length > 1
+              const maxW = slotW - 4
               return (
                 <text key={ci}
-                  x={mx + ci * slotW + (multi ? 2 : 5)}
+                  x={mx + ci * slotW + 2}
                   y={PAD_T - 7}
-                  fontSize={multi ? 9 : 12} fontWeight={700}
+                  fontSize={12} fontWeight={700}
                   fill="#c8c4b0"
-                  fontFamily="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif">
+                  fontFamily="-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif"
+                  textLength={multi ? maxW : undefined}
+                  lengthAdjust={multi ? 'spacingAndGlyphs' : undefined}>
                   {chord}
                 </text>
               )
