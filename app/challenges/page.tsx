@@ -19,11 +19,28 @@ export default function ChallengesPage() {
   useEffect(() => {
     async function load() {
       const supabase = createClient()
-      const { data } = await supabase
+      const { data: chs } = await supabase
         .from('challenges')
-        .select('id, date, title, submissions(count)')
+        .select('id, date, title')
         .order('date', { ascending: false })
-      setChallenges((data ?? []) as ChallengeItem[])
+
+      if (!chs) { setLoading(false); return }
+
+      const { data: counts } = await supabase
+        .from('submissions')
+        .select('challenge_id')
+        .is('group_id', null)
+        .eq('is_private', false)
+
+      const countMap: Record<string, number> = {}
+      for (const s of counts ?? []) {
+        countMap[s.challenge_id] = (countMap[s.challenge_id] ?? 0) + 1
+      }
+
+      setChallenges(chs.map(ch => ({
+        ...ch,
+        submissions: [{ count: countMap[ch.id] ?? 0 }],
+      })))
       setLoading(false)
     }
     load()
