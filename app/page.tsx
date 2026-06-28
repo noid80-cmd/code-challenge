@@ -122,6 +122,7 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true)
   const [isBeforeNoon, setIsBeforeNoon] = useState(false)
   const [profile, setProfile] = useState<{ name: string; avatar_url: string | null } | null>(null)
+  const [totalCount, setTotalCount] = useState(0)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -146,6 +147,12 @@ export default function HomePage() {
       } else {
         setSubmissions(subs || [])
       }
+
+      const { count } = await supabase
+        .from('submissions')
+        .select('*', { count: 'exact', head: true })
+        .eq('challenge_id', ch.id)
+      setTotalCount(count ?? 0)
     }
 
     if (user) {
@@ -410,7 +417,7 @@ export default function HomePage() {
         {/* Submissions */}
         <section>
           {/* 오늘의 연주 헤더 */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: totalCount > submissions.length ? 4 : 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 15, fontWeight: 800, color: '#e0dcd0', letterSpacing: '-0.01em' }}>
                 오늘의 연주
@@ -427,6 +434,11 @@ export default function HomePage() {
             </div>
             <Link href="/ranking" style={{ fontSize: 12, color: '#303028', fontWeight: 700 }}>주간랭킹</Link>
           </div>
+          {totalCount > submissions.length && (
+            <p style={{ fontSize: 12, color: '#504840', marginBottom: 10, marginTop: 0 }}>
+              오늘 {totalCount}명이 참여했어요
+            </p>
+          )}
 
           {/* 필터 + 정렬 한 줄 */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
