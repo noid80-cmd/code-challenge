@@ -123,6 +123,7 @@ export default function HomePage() {
   const [isBeforeNoon, setIsBeforeNoon] = useState(false)
   const [profile, setProfile] = useState<{ name: string; avatar_url: string | null } | null>(null)
   const [totalCount, setTotalCount] = useState(0)
+  const [uploadedToday, setUploadedToday] = useState(false)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -157,7 +158,9 @@ export default function HomePage() {
 
     if (user) {
       const { data: myDates } = await supabase.from('submissions').select('created_at').eq('user_id', user.id)
-      setStreak(calcStreak(myDates?.map(s => localDate(new Date(s.created_at))) ?? []))
+      const dates = myDates?.map(s => localDate(new Date(s.created_at))) ?? []
+      setStreak(calcStreak(dates))
+      setUploadedToday(dates.includes(localDate()))
       const { data: prof } = await supabase.from('profiles').select('name, avatar_url').eq('id', user.id).single()
       setProfile(prof)
     }
@@ -390,26 +393,48 @@ export default function HomePage() {
         {user && <PushBanner user={user} />}
 
         {/* Streak */}
-        {user && streak > 0 && (
+        {user && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 12,
-            background: 'rgba(240,236,224,0.06)',
-            border: '1px solid rgba(240,236,224,0.15)',
+            background: uploadedToday ? 'rgba(240,236,224,0.08)' : 'rgba(240,236,224,0.05)',
+            border: `1px solid ${streak > 0 && !uploadedToday ? 'rgba(240,180,60,0.3)' : 'rgba(240,236,224,0.15)'}`,
             borderRadius: 14, padding: '12px 16px', marginBottom: 28,
           }}>
             <div style={{
               width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-              background: 'rgba(240,236,224,0.15)',
+              background: 'rgba(240,236,224,0.12)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 18,
             }}>
-              <span style={{ fontSize: 18 }}>🔥</span>
+              {uploadedToday ? '✓' : streak > 0 ? '🔥' : '🎵'}
             </div>
             <div style={{ flex: 1 }}>
-              <span style={{ fontSize: 14, fontWeight: 800, color: '#f8f4ec' }}>{streak}일 연속 참여 중</span>
-              <p style={{ fontSize: 12, color: '#605850', margin: 0, marginTop: 1 }}>오늘도 올려보세요</p>
+              {uploadedToday ? (
+                <>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: '#f8f4ec' }}>
+                    {streak > 0 ? `${streak}일 연속 달성!` : '오늘 참여 완료!'}
+                  </span>
+                  <p style={{ fontSize: 12, color: '#605850', margin: 0, marginTop: 1 }}>
+                    {streak > 1 ? '내일도 이어가면 더 길어져요' : '내일도 올리면 2일 연속이에요'}
+                  </p>
+                </>
+              ) : streak > 0 ? (
+                <>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: '#f8f4ec' }}>{streak}일 연속 중</span>
+                  <p style={{ fontSize: 12, color: '#a08040', margin: 0, marginTop: 1 }}>오늘 올리면 {streak + 1}일 연속이에요</p>
+                </>
+              ) : (
+                <>
+                  <span style={{ fontSize: 14, fontWeight: 800, color: '#f8f4ec' }}>오늘 첫 연주를 올려보세요</span>
+                  <p style={{ fontSize: 12, color: '#605850', margin: 0, marginTop: 1 }}>매일 올리면 연속 기록이 쌓여요</p>
+                </>
+              )}
             </div>
-            <Link href="/my-videos" style={{ fontSize: 12, color: '#f0ece0', fontWeight: 700 }}>
-              내 기록 →
+            <Link href={uploadedToday ? '/my-videos' : '/upload'} style={{
+              fontSize: 12, fontWeight: 700, flexShrink: 0,
+              color: streak > 0 && !uploadedToday ? '#c8a040' : '#f0ece0',
+            }}>
+              {uploadedToday ? '내 기록 →' : '업로드 →'}
             </Link>
           </div>
         )}
