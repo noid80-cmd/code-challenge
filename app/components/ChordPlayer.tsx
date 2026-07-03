@@ -37,9 +37,8 @@ function StaffRow({ measures, isLast }: { measures: string[][]; isLast: boolean 
             <line x1={mx} y1={PAD_T} x2={mx} y2={PAD_T + STAFF_H}
               stroke="rgba(240,236,224,0.45)" strokeWidth={1.5} />
             {chords.filter(c => c.trim()).map((chord, ci) => {
-              const multi = chords.filter(c => c.trim()).length > 1
               const maxW = slotW - 4
-              const overflow = multi && chord.length * 7 > maxW
+              const overflow = chord.length * 8.5 > maxW
               return (
                 <text key={ci}
                   x={mx + ci * slotW + 2}
