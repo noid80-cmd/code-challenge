@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {children}
         <a href="https://www.khmusic.co.kr" target="_blank" rel="noopener noreferrer"
           style={{ position: 'fixed', bottom: 10, left: '50%', transform: 'translateX(-50%)',
-            fontSize: 11, color: 'rgba(255,255,255,0.25)', letterSpacing: '0.05em',
+            fontSize: 13, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.05em',
             textDecoration: 'none', zIndex: 9999, whiteSpace: 'nowrap' }}>
           by KH Music
         </a>
