@@ -3,9 +3,44 @@ import { useEffect, useId, useMemo } from 'react'
 
 type Pattern = { label: string; abc: string }
 
+function getNoteDur(tok: string): number {
+  if (tok.includes('/')) return 0.5
+  const m = tok.match(/(\d+)$/)
+  return m ? parseInt(m[1]) : 1
+}
+
+function beamBar(bar: string): string {
+  // Extract notes with cumulative beat positions
+  const noteRe = /[Bz][0-9]*\/?/g
+  const notes: Array<{ tok: string; dur: number; pos: number }> = []
+  let cumPos = 0
+  let m: RegExpExecArray | null
+  while ((m = noteRe.exec(bar)) !== null) {
+    const dur = getNoteDur(m[0])
+    notes.push({ tok: m[0], dur, pos: cumPos })
+    cumPos += dur
+  }
+  if (notes.length === 0) return bar
+  // Beam only B+B pairs that start exactly on a beat boundary (pos divisible by 2)
+  const out: string[] = []
+  let i = 0
+  while (i < notes.length) {
+    const cur = notes[i]
+    const next = notes[i + 1]
+    if (cur.tok === 'B' && cur.dur === 1 && cur.pos % 2 === 0 &&
+        next?.tok === 'B' && next.dur === 1) {
+      out.push('BB')
+      i += 2
+    } else {
+      out.push(cur.tok)
+      i++
+    }
+  }
+  return out.join(' ')
+}
+
 function fixBeaming(abc: string): string {
-  const unbeamed = abc.replace(/B(?![0-9/])(?=B(?![0-9/]))/g, 'B ')
-  return unbeamed.replace(/(?<!B)B(?![0-9/]) B(?![0-9/])/g, 'BB')
+  return abc.replace(/\|([^|[\]\n]*)/g, (_, bar) => '|' + beamBar(bar))
 }
 
 function toPercFormat(abc: string): string {
