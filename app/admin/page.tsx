@@ -463,7 +463,7 @@ export default function AdminPage() {
           <div style={{ background: '#0e0e1a', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: '#818cf8' }}>
-                {editingId ? '챌린지 수정' : mode === 'ai' ? '생성된 챌린지 확인 · 수정' : '챌린지 입력'}
+                {editingId ? '챌린지 수정' : '생성된 챌린지 확인 · 수정'}
               </div>
               {editingId && (
                 <button onClick={() => { setDraft(null); setEditingId(null); setError('') }}
