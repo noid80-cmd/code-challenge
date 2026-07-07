@@ -549,7 +549,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
                 )
                 .map(sub => (
                   <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)}
-                    progressions={type === 'chord' ? challenge?.chords?.progressions : undefined} />
+                    progressions={type === 'chord' ? challenge?.chords?.progressions : undefined}
+                    patterns={type === 'rhythm' ? challenge?.chords?.patterns : undefined} />
                 ))}
             </div>
           )}
@@ -559,7 +560,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
   )
 }
 
-function SubmissionCard({ sub, onLike, progressions }: { sub: Submission; onLike: () => void; progressions?: Progression[] }) {
+function SubmissionCard({ sub, onLike, progressions, patterns }: { sub: Submission; onLike: () => void; progressions?: Progression[]; patterns?: { label: string; abc: string }[] }) {
   const supabase = createClient()
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
@@ -586,6 +587,17 @@ function SubmissionCard({ sub, onLike, progressions }: { sub: Submission; onLike
         }}>
           <span style={{ fontSize: 10, fontWeight: 800, color: '#a0988c', letterSpacing: '0.05em' }}>
             {progressions[sub.progression_index]?.label ?? `진행 ${sub.progression_index + 1}`}
+          </span>
+        </div>
+      )}
+      {patterns && patterns.length > 1 && sub.progression_index != null && (
+        <div style={{
+          position: 'relative', padding: '8px 14px',
+          borderBottom: '1px solid rgba(240,236,224,0.06)',
+          background: 'rgba(240,236,224,0.04)',
+        }}>
+          <span style={{ fontSize: 10, fontWeight: 800, color: '#a0988c', letterSpacing: '0.05em' }}>
+            {patterns[sub.progression_index]?.label ?? `패턴 ${sub.progression_index + 1}`}
           </span>
         </div>
       )}

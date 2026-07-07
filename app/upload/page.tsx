@@ -476,6 +476,39 @@ export default function UploadPage() {
           </div>
         )}
 
+        {/* 패턴 선택 (리듬) */}
+        {challenge && challenge.type === 'rhythm' && (challenge.chords?.patterns?.length ?? 0) > 1 && (
+          <div style={{ marginBottom: 8 }}>
+            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 8, color: '#a0988c' }}>
+              어느 패턴을 연주할까요?
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              {(challenge.chords.patterns ?? []).map((pattern, i) => (
+                <button key={i} type="button" onClick={() => setSelectedProgression(i)} style={{
+                  padding: '11px 14px', borderRadius: 12,
+                  background: selectedProgression === i ? 'rgba(240,236,224,0.1)' : 'rgba(240,236,224,0.03)',
+                  border: selectedProgression === i ? '1px solid rgba(240,236,224,0.35)' : '1px solid rgba(240,236,224,0.08)',
+                  color: selectedProgression === i ? '#f0ece0' : '#605850',
+                  fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left',
+                  display: 'flex', alignItems: 'center', gap: 10,
+                }}>
+                  <div style={{
+                    width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                    background: selectedProgression === i ? 'rgba(240,236,224,0.9)' : 'rgba(240,236,224,0.12)',
+                    border: selectedProgression === i ? 'none' : '1px solid rgba(240,236,224,0.2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {selectedProgression === i && (
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#0a0a08' }} />
+                    )}
+                  </div>
+                  {pattern.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* 진행 선택 */}
         {challenge && (challenge.chords?.progressions?.length ?? 0) > 1 && (
           <div style={{ marginBottom: 8 }}>

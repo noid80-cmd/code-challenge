@@ -107,10 +107,14 @@ function splitIntoChunks(abc: string, chunkSize: number): string[] {
   if (allBars.length === 0) return [text]
 
   const header = headerLines.join('\n')
+  // Continuation chunks: strip time sig (M:), tempo (Q:), title (T:)
+  const headerCont = headerLines.filter(l => !l.trim().match(/^(M:|Q:|T:)/)).join('\n')
+
   const chunks: string[] = []
   for (let i = 0; i < allBars.length; i += chunkSize) {
     const slice = allBars.slice(i, i + chunkSize)
-    chunks.push(header + '\n|' + slice.join('|') + '|]')
+    const h = chunks.length === 0 ? header : headerCont
+    chunks.push(h + '\n%%stretchlast\n|' + slice.join('|') + '|]')
   }
   return chunks
 }
