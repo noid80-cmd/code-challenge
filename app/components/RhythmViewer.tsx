@@ -107,10 +107,18 @@ function splitIntoChunks(abc: string, chunkSize: number): string[] {
   if (allBars.length === 0) return [text]
 
   const header = headerLines.join('\n')
-  // Render all bars as one ABC tune with %%barsperline so abcjs handles line wrapping.
-  // This way abcjs shows time sig / tempo only on the first line and keeps all
-  // bar-ending x-positions identical across lines without any post-render hacks.
-  return [header + '\n%%barsperline ' + chunkSize + '\n%%stretchlast\n|' + allBars.join('|') + '|]']
+  // Group bars into source lines separated by '\n'.
+  // abcjs treats each source line as a new visual staff line:
+  //   - time sig / tempo appear only on line 1 automatically
+  //   - each line is justified to the same staffwidth → bar endings align
+  //   - %%stretchlast fills the final (last) line to match the others
+  const tuneLines: string[] = []
+  for (let i = 0; i < allBars.length; i += chunkSize) {
+    const slice = allBars.slice(i, i + chunkSize)
+    const isLast = i + chunkSize >= allBars.length
+    tuneLines.push('|' + slice.join('|') + (isLast ? '|]' : '|'))
+  }
+  return [header + '\n%%stretchlast\n' + tuneLines.join('\n')]
 }
 
 export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {

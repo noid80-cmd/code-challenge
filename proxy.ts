@@ -5,7 +5,8 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const publicPaths = ['/login', '/signup', '/auth', '/api', '/intro', '/chord', '/rhythm', '/challenges', '/ranking']
 
-  if (publicPaths.some(p => pathname.startsWith(p))) {
+  // '/' is the landing page — public for everyone (and the old PWA start_url)
+  if (pathname === '/' || publicPaths.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
   }
 
