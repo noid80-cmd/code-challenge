@@ -107,16 +107,10 @@ function splitIntoChunks(abc: string, chunkSize: number): string[] {
   if (allBars.length === 0) return [text]
 
   const header = headerLines.join('\n')
-  // Keep M: in continuation chunks so bar widths stay consistent (hidden via CSS after render)
-  const headerCont = headerLines.filter(l => !l.trim().match(/^(Q:|T:)/)).join('\n')
-
-  const chunks: string[] = []
-  for (let i = 0; i < allBars.length; i += chunkSize) {
-    const slice = allBars.slice(i, i + chunkSize)
-    const h = chunks.length === 0 ? header : headerCont
-    chunks.push(h + '\n%%stretchlast\n|' + slice.join('|') + '|]')
-  }
-  return chunks
+  // Render all bars as one ABC tune with %%barsperline so abcjs handles line wrapping.
+  // This way abcjs shows time sig / tempo only on the first line and keeps all
+  // bar-ending x-positions identical across lines without any post-render hacks.
+  return [header + '\n%%barsperline ' + chunkSize + '\n%%stretchlast\n|' + allBars.join('|') + '|]']
 }
 
 export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
@@ -150,13 +144,6 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
             paddingleft: 0,
             minPadding: 0,
           } as Parameters<typeof ABCJS.renderAbc>[2])
-          // Hide time signature on continuation chunks — M: is kept for consistent bar widths
-          if (c > 0) {
-            const el2 = document.getElementById(`rv-${uid}-${i}-${c}`)
-            el2?.querySelectorAll('.abcjs-time-signature').forEach(e => {
-              (e as SVGElement).style.visibility = 'hidden'
-            })
-          }
         })
       })
     })
