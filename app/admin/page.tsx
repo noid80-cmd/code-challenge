@@ -606,7 +606,7 @@ export default function AdminPage() {
           <div>
             <div style={{ fontSize: 13, fontWeight: 800, color: '#ccccee', marginBottom: 12 }}>기존 챌린지</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {challenges.map(ch => (
+              {challenges.filter(ch => (ch.type ?? 'chord') === challengeTypeForNew).map(ch => (
                 <div key={ch.id} style={{
                   background: '#0d0d1a',
                   border: editingId === ch.id ? '1px solid rgba(99,102,241,0.5)' : '1px solid rgba(255,255,255,0.07)',
