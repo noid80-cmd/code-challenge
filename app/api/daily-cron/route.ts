@@ -19,20 +19,16 @@ export async function GET(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   const today = new Date().toISOString().slice(0, 10)
 
-  // 오늘 챌린지가 이미 있으면 생성 건너뜀
-  const { data: existing } = await supabase
-    .from('challenges').select('id, title').eq('date', today).single()
+  // ── 코드챌린지 ──────────────────────────────────────────
+  const { data: existingChord } = await supabase
+    .from('challenges').select('id, title').eq('date', today).eq('type', 'chord').maybeSingle()
 
-  let challengeTitle = existing?.title ?? null
+  let chordTitle: string | null = existingChord?.title ?? null
 
-  if (!existing) {
-    // Claude로 챌린지 생성
-    if (!process.env.ANTHROPIC_API_KEY) {
-      return NextResponse.json({ error: 'ANTHROPIC_API_KEY 없음' }, { status: 500 })
-    }
-
+  if (!existingChord) {
     const rand = Math.random()
     const type = rand < 0.90 ? 'chord' : rand < 0.95 ? 'mode' : 'degree'
 
@@ -51,25 +47,12 @@ export async function GET(req: NextRequest) {
 
     const typeGuide =
       type === 'chord'
-        ? `【유형: 일반 코드 진행】
-- 8마디 구성, 한 마디에 1~2개 코드
-- 1~2개의 진행(progression)
-- key 필드 없음`
+        ? `【유형: 일반 코드 진행】\n- 8마디 구성, 한 마디에 1~2개 코드\n- 1~2개의 진행(progression)\n- key 필드 없음`
         : type === 'mode'
-        ? `【유형: 모드 초견】
-- 진행 2개, 각 4마디 구성
-- 각 진행은 코드 1개를 4마디 반복 (다른 코드 절대 섞지 말 것)
-- 코드명에 모드를 괄호로 표기: "Dm7(Dorian)", "F7(Mixolydian)"
-- 사용 가능한 모드: Dorian, Lydian, Mixolydian, Phrygian, Aeolian
-- 예시: [["Dm7(Dorian)"], ["Dm7(Dorian)"], ["Dm7(Dorian)"], ["Dm7(Dorian)"]]
-- key 필드 없음`
-        : `【유형: 도수 초견】
-- 8마디 구성, 1~2개의 진행
-- 로마 숫자로 코드 표기: Imaj7, IIm7, IIIm7, IVmaj7, V7, VIm7, VIIm7b5
-- progression마다 key 필드 반드시 포함`
+        ? `【유형: 모드 초견】\n- 진행 2개, 각 4마디 구성\n- 각 진행은 코드 1개를 4마디 반복\n- 코드명에 모드를 괄호로 표기: "Dm7(Dorian)"\n- 사용 가능한 모드: Dorian, Lydian, Mixolydian, Phrygian, Aeolian\n- key 필드 없음`
+        : `【유형: 도수 초견】\n- 8마디 구성, 1~2개의 진행\n- 로마 숫자로 코드 표기: Imaj7, IIm7, IIIm7, IVmaj7, V7, VIm7, VIIm7b5\n- progression마다 key 필드 반드시 포함`
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    const message = await anthropic.messages.create({
+    const chordMsg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       messages: [{
@@ -103,47 +86,98 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
       }],
     })
 
-    const text = message.content[0].type === 'text' ? message.content[0].text : ''
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
-      return NextResponse.json({ error: '챌린지 파싱 실패' }, { status: 500 })
+    const chordText = chordMsg.content[0].type === 'text' ? chordMsg.content[0].text : ''
+    const chordMatch = chordText.match(/\{[\s\S]*\}/)
+    if (chordMatch) {
+      const chordData = JSON.parse(chordMatch[0])
+      await supabase.from('challenges').insert({
+        date: today,
+        type: 'chord',
+        title: chordData.title,
+        description: chordData.description,
+        level,
+        chords: { progressions: chordData.progressions },
+      })
+      chordTitle = chordData.title
     }
-
-    const data = JSON.parse(jsonMatch[0])
-    const { error: insertError } = await supabase.from('challenges').insert({
-      date: today,
-      title: data.title,
-      description: data.description,
-      level,
-      chords: { progressions: data.progressions },
-    })
-
-    if (insertError) {
-      return NextResponse.json({ error: insertError.message }, { status: 500 })
-    }
-
-    challengeTitle = data.title
   }
 
-  // 푸시 알림 전송
+  // ── 리듬챌린지 ──────────────────────────────────────────
+  const { data: existingRhythm } = await supabase
+    .from('challenges').select('id, title').eq('date', today).eq('type', 'rhythm').maybeSingle()
+
+  let rhythmTitle: string | null = existingRhythm?.title ?? null
+
+  if (!existingRhythm) {
+    const rhythmMsg = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1024,
+      messages: [{
+        role: 'user',
+        content: `드럼/리듬 초견 챌린지를 위한 ABC notation 리듬 패턴 2개를 생성하세요.
+
+조건:
+- 각 패턴은 정확히 8마디 (4/4박자)
+- 도돌이표 없이 겹세로줄(|])로 끝낼 것
+- K:perc, L:1/8, V:1 clef=perc 사용
+- 음표는 B(박)와 z(쉼표)만 사용
+- L:1/8 기준: B=8분음표, B2=4분음표, B4=2분음표, B3=점4분음표, B/=16분음표
+- 각 마디의 총합이 정확히 8 (L:1/8 기준)이어야 함
+- A 패턴: 그루브있는 기본 리듬
+- B 패턴: 당김음·쉼표를 활용한 복잡한 리듬
+
+JSON 형식으로만 응답하세요 (다른 텍스트 없이):
+{
+  "title": "리듬 챌린지 제목",
+  "description": "간단한 설명 (1-2문장)",
+  "patterns": [
+    {
+      "label": "A 패턴",
+      "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=perc\\n|B2 B2 B2 B2|...|]"
+    },
+    {
+      "label": "B 패턴",
+      "abc": "X:2\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=perc\\n|B B z B B z B B|...|]"
+    }
+  ]
+}`,
+      }],
+    })
+
+    const rhythmText = rhythmMsg.content[0].type === 'text' ? rhythmMsg.content[0].text : ''
+    const rhythmMatch = rhythmText.match(/\{[\s\S]*\}/)
+    if (rhythmMatch) {
+      const rhythmData = JSON.parse(rhythmMatch[0])
+      await supabase.from('challenges').insert({
+        date: today,
+        type: 'rhythm',
+        title: rhythmData.title,
+        description: rhythmData.description,
+        chords: { patterns: rhythmData.patterns },
+      })
+      rhythmTitle = rhythmData.title
+    }
+  }
+
+  // ── 푸시 알림 ──────────────────────────────────────────
   const { data: subs } = await supabase
     .from('push_subscriptions').select('subscription, endpoint')
 
   if (!subs || subs.length === 0) {
-    return NextResponse.json({ generated: !existing, sent: 0, title: challengeTitle })
+    return NextResponse.json({ chordTitle, rhythmTitle, sent: 0 })
   }
 
-  const title = '코드 챌린지 🎵'
-  const body = challengeTitle
-    ? `오늘의 챌린지: ${challengeTitle}`
-    : '오늘의 새로운 코드 진행이 올라왔어요!'
+  const notifTitle = 'PlayDaily — 오늘의 챌린지'
+  const notifBody = [
+    chordTitle ? `🎵 ${chordTitle}` : null,
+    rhythmTitle ? `🥁 ${rhythmTitle}` : null,
+  ].filter(Boolean).join('\n') || '새로운 챌린지가 올라왔어요!'
 
   const deadEndpoints: string[] = []
-
   const results = await Promise.allSettled(
     subs.map(async ({ subscription, endpoint }) => {
       try {
-        await webpush.sendNotification(subscription, JSON.stringify({ title, body, url: '/' }))
+        await webpush.sendNotification(subscription, JSON.stringify({ title: notifTitle, body: notifBody, url: '/' }))
       } catch (err: unknown) {
         if (err && typeof err === 'object' && 'statusCode' in err &&
           ((err as { statusCode: number }).statusCode === 410 || (err as { statusCode: number }).statusCode === 404)) {
@@ -159,5 +193,5 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
   }
 
   const sent = results.filter(r => r.status === 'fulfilled').length
-  return NextResponse.json({ generated: !existing, title: challengeTitle, sent, total: subs.length })
+  return NextResponse.json({ chordTitle, rhythmTitle, sent, total: subs.length })
 }
