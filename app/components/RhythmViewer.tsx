@@ -88,14 +88,20 @@ function splitIntoChunks(abc: string, chunkSize: number): string[] {
 
   if (allBars.length === 0) return [text]
 
-  const header = headerLines.join('\n')
+  // %%stretchlast must be placed BEFORE the V: declaration so it lands in the
+  // tune-level header context (abctune.formatting) that layout.js reads.
+  // Placing it after V: puts it in the voice/body context which is ignored.
+  const preVLines = headerLines.filter(l => !l.trim().startsWith('V:'))
+  const vLine = headerLines.find(l => l.trim().startsWith('V:')) ?? ''
+  const header = preVLines.join('\n') + '\n%%stretchlast 1\n' + vLine
+
   const tuneLines: string[] = []
   for (let i = 0; i < allBars.length; i += chunkSize) {
     const slice = allBars.slice(i, i + chunkSize)
     const isLast = i + chunkSize >= allBars.length
     tuneLines.push('|' + slice.join('|') + (isLast ? '|]' : '|'))
   }
-  return [header + '\n%%stretchlast 1\n' + tuneLines.join('\n')]
+  return [header + '\n' + tuneLines.join('\n')]
 }
 
 export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
@@ -132,7 +138,6 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
             paddingright: 0,
             paddingleft: 0,
             minPadding: 0,
-            format: { stretchlast: 1 },
           } as Parameters<typeof ABCJS.renderAbc>[2])
         })
       })
