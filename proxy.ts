@@ -37,7 +37,19 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { user }, error: userError } = await supabase.auth.getUser()
+
+  if (userError) {
+    // getUser() failed (network error / Supabase unreachable) — fall back to
+    // local session check so transient failures don't log the user out.
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      const loginUrl = new URL('/login', request.url)
+      loginUrl.searchParams.set('from', pathname)
+      return NextResponse.redirect(loginUrl)
+    }
+    return supabaseResponse
+  }
 
   if (!user) {
     const loginUrl = new URL('/login', request.url)

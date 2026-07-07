@@ -4,7 +4,6 @@ import { useEffect, useId, useMemo } from 'react'
 type Pattern = { label: string; abc: string }
 
 function getNoteDur(tok: string): number {
-  // Triplet/tuplet: (3BBB = 2 units, (2BB = 3 units
   if (tok.startsWith('(')) {
     const m = tok.match(/^\((\d+)/)
     const n = m ? parseInt(m[1]) : 3
@@ -16,7 +15,6 @@ function getNoteDur(tok: string): number {
 }
 
 function beamBar(bar: string): string {
-  // Match tuplets as atomic units first, then individual notes
   const noteRe = /\(\d+(?:[Bz][0-9]*\/?)+|[Bz][0-9]*\/?/g
   const notes: Array<{ tok: string; dur: number; pos: number }> = []
   let cumPos = 0
@@ -33,40 +31,21 @@ function beamBar(bar: string): string {
   while (i < notes.length) {
     const cur = notes[i]
     const next = notes[i + 1]
-
-    // Tuplets ((3BBB etc.) pass through unchanged
-    if (cur.tok.startsWith('(')) {
-      out.push(cur.tok)
-      i++
-      continue
-    }
-
-    // Beam eighth note pairs at beat boundaries
+    if (cur.tok.startsWith('(')) { out.push(cur.tok); i++; continue }
     if (cur.tok === 'B' && cur.dur === 1 && cur.pos % 2 === 0 &&
         next?.tok === 'B' && next.dur === 1) {
-      out.push('BB')
-      i += 2
-      continue
+      out.push('BB'); i += 2; continue
     }
-
-    // Beam consecutive 16th notes within the same beat (no spaces → beamed in abcjs)
     if (cur.tok === 'B/' && cur.dur === 0.5) {
       const beatEnd = (Math.floor(cur.pos / 2) + 1) * 2
       let j = i
       const group: string[] = []
       while (j < notes.length && notes[j].tok === 'B/' && notes[j].pos + 0.5 <= beatEnd) {
-        group.push('B/')
-        j++
+        group.push('B/'); j++
       }
-      if (group.length >= 2) {
-        out.push(group.join(''))
-        i = j
-        continue
-      }
+      if (group.length >= 2) { out.push(group.join('')); i = j; continue }
     }
-
-    out.push(cur.tok)
-    i++
+    out.push(cur.tok); i++
   }
   return out.join(' ')
 }
@@ -75,102 +54,98 @@ function fixBeaming(abc: string): string {
   return abc.replace(/\|([^|[\]\n]*)/g, (_, bar) => '|' + beamBar(bar))
 }
 
-function toPercFormat(abc: string): string {
-  return abc.replace(/(V:\d+[^\n]*)/g, (m) => {
-    let out = m
-    if (out.includes('clef=perc')) out = out.replace('clef=perc', 'clef=none')
-    if (!out.includes('clef=')) out += ' clef=none'
-    if (!out.includes('stafflines')) out += ' stafflines=1'
-    if (!out.includes('stem=')) out += ' stem=up'
-    return out
-  })
-}
-
-function splitIntoChunks(abc: string, chunkSize: number): string[] {
+function extractBars(abc: string): string[] {
   const text = abc.replace(/\\n/g, '\n')
-  const lines = text.split('\n')
-  const headerLines: string[] = []
-  const allBars: string[] = []
-
-  for (const line of lines) {
+  const bars: string[] = []
+  for (const line of text.split('\n')) {
     const trimmed = line.trim()
     if (trimmed.startsWith('|')) {
       trimmed.split('|').forEach(s => {
         const b = s.trim()
-        if (b !== '' && b !== ']') allBars.push(b)
+        if (b && b !== ']') bars.push(b)
       })
-    } else {
-      headerLines.push(line)
+    }
+  }
+  return bars
+}
+
+function extractHeader(abc: string): string {
+  const text = abc.replace(/\\n/g, '\n')
+  return text.split('\n')
+    .filter(l => {
+      const t = l.trim()
+      return t.length > 0 && !t.startsWith('|') && !t.startsWith('V:')
+    })
+    .join('\n')
+}
+
+// Combines all patterns into one multi-voice ABC tune so abcjs renders them
+// in a single SVG pass — barlines are synchronized across ALL staves.
+function buildMultiVoiceABC(patterns: Pattern[], chunkSize: number): string {
+  if (patterns.length === 0) return ''
+  const allBars = patterns.map(p => extractBars(p.abc))
+  const header = extractHeader(patterns[0].abc)
+  const maxBars = Math.max(...allBars.map(b => b.length))
+
+  // Declare each pattern as its own voice with a label ("A 패턴" / "B 패턴")
+  const voiceDecls = patterns.map((p, i) =>
+    `V:${i + 1} name="${p.label}" abbrev="" clef=none stafflines=1 stem=up`
+  ).join('\n')
+
+  // Interleave voice content: each group of chunkSize bars becomes one source
+  // line per voice. abcjs treats consecutive [V:n] groups as one system so
+  // barlines are computed together and remain aligned.
+  const contentLines: string[] = []
+  for (let start = 0; start < maxBars; start += chunkSize) {
+    const isLast = start + chunkSize >= maxBars
+    for (let i = 0; i < patterns.length; i++) {
+      const bars = allBars[i].slice(start, start + chunkSize)
+      if (bars.length === 0) continue
+      contentLines.push(`[V:${i + 1}]|${bars.join('|')}${isLast ? '|]' : '|'}`)
     }
   }
 
-  if (allBars.length === 0) return [text]
-
-  const header = headerLines.join('\n')
-  // Group bars into source lines separated by '\n'.
-  // abcjs treats each source line as a new visual staff line:
-  //   - time sig / tempo appear only on line 1 automatically
-  //   - each line is justified to the same staffwidth → bar endings align
-  //   - %%stretchlast fills the final (last) line to match the others
-  const tuneLines: string[] = []
-  for (let i = 0; i < allBars.length; i += chunkSize) {
-    const slice = allBars.slice(i, i + chunkSize)
-    const isLast = i + chunkSize >= allBars.length
-    tuneLines.push('|' + slice.join('|') + (isLast ? '|]' : '|'))
-  }
-  return [header + '\n%%stretchlast\n' + tuneLines.join('\n')]
+  return header + '\n%%stretchlast\n' + voiceDecls + '\n' + contentLines.join('\n')
 }
 
 export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
 
-  const allChunks = useMemo(
-    () => patterns.map(p =>
-      splitIntoChunks(p.abc, 4)
-        .map(c => fixBeaming(toPercFormat(c)))
-    ),
+  const combinedAbc = useMemo(
+    () => {
+      if (patterns.length === 0) return ''
+      return fixBeaming(buildMultiVoiceABC(patterns, 4))
+    },
     [patterns]
   )
 
   useEffect(() => {
+    if (!combinedAbc) return
     import('abcjs').then(ABCJS => {
-      allChunks.forEach((chunks, i) => {
-        chunks.forEach((chunkAbc, c) => {
-          const el = document.getElementById(`rv-${uid}-${i}-${c}`)
-          if (!el) return
-          // Measure the actual rendered container width so the SVG doesn't overflow
-          const containerWidth = el.parentElement?.clientWidth ?? 300
-          const staffwidth = Math.max(containerWidth - 20, 180)
-          ABCJS.renderAbc(`rv-${uid}-${i}-${c}`, chunkAbc, {
-            staffwidth,
-            scale: 0.8,
-            foregroundColor: '#f0ece0',
-            selectionColor: 'none',
-            paddingtop: 4,
-            paddingbottom: 4,
-            paddingright: 0,
-            paddingleft: 0,
-            minPadding: 0,
-          } as Parameters<typeof ABCJS.renderAbc>[2])
-        })
-      })
+      const el = document.getElementById(`rv-${uid}`)
+      if (!el) return
+      const containerWidth = el.parentElement?.clientWidth ?? 300
+      // Reserve ~80 px on the left for the voice name labels
+      const staffwidth = Math.max(containerWidth - 80, 160)
+      ABCJS.renderAbc(`rv-${uid}`, combinedAbc, {
+        staffwidth,
+        scale: 0.8,
+        foregroundColor: '#f0ece0',
+        selectionColor: 'none',
+        paddingtop: 4,
+        paddingbottom: 4,
+        paddingright: 0,
+        paddingleft: 0,
+        minPadding: 0,
+      } as Parameters<typeof ABCJS.renderAbc>[2])
     })
-  }, [allChunks, uid])
+  }, [combinedAbc, uid])
+
+  if (patterns.length === 0) return null
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {allChunks.map((chunks, i) => (
-        <div key={i}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#a0988c', marginBottom: 8, letterSpacing: '0.05em' }}>
-            {patterns[i].label}
-          </div>
-          <div style={{ background: 'rgba(240,236,224,0.04)', borderRadius: 12, overflow: 'hidden' }}>
-            {chunks.map((_, c) => (
-              <div key={c} id={`rv-${uid}-${i}-${c}`} />
-            ))}
-          </div>
-        </div>
-      ))}
+    <div style={{ background: 'rgba(240,236,224,0.04)', borderRadius: 12, overflow: 'hidden' }}>
+      <div id={`rv-${uid}`} />
     </div>
   )
 }
