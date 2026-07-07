@@ -18,7 +18,10 @@ export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
+  const [error, setError] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    return new URLSearchParams(window.location.search).get('err') ?? ''
+  })
   const [loading, setLoading] = useState(false)
   const [resetMode, setResetMode] = useState(false)
   const [resetEmail, setResetEmail] = useState('')

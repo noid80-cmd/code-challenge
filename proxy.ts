@@ -5,10 +5,7 @@ export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const publicPaths = ['/login', '/signup', '/auth', '/api', '/intro', '/chord', '/rhythm', '/challenges', '/ranking']
 
-  if (
-    pathname === '/' ||
-    publicPaths.some(p => pathname.startsWith(p))
-  ) {
+  if (publicPaths.some(p => pathname.startsWith(p))) {
     return NextResponse.next()
   }
 
