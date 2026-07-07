@@ -453,7 +453,7 @@ export default function AdminPage() {
         {challengeTypeForNew === 'chord' && <>
         <button onClick={generate} disabled={generating}
           style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: generating ? '#1a1a2e' : 'linear-gradient(135deg, #4f46e5, #6366f1)', color: generating ? '#444466' : '#fff', fontSize: 16, fontWeight: 700, cursor: generating ? 'default' : 'pointer', marginBottom: 16 }}>
-          {generating ? '생성 중...' : 'AI로 챌린지 생성'}
+          {generating ? '생성 중...' : 'AI로 코드진행 생성'}
         </button>
 
         {error && <p style={{ color: '#f87171', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>{error}</p>}
