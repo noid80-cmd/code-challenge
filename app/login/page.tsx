@@ -69,6 +69,26 @@ export default function LoginPage() {
 
   async function handleGoogle() {
     setError('')
+    // iOS PWA: cookies get cleared when the app backgrounds during OAuth.
+    // Using implicit flow avoids storing a code_verifier in cookies entirely.
+    const isIOS = (window.navigator as { standalone?: boolean }).standalone !== undefined
+    if (isIOS) {
+      const { createClient: rawCreate } = await import('@supabase/supabase-js')
+      const supabase = rawCreate(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { flowType: 'implicit' } }
+      )
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: { prompt: 'select_account' },
+        },
+      })
+      if (error) setError('Google 로그인 오류: ' + error.message)
+      return
+    }
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',

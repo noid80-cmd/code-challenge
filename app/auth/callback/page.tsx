@@ -48,6 +48,14 @@ export default function AuthCallback() {
       }
 
       if (accessToken && refreshToken) {
+        // iOS Safari: standalone is false. Session must live in PWA cookies, not Safari.
+        // Redirect to PWA root with tokens so OAuthHandler can call setSession there.
+        const standalone = (window.navigator as { standalone?: boolean }).standalone
+        const isIOSSafari = standalone !== undefined && !standalone
+        if (isIOSSafari) {
+          window.location.replace('/?_at=' + encodeURIComponent(accessToken) + '&_rt=' + encodeURIComponent(refreshToken))
+          return
+        }
         const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
         if (error) { window.location.href = '/login?err=' + encodeURIComponent(error.message); return }
         await afterLogin(supabase)

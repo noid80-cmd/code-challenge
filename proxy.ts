@@ -9,9 +9,11 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  // iOS PWA OAuth handoff: code_verifier lives in PWA cookie jar, so we redirect
-  // from Safari back to the root URL and let the PWA handle the exchange.
-  if (request.nextUrl.searchParams.has('_oauthcode')) {
+  // iOS PWA OAuth handoff: allow auth params through without session check.
+  // _oauthcode = PKCE code to exchange in PWA context
+  // _at / _rt   = implicit-flow tokens handed off from Safari to PWA
+  if (request.nextUrl.searchParams.has('_oauthcode') ||
+      request.nextUrl.searchParams.has('_at')) {
     return NextResponse.next()
   }
 
