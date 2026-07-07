@@ -4,22 +4,23 @@ import { useEffect, useId, useMemo } from 'react'
 type Pattern = { label: string; abc: string }
 
 function fixBeaming(abc: string): string {
-  // Step 1: un-beam any run of consecutive 8th notes (BBBB → B B B B)
-  // so we can re-pair them correctly by beat
+  // Step 1: un-beam consecutive 8th note runs (BBBB → B B B B)
   const unbeamed = abc.replace(/B(?![0-9/])(?=B(?![0-9/]))/g, 'B ')
-  // Step 2: re-beam in beat pairs (B B → BB), not crossing rests or longer notes
+  // Step 2: re-beam in beat pairs (B B → BB)
   return unbeamed.replace(/(?<!B)B(?![0-9/]) B(?![0-9/])/g, 'BB')
 }
 
-function toSingleLine(abc: string): string {
-  // Add stafflines=1 to the V: voice line so abcjs draws one staff line
-  return abc.replace(/(V:\d+[^\n]*)/g, (m) =>
-    m.includes('stafflines') ? m : m + ' stafflines=1'
-  )
+function toPercFormat(abc: string): string {
+  // Add stafflines=1 and stem=up to the V: voice declaration
+  return abc.replace(/(V:\d+[^\n]*)/g, (m) => {
+    let out = m
+    if (!out.includes('stafflines')) out += ' stafflines=1'
+    if (!out.includes('stem=')) out += ' stem=up'
+    return out
+  })
 }
 
 function splitIntoChunks(abc: string, chunkSize: number): string[] {
-  // Normalize literal \n and collect all bars
   const text = abc.replace(/\\n/g, '\n')
   const lines = text.split('\n')
   const headerLines: string[] = []
@@ -54,27 +55,28 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
   const allChunks = useMemo(
     () => patterns.map(p =>
       splitIntoChunks(p.abc, 4)
-        .map(c => fixBeaming(toSingleLine(c)))
+        .map(c => fixBeaming(toPercFormat(c)))
     ),
     [patterns]
   )
 
   useEffect(() => {
     import('abcjs').then(ABCJS => {
-      const staffwidth = Math.max(window.innerWidth - 40, 280)
+      // Use full width with minimal padding so 4 dense bars fit on one line
+      const staffwidth = Math.max(window.innerWidth - 16, 280)
       allChunks.forEach((chunks, i) => {
         chunks.forEach((chunkAbc, c) => {
           const el = document.getElementById(`rv-${uid}-${i}-${c}`)
           if (!el) return
           ABCJS.renderAbc(`rv-${uid}-${i}-${c}`, chunkAbc, {
             staffwidth,
-            scale: 1.2,
+            scale: 0.8,
             foregroundColor: '#f0ece0',
             selectionColor: 'none',
-            paddingtop: c === 0 ? 8 : 0,
-            paddingbottom: c === chunks.length - 1 ? 8 : 0,
-            paddingright: 8,
-            paddingleft: 8,
+            paddingtop: 4,
+            paddingbottom: 4,
+            paddingright: 4,
+            paddingleft: 4,
           } as Parameters<typeof ABCJS.renderAbc>[2])
         })
       })

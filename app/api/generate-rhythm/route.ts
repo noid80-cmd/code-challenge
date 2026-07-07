@@ -17,7 +17,7 @@ export async function POST() {
 조건:
 - 각 패턴은 정확히 8마디 (4/4박자)
 - 도돌이표 없이 겹세로줄(|])로 끝낼 것
-- K:perc, L:1/8, V:1 clef=perc stafflines=1 사용
+- K:perc, L:1/8, V:1 clef=perc stafflines=1 stem=up 사용
 - 음표는 B(박)와 z(쉼표)만 사용
 - L:1/8 기준: B=8분음표, B2=4분음표, B4=2분음표, B3=점4분음표, B/=16분음표
 - 각 마디의 총합이 정확히 8 (L:1/8 기준)이어야 함
@@ -32,11 +32,11 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
   "patterns": [
     {
       "label": "A 패턴",
-      "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=perc stafflines=1\\n|B2 B2 B2 B2|B2 B2 BB BB|BB BB B2 B2|B2 B2 B2 B2|B2 B2 BB BB|BB BB B2 B2|BB B2 BB B2|B4 B4|]"
+      "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=perc stafflines=1 stem=up\\n|B2 B2 B2 B2|B2 B2 BB BB|BB BB B2 B2|B2 B2 B2 B2|B2 B2 BB BB|BB BB B2 B2|BB B2 BB B2|B4 B4|]"
     },
     {
       "label": "B 패턴",
-      "abc": "X:2\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=perc stafflines=1\\n|BB z2 BB z2|B2 z BB z2|BB BB z2 B2|Bz BB z2 BB|BB z2 BB z2|B2 z BB z2|BB BB z2 B2|B4 z4|]"
+      "abc": "X:2\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=perc stafflines=1 stem=up\\n|BB z2 BB z2|B2 z BB z2|BB BB z2 B2|Bz BB z2 BB|BB z2 BB z2|B2 z BB z2|BB BB z2 B2|B4 z4|]"
     }
   ]
 }`,
