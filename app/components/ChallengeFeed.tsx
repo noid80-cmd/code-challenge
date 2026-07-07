@@ -125,6 +125,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
   const [profile, setProfile] = useState<{ name: string; avatar_url: string | null } | null>(null)
   const [totalCount, setTotalCount] = useState(0)
   const [uploadedToday, setUploadedToday] = useState(false)
+  const [challengeOpen, setChallengeOpen] = useState(true)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -232,17 +233,17 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
         </Link>
 
         {/* 타입 스위처 */}
-        <div style={{ display: 'flex', background: 'rgba(240,236,224,0.06)', borderRadius: 10, padding: 3, gap: 2, flex: 1, maxWidth: 220 }}>
+        <div style={{ display: 'flex', background: 'rgba(240,236,224,0.06)', borderRadius: 10, padding: 3, gap: 2 }}>
           {(['chord', 'rhythm'] as const).map(t => (
             <Link key={t} href={`/${t}`} style={{
-              flex: 1, padding: '6px 0', borderRadius: 8, textAlign: 'center',
+              width: 36, height: 28, borderRadius: 8,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
               background: type === t ? 'rgba(240,236,224,0.13)' : 'transparent',
-              color: type === t ? '#f0ece0' : '#403830',
-              fontSize: 12, fontWeight: 800, textDecoration: 'none',
+              fontSize: 15, textDecoration: 'none',
               outline: type === t ? '1px solid rgba(240,236,224,0.2)' : 'none',
               transition: 'all 0.15s',
             }}>
-              {t === 'chord' ? '🎵 코드' : '🥁 리듬'}
+              {t === 'chord' ? '🎵' : '🥁'}
             </Link>
           ))}
         </div>
@@ -331,56 +332,68 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
               border: '1px solid rgba(240,236,224,0.2)', borderRadius: 22, padding: 22,
               boxShadow: '0 0 0 1px rgba(240,236,224,0.06), 0 24px 60px rgba(240,236,224,0.1)',
             }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: challenge.description && challenge.description !== challenge.title ? 6 : 18 }}>
-                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.025em', margin: 0, flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: challengeOpen ? (challenge.description && challenge.description !== challenge.title ? 6 : 18) : 0 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.025em', margin: 0, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {challenge.title}
                 </h2>
-                {challenge.level && (() => {
-                  const levelMap: Record<string, { label: string; color: string; bg: string; border: string }> = {
-                    beginner:     { label: '초급', color: '#6fcf8a', bg: 'rgba(111,207,138,0.12)', border: 'rgba(111,207,138,0.3)' },
-                    intermediate: { label: '중급', color: '#f0c060', bg: 'rgba(240,192,96,0.12)',  border: 'rgba(240,192,96,0.3)'  },
-                    advanced:     { label: '고급', color: '#e07060', bg: 'rgba(224,112,96,0.12)',  border: 'rgba(224,112,96,0.3)'  },
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  {challenge.level && (() => {
+                    const levelMap: Record<string, { label: string; color: string; bg: string; border: string }> = {
+                      beginner:     { label: '초급', color: '#6fcf8a', bg: 'rgba(111,207,138,0.12)', border: 'rgba(111,207,138,0.3)' },
+                      intermediate: { label: '중급', color: '#f0c060', bg: 'rgba(240,192,96,0.12)',  border: 'rgba(240,192,96,0.3)'  },
+                      advanced:     { label: '고급', color: '#e07060', bg: 'rgba(224,112,96,0.12)',  border: 'rgba(224,112,96,0.3)'  },
+                    }
+                    const lv = levelMap[challenge.level] ?? levelMap.intermediate
+                    return (
+                      <span style={{
+                        fontSize: 11, fontWeight: 800,
+                        color: lv.color, background: lv.bg, border: `1px solid ${lv.border}`,
+                        borderRadius: 7, padding: '3px 9px', letterSpacing: '0.04em',
+                      }}>{lv.label}</span>
+                    )
+                  })()}
+                  <button onClick={() => setChallengeOpen(o => !o)} style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: '#504840', fontSize: 12, padding: '4px 2px', lineHeight: 1,
+                  }}>
+                    {challengeOpen ? '▴' : '▾'}
+                  </button>
+                </div>
+              </div>
+              {challengeOpen && (
+                <>
+                  {challenge.description && challenge.description !== challenge.title && (
+                    <p style={{ fontSize: 13, color: '#605850', lineHeight: 1.7, marginBottom: 18 }}>
+                      {challenge.description}
+                    </p>
+                  )}
+                  {type === 'rhythm'
+                    ? <RhythmViewer patterns={challenge.chords?.patterns ?? []} />
+                    : <ChordPlayer progressions={challenge.chords?.progressions ?? []} title={challenge.title} />
                   }
-                  const lv = levelMap[challenge.level] ?? levelMap.intermediate
-                  return (
-                    <span style={{
-                      flexShrink: 0, fontSize: 11, fontWeight: 800,
-                      color: lv.color, background: lv.bg, border: `1px solid ${lv.border}`,
-                      borderRadius: 7, padding: '3px 9px', letterSpacing: '0.04em',
-                    }}>{lv.label}</span>
-                  )
-                })()}
-              </div>
-              {challenge.description && challenge.description !== challenge.title && (
-                <p style={{ fontSize: 13, color: '#605850', lineHeight: 1.7, marginBottom: 18 }}>
-                  {challenge.description}
-                </p>
+                  <div style={{ marginTop: 16 }}>
+                    {user ? (
+                      <Link href={`/upload?type=${type}`} style={{
+                        display: 'block', padding: '14px', borderRadius: 13,
+                        background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                        color: '#0a0a08', fontSize: 14, fontWeight: 800, textAlign: 'center',
+                        letterSpacing: '-0.01em', boxShadow: '0 6px 24px rgba(240,236,224,0.4)',
+                      }}>
+                        챌린지 참여하기
+                      </Link>
+                    ) : (
+                      <Link href="/login" style={{
+                        display: 'block', padding: '14px', borderRadius: 13,
+                        background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                        color: '#0a0a08', fontSize: 14, fontWeight: 800, textAlign: 'center',
+                        boxShadow: '0 6px 24px rgba(240,236,224,0.35)',
+                      }}>
+                        로그인하고 참여하기
+                      </Link>
+                    )}
+                  </div>
+                </>
               )}
-              {type === 'rhythm'
-                ? <RhythmViewer patterns={challenge.chords?.patterns ?? []} />
-                : <ChordPlayer progressions={challenge.chords?.progressions ?? []} title={challenge.title} />
-              }
-              <div style={{ marginTop: 16 }}>
-                {user ? (
-                  <Link href={`/upload?type=${type}`} style={{
-                    display: 'block', padding: '14px', borderRadius: 13,
-                    background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-                    color: '#0a0a08', fontSize: 14, fontWeight: 800, textAlign: 'center',
-                    letterSpacing: '-0.01em', boxShadow: '0 6px 24px rgba(240,236,224,0.4)',
-                  }}>
-                    챌린지 참여하기
-                  </Link>
-                ) : (
-                  <Link href="/login" style={{
-                    display: 'block', padding: '14px', borderRadius: 13,
-                    background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-                    color: '#0a0a08', fontSize: 14, fontWeight: 800, textAlign: 'center',
-                    boxShadow: '0 6px 24px rgba(240,236,224,0.35)',
-                  }}>
-                    로그인하고 참여하기
-                  </Link>
-                )}
-              </div>
             </div>
           ) : (
             <div style={{
