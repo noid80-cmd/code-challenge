@@ -4,14 +4,11 @@ import { useEffect, useId, useMemo } from 'react'
 type Pattern = { label: string; abc: string }
 
 function fixBeaming(abc: string): string {
-  // Step 1: un-beam consecutive 8th note runs (BBBB → B B B B)
   const unbeamed = abc.replace(/B(?![0-9/])(?=B(?![0-9/]))/g, 'B ')
-  // Step 2: re-beam in beat pairs (B B → BB)
   return unbeamed.replace(/(?<!B)B(?![0-9/]) B(?![0-9/])/g, 'BB')
 }
 
 function toPercFormat(abc: string): string {
-  // Add stafflines=1 and stem=up to the V: voice declaration
   return abc.replace(/(V:\d+[^\n]*)/g, (m) => {
     let out = m
     if (!out.includes('stafflines')) out += ' stafflines=1'
@@ -62,21 +59,22 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
 
   useEffect(() => {
     import('abcjs').then(ABCJS => {
-      // Use full width with minimal padding so 4 dense bars fit on one line
-      const staffwidth = Math.max(window.innerWidth - 16, 280)
       allChunks.forEach((chunks, i) => {
         chunks.forEach((chunkAbc, c) => {
           const el = document.getElementById(`rv-${uid}-${i}-${c}`)
           if (!el) return
+          // Measure the actual rendered container width so the SVG doesn't overflow
+          const containerWidth = el.parentElement?.clientWidth ?? 300
+          const staffwidth = Math.max(containerWidth - 4, 200)
           ABCJS.renderAbc(`rv-${uid}-${i}-${c}`, chunkAbc, {
             staffwidth,
-            scale: 0.8,
+            scale: 0.65,
             foregroundColor: '#f0ece0',
             selectionColor: 'none',
             paddingtop: 4,
             paddingbottom: 4,
-            paddingright: 4,
-            paddingleft: 4,
+            paddingright: 2,
+            paddingleft: 2,
           } as Parameters<typeof ABCJS.renderAbc>[2])
         })
       })
