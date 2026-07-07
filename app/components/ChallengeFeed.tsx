@@ -134,9 +134,10 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
 
     const { date: chDate, isBeforeNoon } = challengeDate()
     setIsBeforeNoon(isBeforeNoon)
-    const { data: ch } = await supabase.from('challenges').select('*')
+    const { data: ch, error: chError } = await supabase.from('challenges').select('*')
       .eq('date', chDate).eq('type', type)
       .order('created_at', { ascending: false }).limit(1).maybeSingle()
+    if (chError) console.error('[ChallengeFeed] challenge query error:', chError)
     setChallenge(ch)
 
     if (ch) {
