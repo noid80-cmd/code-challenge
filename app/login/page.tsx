@@ -97,10 +97,10 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 8, color: '#f0ece0' }}>
-            {resetMode ? '비밀번호 찾기' : '코드 챌린지'}
+            {resetMode ? '비밀번호 찾기' : 'PlayDaily'}
           </h1>
           <p style={{ color: '#807060', fontSize: 14, fontWeight: 500 }}>
-            {resetMode ? '가입한 이메일로 재설정 링크를 보내드려요' : '매일 새로운 코드 진행을 연주하고 공유하세요'}
+            {resetMode ? '가입한 이메일로 재설정 링크를 보내드려요' : '매일 연주하고 공유하세요'}
           </p>
         </div>
 

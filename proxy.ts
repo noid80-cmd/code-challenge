@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const publicPaths = ['/login', '/signup', '/auth', '/api', '/intro']
+  const publicPaths = ['/login', '/signup', '/auth', '/api', '/intro', '/chord', '/rhythm', '/challenges', '/ranking']
 
   if (
     pathname === '/' ||
