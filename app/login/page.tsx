@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 48 48">
@@ -15,7 +14,6 @@ const GoogleIcon = () => (
 )
 
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(() => {
@@ -27,24 +25,30 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState('')
   const [resetSent, setResetSent] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
+  // If cookies were cleared (iOS PWA) but localStorage has a refresh token, recover silently
+  const [recovering, setRecovering] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const from = new URLSearchParams(window.location.search).get('from')
+    const rt = localStorage.getItem('sb_rt')
+    return !!(from && rt)
+  })
 
-  // iOS PWA: cookies get cleared on force-kill but localStorage survives.
-  // If redirected from a protected page, try silently re-authenticating with stored refresh_token.
   useEffect(() => {
     const from = new URLSearchParams(window.location.search).get('from')
-    if (!from) return
     const rt = localStorage.getItem('sb_rt')
-    if (!rt) return
+    if (!from || !rt) { setRecovering(false); return }
     const supabase = createClient()
     supabase.auth.refreshSession({ refresh_token: rt }).then(({ data }) => {
       if (data.session) {
         localStorage.setItem('sb_rt', data.session.refresh_token)
-        router.push(from)
+        // Hard redirect — ensures cookies are committed before next server request
+        window.location.href = from
       } else {
         localStorage.removeItem('sb_rt')
+        setRecovering(false)
       }
     })
-  }, [router])
+  }, [])
 
   async function storeRefreshToken(supabase: ReturnType<typeof createClient>) {
     try {
@@ -60,9 +64,8 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setLoading(false); setError('이메일 또는 비밀번호가 올바르지 않아요.'); return }
     await storeRefreshToken(supabase)
-    setLoading(false)
     const from = new URLSearchParams(window.location.search).get('from')
-    router.push(from ?? '/')
+    window.location.href = from ?? '/'
   }
 
   async function handleGoogle() {
@@ -107,6 +110,14 @@ export default function LoginPage() {
     })
     setResetLoading(false)
     setResetSent(true)
+  }
+
+  if (recovering) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0a0a08', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ color: '#303028', fontSize: 14, fontWeight: 600 }}>잠시만요...</span>
+      </div>
+    )
   }
 
   const inputStyle: React.CSSProperties = {

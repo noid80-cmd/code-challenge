@@ -107,8 +107,8 @@ function splitIntoChunks(abc: string, chunkSize: number): string[] {
   if (allBars.length === 0) return [text]
 
   const header = headerLines.join('\n')
-  // Continuation chunks: strip time sig (M:), tempo (Q:), title (T:)
-  const headerCont = headerLines.filter(l => !l.trim().match(/^(M:|Q:|T:)/)).join('\n')
+  // Keep M: in continuation chunks so bar widths stay consistent (hidden via CSS after render)
+  const headerCont = headerLines.filter(l => !l.trim().match(/^(Q:|T:)/)).join('\n')
 
   const chunks: string[] = []
   for (let i = 0; i < allBars.length; i += chunkSize) {
@@ -150,6 +150,13 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
             paddingleft: 0,
             minPadding: 0,
           } as Parameters<typeof ABCJS.renderAbc>[2])
+          // Hide time signature on continuation chunks — M: is kept for consistent bar widths
+          if (c > 0) {
+            const el2 = document.getElementById(`rv-${uid}-${i}-${c}`)
+            el2?.querySelectorAll('.abcjs-time-signature').forEach(e => {
+              (e as SVGElement).style.visibility = 'hidden'
+            })
+          }
         })
       })
     })
