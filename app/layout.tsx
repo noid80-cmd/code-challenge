@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import Script from 'next/script'
+import { SessionSync } from './components/SessionSync'
 
 export const metadata: Metadata = {
   title: 'PlayDaily',
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ko">
       <body>
+        <SessionSync />
         {children}
         <a href="https://www.khmusic.co.kr" target="_blank" rel="noopener noreferrer"
           style={{ position: 'fixed', bottom: 10, left: '50%', transform: 'translateX(-50%)',

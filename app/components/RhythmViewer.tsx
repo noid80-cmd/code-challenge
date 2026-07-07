@@ -11,6 +11,8 @@ function fixBeaming(abc: string): string {
 function toPercFormat(abc: string): string {
   return abc.replace(/(V:\d+[^\n]*)/g, (m) => {
     let out = m
+    if (out.includes('clef=perc')) out = out.replace('clef=perc', 'clef=none')
+    if (!out.includes('clef=')) out += ' clef=none'
     if (!out.includes('stafflines')) out += ' stafflines=1'
     if (!out.includes('stem=')) out += ' stem=up'
     return out
@@ -68,7 +70,7 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
           const staffwidth = Math.max(containerWidth - 4, 200)
           ABCJS.renderAbc(`rv-${uid}-${i}-${c}`, chunkAbc, {
             staffwidth,
-            scale: 0.7,
+            scale: 0.8,
             foregroundColor: '#f0ece0',
             selectionColor: 'none',
             paddingtop: 4,
