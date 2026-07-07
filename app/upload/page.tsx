@@ -483,7 +483,7 @@ export default function UploadPage() {
               어느 진행을 연주할까요?
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-              {challenge.chords.progressions.map((prog, i) => (
+              {(challenge.chords.progressions ?? []).map((prog, i) => (
                 <button key={i} type="button" onClick={() => setSelectedProgression(i)} style={{
                   padding: '11px 14px', borderRadius: 12,
                   background: selectedProgression === i ? 'rgba(240,236,224,0.1)' : 'rgba(240,236,224,0.03)',
