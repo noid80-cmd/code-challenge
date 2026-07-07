@@ -39,7 +39,6 @@ export default function LoginPage() {
     supabase.auth.refreshSession({ refresh_token: rt }).then(({ data }) => {
       if (data.session) {
         localStorage.setItem('sb_rt', data.session.refresh_token)
-        fetch('/api/refresh-session', { method: 'POST' }).catch(() => {})
         router.push(from)
       } else {
         localStorage.removeItem('sb_rt')
@@ -61,7 +60,6 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setLoading(false); setError('이메일 또는 비밀번호가 올바르지 않아요.'); return }
     await storeRefreshToken(supabase)
-    try { await fetch('/api/refresh-session', { method: 'POST' }) } catch {}
     setLoading(false)
     const from = new URLSearchParams(window.location.search).get('from')
     router.push(from ?? '/')

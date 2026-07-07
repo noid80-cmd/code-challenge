@@ -5,11 +5,17 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import ChordPlayer from '@/app/components/ChordPlayer'
+import dynamic from 'next/dynamic'
 import { normalizeMeasures } from '@/lib/chords'
 import { challengeDate } from '@/lib/date'
 
+const RhythmViewer = dynamic(() => import('@/app/components/RhythmViewer'), { ssr: false })
+
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
-type Challenge = { id: string; title: string; description?: string; level: string; chords: { progressions: Progression[] } }
+type Challenge = {
+  id: string; title: string; description?: string; level: string; type?: string
+  chords: { progressions?: Progression[]; patterns?: { label: string; abc: string }[] }
+}
 
 type Group = { id: string; name: string }
 
@@ -44,7 +50,10 @@ export default function UploadPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
       const { date: today } = challengeDate()
-      const { data } = await supabase.from('challenges').select('*').eq('date', today).order('created_at', { ascending: false }).limit(1).single()
+      const typeParam = new URLSearchParams(window.location.search).get('type') ?? 'chord'
+      const { data } = await supabase.from('challenges').select('*')
+        .eq('date', today).eq('type', typeParam)
+        .order('created_at', { ascending: false }).limit(1).maybeSingle()
       setChallenge(data)
       const { data: memberships } = await supabase
         .from('group_members').select('groups(id, name)').eq('user_id', user.id)
@@ -455,7 +464,10 @@ export default function UploadPage() {
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', color: '#a0988c', marginBottom: 8 }}>오늘의 챌린지</div>
             <div style={{ fontSize: 15, fontWeight: 900, color: '#f0ece0', marginBottom: 16, letterSpacing: '-0.02em' }}>{challenge.title}</div>
             <div style={{ overflowX: 'auto' }}>
-              <ChordPlayer progressions={challenge.chords.progressions} title={challenge.title} />
+              {challenge.type === 'rhythm'
+                ? <RhythmViewer patterns={challenge.chords?.patterns ?? []} />
+                : <ChordPlayer progressions={challenge.chords?.progressions ?? []} title={challenge.title} />
+              }
             </div>
           </div>
         ) : (
