@@ -4,14 +4,20 @@ import { useEffect, useId, useMemo } from 'react'
 type Pattern = { label: string; abc: string }
 
 function getNoteDur(tok: string): number {
+  // Triplet/tuplet: (3BBB = 2 units, (2BB = 3 units
+  if (tok.startsWith('(')) {
+    const m = tok.match(/^\((\d+)/)
+    const n = m ? parseInt(m[1]) : 3
+    return n === 3 ? 2 : n === 2 ? 3 : n === 5 ? 4 : 2
+  }
   if (tok.includes('/')) return 0.5
   const m = tok.match(/(\d+)$/)
   return m ? parseInt(m[1]) : 1
 }
 
 function beamBar(bar: string): string {
-  // Extract notes with cumulative beat positions
-  const noteRe = /[Bz][0-9]*\/?/g
+  // Match tuplets as atomic units first, then individual notes
+  const noteRe = /\(\d+(?:[Bz][0-9]*\/?)+|[Bz][0-9]*\/?/g
   const notes: Array<{ tok: string; dur: number; pos: number }> = []
   let cumPos = 0
   let m: RegExpExecArray | null
@@ -21,20 +27,46 @@ function beamBar(bar: string): string {
     cumPos += dur
   }
   if (notes.length === 0) return bar
-  // Beam only B+B pairs that start exactly on a beat boundary (pos divisible by 2)
+
   const out: string[] = []
   let i = 0
   while (i < notes.length) {
     const cur = notes[i]
     const next = notes[i + 1]
+
+    // Tuplets ((3BBB etc.) pass through unchanged
+    if (cur.tok.startsWith('(')) {
+      out.push(cur.tok)
+      i++
+      continue
+    }
+
+    // Beam eighth note pairs at beat boundaries
     if (cur.tok === 'B' && cur.dur === 1 && cur.pos % 2 === 0 &&
         next?.tok === 'B' && next.dur === 1) {
       out.push('BB')
       i += 2
-    } else {
-      out.push(cur.tok)
-      i++
+      continue
     }
+
+    // Beam consecutive 16th notes within the same beat (no spaces → beamed in abcjs)
+    if (cur.tok === 'B/' && cur.dur === 0.5) {
+      const beatEnd = (Math.floor(cur.pos / 2) + 1) * 2
+      let j = i
+      const group: string[] = []
+      while (j < notes.length && notes[j].tok === 'B/' && notes[j].pos + 0.5 <= beatEnd) {
+        group.push('B/')
+        j++
+      }
+      if (group.length >= 2) {
+        out.push(group.join(''))
+        i = j
+        continue
+      }
+    }
+
+    out.push(cur.tok)
+    i++
   }
   return out.join(' ')
 }

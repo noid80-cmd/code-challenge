@@ -73,6 +73,7 @@ export default function AdminPage() {
   const [challengeTypeForNew, setChallengeTypeForNew] = useState<'chord' | 'rhythm'>('chord')
   const [rhythmDraft, setRhythmDraft] = useState<RhythmDraft | null>(null)
   const [generatingRhythm, setGeneratingRhythm] = useState(false)
+  const [rhythmLevel, setRhythmLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate')
 
   const loadChallenges = useCallback(async () => {
     const supabase = createClient()
@@ -96,7 +97,7 @@ export default function AdminPage() {
   async function generateRhythm() {
     setGeneratingRhythm(true); setError(''); setRhythmDraft(null)
     try {
-      const res = await fetch('/api/generate-rhythm', { method: 'POST' })
+      const res = await fetch('/api/generate-rhythm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: rhythmLevel }) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '생성 실패')
       setRhythmDraft({ title: data.title, description: data.description || '', patterns: data.patterns ?? [] })
@@ -118,7 +119,7 @@ export default function AdminPage() {
       title: rhythmDraft.title.trim(),
       description: rhythmDraft.description.trim() || null,
       chords: { patterns: rhythmDraft.patterns },
-      level: 'intermediate',
+      level: rhythmLevel,
     })
     if (error) {
       setError(error.message.includes('duplicate') || error.message.includes('unique')
@@ -415,6 +416,20 @@ export default function AdminPage() {
 
         {challengeTypeForNew === 'rhythm' && !editingId && (
           <div>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+              {(['beginner', 'intermediate', 'advanced'] as const).map(lv => {
+                const labels = { beginner: '초급', intermediate: '중급', advanced: '고급' }
+                return (
+                  <button key={lv} onClick={() => setRhythmLevel(lv)} style={{
+                    flex: 1, padding: '8px', borderRadius: 9, border: 'none', cursor: 'pointer',
+                    background: rhythmLevel === lv ? 'rgba(99,102,241,0.25)' : 'rgba(255,255,255,0.04)',
+                    color: rhythmLevel === lv ? '#a5b4fc' : '#555570',
+                    fontSize: 12, fontWeight: 800,
+                    outline: rhythmLevel === lv ? '1px solid rgba(99,102,241,0.4)' : 'none',
+                  }}>{labels[lv]}</button>
+                )
+              })}
+            </div>
             <button onClick={generateRhythm} disabled={generatingRhythm}
               style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: generatingRhythm ? '#1a1a2e' : 'linear-gradient(135deg, #4f46e5, #6366f1)', color: generatingRhythm ? '#444466' : '#fff', fontSize: 16, fontWeight: 700, cursor: generatingRhythm ? 'default' : 'pointer', marginBottom: 16 }}>
               {generatingRhythm ? '생성 중...' : 'AI로 리듬 패턴 생성'}

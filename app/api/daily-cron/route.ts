@@ -109,6 +109,20 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
   let rhythmTitle: string | null = existingRhythm?.title ?? null
 
   if (!existingRhythm) {
+    const rhythmLevels = ['beginner', 'intermediate', 'advanced'] as const
+    const rhythmLevelWeights = [0.3, 0.5, 0.2]
+    const rRand = Math.random()
+    const rhythmLevel = rRand < rhythmLevelWeights[0] ? rhythmLevels[0]
+      : rRand < rhythmLevelWeights[0] + rhythmLevelWeights[1] ? rhythmLevels[1]
+      : rhythmLevels[2]
+
+    const rhythmLevelGuide =
+      rhythmLevel === 'beginner'
+        ? `초급: 4분음표·8분음표·쉼표만 사용. 단순하고 예측 가능한 리듬.\n예시 마디: |B2 B2 B2 B2| |BB BB z2 B2| |B2 BB z2 B2|`
+        : rhythmLevel === 'advanced'
+        ? `고급: 16분음표·셋잇단음표·당김음을 복잡하게 혼합. 불규칙 악센트 포함.\n예시 마디: |B/B/B/B/ (3BBB B/B/B/B/ z2| |(3BBB B/B/z/ B/B/B/B/ B2|`
+        : `중급: 8분음표 기반에 16분음표(B/)와 셋잇단음표((3BBB)를 혼합. 당김음 포함.\n예시 마디: |BB z2 B/B/B/B/ B2| |(3BBB BB z2 B2| |B/B/B/B/ (3BBB BB z2|`
+
     const rhythmMsg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 1024,
@@ -116,30 +130,37 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
         role: 'user',
         content: `드럼/리듬 초견 챌린지를 위한 ABC notation 리듬 패턴 2개를 생성하세요.
 
-조건:
-- 각 패턴은 정확히 8마디 (4/4박자)
-- 도돌이표 없이 겹세로줄(|])로 끝낼 것
-- K:perc, L:1/8, V:1 clef=none stafflines=1 stem=up 사용
-- 음표는 B(박)와 z(쉼표)만 사용
-- L:1/8 기준: B=8분음표, B2=4분음표, B4=2분음표, B3=점4분음표, B/=16분음표
-- 각 마디의 총합이 정확히 8 (L:1/8 기준)이어야 함
-- 8분음표(B)는 반드시 2개씩 붙여서 표기 (공백 없이 BB). 예: 4박 = BB BB BB BB (각 박 2개 묶음)
-- A 패턴: 그루브있는 기본 리듬
-- B 패턴: 당김음·쉼표를 활용한 복잡한 리듬
+난이도: ${rhythmLevelGuide}
+
+공통 조건:
+- 4/4박자, 정확히 8마디, 겹세로줄(|])로 끝낼 것
+- K:perc, L:1/8, V:1 clef=none stafflines=1 stem=up
+- 음표는 B(타격), z(쉼표)만 사용
+- 각 마디 총합 = 정확히 8 (L:1/8 기준)
+
+음표 길이 (반드시 지킬 것):
+- B/ = 16분음표 = 0.5
+- B  = 8분음표  = 1
+- B2 = 4분음표  = 2
+- B4 = 2분음표  = 4
+- (3BBB = 셋잇단음표 = 총합 2 (3개를 2박에 배분)
+
+빔 표기 규칙:
+- 8분음표 2개 묶음: BB (공백 없이)
+- 16분음표 4개 묶음: B/B/B/B/ (공백 없이)
+- 셋잇단음표: (3BBB (공백 없이)
+- 서로 다른 묶음 사이는 공백으로 구분
+
+A 패턴: 규칙적인 그루브 중심
+B 패턴: 당김음·쉼표를 활용한 복잡한 리듬
 
 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 {
   "title": "리듬 챌린지 제목",
   "description": "간단한 설명 (1-2문장)",
   "patterns": [
-    {
-      "label": "A 패턴",
-      "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|B2 B2 B2 B2|...|]"
-    },
-    {
-      "label": "B 패턴",
-      "abc": "X:2\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|B B z B B z B B|...|]"
-    }
+    { "label": "A 패턴", "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|...|]" },
+    { "label": "B 패턴", "abc": "X:2\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|...|]" }
   ]
 }`,
       }],
@@ -152,6 +173,7 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
       await supabase.from('challenges').insert({
         date: today,
         type: 'rhythm',
+        level: rhythmLevel,
         title: rhythmData.title,
         description: rhythmData.description,
         chords: { patterns: rhythmData.patterns },
