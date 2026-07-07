@@ -13,14 +13,14 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
         if (!el) return
         ABCJS.renderAbc(`rv-${uid}-${i}`, p.abc, {
           responsive: 'resize',
-          staffwidth: 500,
-          scale: 1.4,
+          scale: 1.6,
           foregroundColor: '#f0ece0',
           selectionColor: 'none',
           paddingtop: 8,
           paddingbottom: 8,
           paddingright: 10,
           paddingleft: 10,
+          wrap: { minSpacing: 1.5, maxSpacing: 2.5, preferredMeasuresPerLine: 4 },
         } as Parameters<typeof ABCJS.renderAbc>[2])
       })
     })
