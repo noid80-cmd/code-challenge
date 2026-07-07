@@ -33,8 +33,10 @@ export default function LoginPage() {
     setError(''); setLoading(true)
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) { setLoading(false); setError('이메일 또는 비밀번호가 올바르지 않아요.'); return }
+    // Force server to re-set cookies with maxAge via Set-Cookie header
+    try { await fetch('/api/refresh-session', { method: 'POST' }) } catch {}
     setLoading(false)
-    if (error) { setError('이메일 또는 비밀번호가 올바르지 않아요.'); return }
     router.push('/')
   }
 

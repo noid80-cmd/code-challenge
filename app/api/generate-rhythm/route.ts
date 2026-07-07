@@ -21,6 +21,7 @@ export async function POST() {
 - 음표는 B(박)와 z(쉼표)만 사용
 - L:1/8 기준: B=8분음표, B2=4분음표, B4=2분음표, B3=점4분음표, B/=16분음표
 - 각 마디의 총합이 정확히 8 (L:1/8 기준)이어야 함
+- 8분음표(B)는 반드시 2개씩 붙여서 표기 (공백 없이 BB). 예: 4박 = BB BB BB BB (각 박 2개 묶음)
 - A 패턴: 그루브있는 기본 리듬
 - B 패턴: 당김음·쉼표를 활용한 복잡한 리듬
 
@@ -31,11 +32,11 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
   "patterns": [
     {
       "label": "A 패턴",
-      "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=perc\\n|B2 B2 B2 B2|B2 B2 B2 B2|B B B B B B B B|B2 B2 B2 B2|B2 B2 B2 B2|B B B B B B B B|B2 B B2 B B2 B B|B4 B4|]"
+      "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=perc\\n|B2 B2 B2 B2|B2 B2 BB BB|BB BB B2 B2|B2 B2 B2 B2|B2 B2 BB BB|BB BB B2 B2|BB B2 BB B2|B4 B4|]"
     },
     {
       "label": "B 패턴",
-      "abc": "X:2\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=perc\\n|B B z B B z B B|B2 z2 B2 z2|B B B B z2 B2|B z B z B2 z2|B B z B B z B B|B2 z2 B2 z2|B B B B z2 B2|B4 z4|]"
+      "abc": "X:2\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=perc\\n|BB z2 BB z2|B2 z BB z2|BB BB z2 B2|Bz BB z2 BB|BB z2 BB z2|B2 z BB z2|BB BB z2 B2|B4 z4|]"
     }
   ]
 }`,

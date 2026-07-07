@@ -3,6 +3,11 @@
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+async function refreshServerCookies() {
+  // Force the server to re-set session cookies with maxAge via Set-Cookie header
+  try { await fetch('/api/refresh-session', { method: 'POST' }) } catch {}
+}
+
 export default function AuthCallback() {
   useEffect(() => {
     // Read URL before createClient() potentially clears the hash
@@ -18,6 +23,7 @@ export default function AuthCallback() {
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (error) { window.location.href = '/login?err=' + encodeURIComponent(error.message); return }
+        await refreshServerCookies()
         window.location.href = '/'; return
       }
 
@@ -25,12 +31,16 @@ export default function AuthCallback() {
       if (accessToken && refreshToken) {
         const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
         if (error) { window.location.href = '/login?err=' + encodeURIComponent(error.message); return }
+        await refreshServerCookies()
         window.location.href = '/'; return
       }
 
       // Fallback: client may have auto-processed the hash
       const { data: { session } } = await supabase.auth.getSession()
-      if (session) { window.location.href = '/'; return }
+      if (session) {
+        await refreshServerCookies()
+        window.location.href = '/'; return
+      }
 
       // Debug: show what was in the URL
       const dbg = `search=${encodeURIComponent(window.location.search)}&hash=${encodeURIComponent(window.location.hash)}`

@@ -4,26 +4,36 @@ import { useEffect, useId } from 'react'
 type Pattern = { label: string; abc: string }
 
 function splitBarsPerLine(abc: string, barsPerLine: number): string {
-  const lines = abc.split('\n')
-  const musicIdx = lines.findIndex(l => l.trim().startsWith('|'))
-  if (musicIdx === -1) return abc
+  // Normalize literal \n (JSON-encoded) to real newlines
+  const text = abc.replace(/\\n/g, '\n')
+  const lines = text.split('\n')
 
-  const header = lines.slice(0, musicIdx)
-  const music = lines[musicIdx].trim()
+  const headerLines: string[] = []
+  const allBars: string[] = []
 
-  // "|bar1|bar2|...|barN|]" → split by | → filter empty
-  const parts = music.split('|').filter((_, i) => i > 0) // skip leading empty
-  // last part is "]", bars are all but last
-  const bars = parts.slice(0, -1)
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('|')) {
+      // Collect bars from this music line; skip empty segments and closing ]
+      trimmed.split('|').forEach(s => {
+        const b = s.trim()
+        if (b !== '' && b !== ']') allBars.push(b)
+      })
+    } else {
+      headerLines.push(line)
+    }
+  }
+
+  if (allBars.length === 0) return text
 
   const musicLines: string[] = []
-  for (let i = 0; i < bars.length; i += barsPerLine) {
-    const chunk = bars.slice(i, i + barsPerLine)
-    const isLast = i + barsPerLine >= bars.length
+  for (let i = 0; i < allBars.length; i += barsPerLine) {
+    const chunk = allBars.slice(i, i + barsPerLine)
+    const isLast = i + barsPerLine >= allBars.length
     musicLines.push('|' + chunk.join('|') + (isLast ? '|]' : '|'))
   }
 
-  return [...header, ...musicLines].join('\n')
+  return [...headerLines, ...musicLines].join('\n')
 }
 
 export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
