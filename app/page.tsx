@@ -132,12 +132,6 @@ export default function LandingPage() {
         </div>
       </main>
 
-      <div style={{ textAlign: 'center', paddingBottom: 24 }}>
-        <a href="https://www.khmusic.co.kr" target="_blank" rel="noopener noreferrer"
-          style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)', textDecoration: 'underline', textUnderlineOffset: 3 }}>
-          by KH Music
-        </a>
-      </div>
     </div>
   )
 }
