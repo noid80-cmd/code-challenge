@@ -11,17 +11,17 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
       patterns.forEach((p, i) => {
         const el = document.getElementById(`rv-${uid}-${i}`)
         if (!el) return
-        const staffwidth = Math.max(el.clientWidth - 24, 200)
+        const staffwidth = Math.max(window.innerWidth - 80, 280)
         ABCJS.renderAbc(`rv-${uid}-${i}`, p.abc, {
           staffwidth,
-          scale: 1.4,
+          scale: 1.1,
           foregroundColor: '#f0ece0',
           selectionColor: 'none',
           paddingtop: 8,
           paddingbottom: 8,
           paddingright: 10,
           paddingleft: 10,
-          wrap: { minSpacing: 1.5, maxSpacing: 2.8, preferredMeasuresPerLine: 4 },
+          wrap: { minSpacing: 1.2, maxSpacing: 2.5, preferredMeasuresPerLine: 4 },
         } as Parameters<typeof ABCJS.renderAbc>[2])
       })
     })
