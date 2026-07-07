@@ -95,7 +95,7 @@ function splitIntoChunks(abc: string, chunkSize: number): string[] {
     const isLast = i + chunkSize >= allBars.length
     tuneLines.push('|' + slice.join('|') + (isLast ? '|]' : '|'))
   }
-  return [header + '\n%%stretchlast\n' + tuneLines.join('\n')]
+  return [header + '\n%%stretchlast 1\n' + tuneLines.join('\n')]
 }
 
 export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
@@ -132,6 +132,7 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
             paddingright: 0,
             paddingleft: 0,
             minPadding: 0,
+            format: { stretchlast: 1 },
           } as Parameters<typeof ABCJS.renderAbc>[2])
         })
       })
