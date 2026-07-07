@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -28,16 +28,43 @@ export default function LoginPage() {
   const [resetSent, setResetSent] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
 
+  // iOS PWA: cookies get cleared on force-kill but localStorage survives.
+  // If redirected from a protected page, try silently re-authenticating with stored refresh_token.
+  useEffect(() => {
+    const from = new URLSearchParams(window.location.search).get('from')
+    if (!from) return
+    const rt = localStorage.getItem('sb_rt')
+    if (!rt) return
+    const supabase = createClient()
+    supabase.auth.refreshSession({ refresh_token: rt }).then(({ data }) => {
+      if (data.session) {
+        localStorage.setItem('sb_rt', data.session.refresh_token)
+        fetch('/api/refresh-session', { method: 'POST' }).catch(() => {})
+        router.push(from)
+      } else {
+        localStorage.removeItem('sb_rt')
+      }
+    })
+  }, [router])
+
+  async function storeRefreshToken(supabase: ReturnType<typeof createClient>) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.refresh_token) localStorage.setItem('sb_rt', session.refresh_token)
+    } catch {}
+  }
+
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
     setError(''); setLoading(true)
     const supabase = createClient()
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setLoading(false); setError('이메일 또는 비밀번호가 올바르지 않아요.'); return }
-    // Force server to re-set cookies with maxAge via Set-Cookie header
+    await storeRefreshToken(supabase)
     try { await fetch('/api/refresh-session', { method: 'POST' }) } catch {}
     setLoading(false)
-    router.push('/')
+    const from = new URLSearchParams(window.location.search).get('from')
+    router.push(from ?? '/')
   }
 
   async function handleGoogle() {

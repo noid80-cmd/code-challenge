@@ -3,14 +3,20 @@
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-async function refreshServerCookies() {
-  // Force the server to re-set session cookies with maxAge via Set-Cookie header
+async function afterLogin(supabase: ReturnType<typeof createClient>) {
+  // Force server to re-set cookies with maxAge
   try { await fetch('/api/refresh-session', { method: 'POST' }) } catch {}
+  // Store refresh_token in localStorage for iOS PWA recovery (cookies may be cleared on force-kill)
+  try {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session?.refresh_token) {
+      localStorage.setItem('sb_rt', session.refresh_token)
+    }
+  } catch {}
 }
 
 export default function AuthCallback() {
   useEffect(() => {
-    // Read URL before createClient() potentially clears the hash
     const code = new URLSearchParams(window.location.search).get('code')
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
     const accessToken = hashParams.get('access_token')
@@ -19,30 +25,26 @@ export default function AuthCallback() {
     const run = async () => {
       const supabase = createClient()
 
-      // PKCE flow
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (error) { window.location.href = '/login?err=' + encodeURIComponent(error.message); return }
-        await refreshServerCookies()
+        await afterLogin(supabase)
         window.location.href = '/'; return
       }
 
-      // Implicit flow — set session from hash tokens
       if (accessToken && refreshToken) {
         const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
         if (error) { window.location.href = '/login?err=' + encodeURIComponent(error.message); return }
-        await refreshServerCookies()
+        await afterLogin(supabase)
         window.location.href = '/'; return
       }
 
-      // Fallback: client may have auto-processed the hash
       const { data: { session } } = await supabase.auth.getSession()
       if (session) {
-        await refreshServerCookies()
+        await afterLogin(supabase)
         window.location.href = '/'; return
       }
 
-      // Debug: show what was in the URL
       const dbg = `search=${encodeURIComponent(window.location.search)}&hash=${encodeURIComponent(window.location.hash)}`
       window.location.href = '/login?err=' + encodeURIComponent('no_session|' + dbg)
     }
