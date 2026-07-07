@@ -68,13 +68,14 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
           const staffwidth = Math.max(containerWidth - 4, 200)
           ABCJS.renderAbc(`rv-${uid}-${i}-${c}`, chunkAbc, {
             staffwidth,
-            scale: 0.65,
+            scale: 0.7,
             foregroundColor: '#f0ece0',
             selectionColor: 'none',
             paddingtop: 4,
             paddingbottom: 4,
-            paddingright: 2,
-            paddingleft: 2,
+            paddingright: 0,
+            paddingleft: 0,
+            minPadding: 0,
           } as Parameters<typeof ABCJS.renderAbc>[2])
         })
       })
