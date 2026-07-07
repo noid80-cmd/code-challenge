@@ -9,6 +9,12 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // iOS PWA OAuth handoff: code_verifier lives in PWA cookie jar, so we redirect
+  // from Safari back to the root URL and let the PWA handle the exchange.
+  if (request.nextUrl.searchParams.has('_oauthcode')) {
+    return NextResponse.next()
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(

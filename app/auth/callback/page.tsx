@@ -35,7 +35,17 @@ export default function AuthCallback() {
 
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
-        if (error) { window.location.href = '/login?err=' + encodeURIComponent(error.message); return }
+        if (error) {
+          // iOS PWA: PKCE code_verifier is in the PWA cookie jar, but this callback
+          // may be running in Safari (different context). Redirect to home with the code
+          // so iOS opens the PWA, where the code_verifier is available.
+          if (error.message.includes('code verifier') || error.message.includes('PKCE')) {
+            window.location.replace('/?_oauthcode=' + encodeURIComponent(code))
+            return
+          }
+          window.location.href = '/login?err=' + encodeURIComponent(error.message)
+          return
+        }
         await afterLogin(supabase)
         window.location.href = '/'; return
       }
