@@ -23,6 +23,14 @@ export default function AuthCallback() {
     const refreshToken = hashParams.get('refresh_token')
 
     const run = async () => {
+      // Supabase may redirect back with ?error= if OAuth exchange failed on its side
+      const oauthError = new URLSearchParams(window.location.search).get('error')
+      if (oauthError) {
+        const desc = new URLSearchParams(window.location.search).get('error_description') ?? oauthError
+        window.location.href = '/login?err=' + encodeURIComponent(desc.replace(/\+/g, ' '))
+        return
+      }
+
       const supabase = createClient()
 
       if (code) {
