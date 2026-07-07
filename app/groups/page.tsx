@@ -73,15 +73,12 @@ export default function GroupsPage() {
         padding: '0 20px', height: 54,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/" style={{ color: '#605850', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
-          <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-          피드
-        </Link>
+        <Link href="/chord" style={{ color: '#605850', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
         <span style={{ fontWeight: 800, fontSize: 16, color: '#f0ece0', letterSpacing: '-0.02em' }}>내 그룹</span>
         <div style={{ width: 48 }} />
       </header>
 
-      <main style={{ maxWidth: 560, margin: '0 auto', padding: '28px 16px max(120px, calc(100px + env(safe-area-inset-bottom)))' }}>
+      <main style={{ maxWidth: 560, margin: '0 auto', padding: '28px 16px 100px' }}>
         <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
           <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
             placeholder="초대 코드 입력"

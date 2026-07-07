@@ -263,6 +263,20 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
                 color: '#0a0a08', fontSize: 13, fontWeight: 800,
                 boxShadow: '0 3px 12px rgba(240,236,224,0.35)',
               }}>업로드</Link>
+              <Link href="/groups" style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: '50%',
+                  background: 'rgba(240,236,224,0.08)', border: '1px solid rgba(240,236,224,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="16" height="14" viewBox="0 0 16 14" fill="none">
+                    <circle cx="6" cy="4.5" r="2.5" stroke="#a0988c" strokeWidth="1.4"/>
+                    <circle cx="11.5" cy="5" r="2" stroke="#a0988c" strokeWidth="1.4"/>
+                    <path d="M1 13c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="#a0988c" strokeWidth="1.4" strokeLinecap="round"/>
+                    <path d="M11 10.5c1.657 0 3 1.119 3 2.5" stroke="#a0988c" strokeWidth="1.4" strokeLinecap="round"/>
+                  </svg>
+                </div>
+              </Link>
               <Link href="/my-videos" style={{ display: 'flex', alignItems: 'center' }}>
                 <div style={{
                   width: 32, height: 32, borderRadius: '50%', overflow: 'hidden',
