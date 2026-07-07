@@ -59,7 +59,6 @@ export default function AdminPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [adminTab, setAdminTab] = useState<'challenges' | 'members'>('challenges')
-  const [mode, setMode] = useState<'ai' | 'manual'>('manual')
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [draft, setDraft] = useState<DraftChallenge | null>(null)
@@ -201,7 +200,7 @@ export default function AdminPage() {
         chords: toMeasures(p.chords),
       })),
     })
-    setMode('manual'); setError(''); setSuccess('')
+    setError(''); setSuccess('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -452,23 +451,10 @@ export default function AdminPage() {
         )}
 
         {challengeTypeForNew === 'chord' && <>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          <button onClick={() => { setMode('manual'); if (!editingId) setDraft(emptyDraft()); setError('') }}
-            style={{ flex: 1, padding: '11px', borderRadius: 12, background: mode === 'manual' ? 'rgba(99,102,241,0.2)' : '#0e0e1a', color: mode === 'manual' ? '#a5b4fc' : '#555570', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: mode === 'manual' ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
-            직접 입력
-          </button>
-          <button onClick={() => { setMode('ai'); setDraft(null); setEditingId(null); setError('') }}
-            style={{ flex: 1, padding: '11px', borderRadius: 12, background: mode === 'ai' ? 'rgba(99,102,241,0.2)' : '#0e0e1a', color: mode === 'ai' ? '#a5b4fc' : '#555570', fontSize: 14, fontWeight: 700, cursor: 'pointer', border: mode === 'ai' ? '1px solid rgba(99,102,241,0.4)' : '1px solid rgba(255,255,255,0.07)' }}>
-            AI 생성
-          </button>
-        </div>
-
-        {mode === 'ai' && (
-          <button onClick={generate} disabled={generating}
-            style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: generating ? '#1a1a2e' : 'linear-gradient(135deg, #4f46e5, #6366f1)', color: generating ? '#444466' : '#fff', fontSize: 16, fontWeight: 700, cursor: generating ? 'default' : 'pointer', marginBottom: 16 }}>
-            {generating ? '생성 중...' : 'AI로 챌린지 생성'}
-          </button>
-        )}
+        <button onClick={generate} disabled={generating}
+          style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: generating ? '#1a1a2e' : 'linear-gradient(135deg, #4f46e5, #6366f1)', color: generating ? '#444466' : '#fff', fontSize: 16, fontWeight: 700, cursor: generating ? 'default' : 'pointer', marginBottom: 16 }}>
+          {generating ? '생성 중...' : 'AI로 챌린지 생성'}
+        </button>
 
         {error && <p style={{ color: '#f87171', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>{error}</p>}
         {success && <p style={{ color: '#34d399', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>{success}</p>}
@@ -594,12 +580,6 @@ export default function AdminPage() {
           </div>
         )}
 
-        {mode === 'manual' && !draft && (
-          <button onClick={() => setDraft(emptyDraft())}
-            style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: 'linear-gradient(135deg, #4f46e5, #6366f1)', color: '#fff', fontSize: 16, fontWeight: 700, cursor: 'pointer', marginBottom: 20 }}>
-            직접 입력하기
-          </button>
-        )}
         </>}
 
         {challenges.length > 0 && (
