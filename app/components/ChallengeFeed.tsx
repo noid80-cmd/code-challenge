@@ -213,10 +213,10 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
         position: 'sticky', top: 0, zIndex: 50,
         background: 'rgba(8,8,8,0.88)', backdropFilter: 'blur(24px)',
         borderBottom: '1px solid rgba(240,236,224,0.12)',
-        padding: '0 20px', height: 54,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '0 16px', height: 54,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
       }}>
-        <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+        <Link href="/" style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           <div style={{
             width: 30, height: 30, borderRadius: 9,
             background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
@@ -229,26 +229,34 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
               <line x1="1" y1="8" x2="8"  y2="8" stroke="rgba(4,7,0,0.9)" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
           </div>
-          <span style={{ fontWeight: 900, fontSize: 16, color: '#f0ece0', letterSpacing: '-0.03em' }}>
-            {typeEmoji} {typeLabel}
-          </span>
         </Link>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        {/* 타입 스위처 */}
+        <div style={{ display: 'flex', background: 'rgba(240,236,224,0.06)', borderRadius: 10, padding: 3, gap: 2, flex: 1, maxWidth: 220 }}>
+          {(['chord', 'rhythm'] as const).map(t => (
+            <Link key={t} href={`/${t}`} style={{
+              flex: 1, padding: '6px 0', borderRadius: 8, textAlign: 'center',
+              background: type === t ? 'rgba(240,236,224,0.13)' : 'transparent',
+              color: type === t ? '#f0ece0' : '#403830',
+              fontSize: 12, fontWeight: 800, textDecoration: 'none',
+              outline: type === t ? '1px solid rgba(240,236,224,0.2)' : 'none',
+              transition: 'all 0.15s',
+            }}>
+              {t === 'chord' ? '🎵 코드' : '🥁 리듬'}
+            </Link>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           {isAdmin && (
             <Link href="/admin" style={{
-              padding: '5px 11px', borderRadius: 7,
+              padding: '5px 9px', borderRadius: 7,
               background: 'rgba(240,236,224,0.1)', border: '1px solid rgba(240,236,224,0.2)',
               color: '#a0988c', fontSize: 12, fontWeight: 700,
             }}>관리</Link>
           )}
           {user ? (
             <>
-              <Link href="/groups" style={{
-                padding: '6px 12px', borderRadius: 8,
-                background: 'rgba(240,236,224,0.1)', border: '1px solid rgba(240,236,224,0.2)',
-                color: '#f8f4ec', fontSize: 13, fontWeight: 700,
-              }}>그룹</Link>
               <Link href={`/upload?type=${type}`} style={{
                 padding: '6px 14px', borderRadius: 8,
                 background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
