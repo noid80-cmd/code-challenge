@@ -3,6 +3,29 @@ import { useEffect, useId } from 'react'
 
 type Pattern = { label: string; abc: string }
 
+function splitBarsPerLine(abc: string, barsPerLine: number): string {
+  const lines = abc.split('\n')
+  const musicIdx = lines.findIndex(l => l.trim().startsWith('|'))
+  if (musicIdx === -1) return abc
+
+  const header = lines.slice(0, musicIdx)
+  const music = lines[musicIdx].trim()
+
+  // "|bar1|bar2|...|barN|]" → split by | → filter empty
+  const parts = music.split('|').filter((_, i) => i > 0) // skip leading empty
+  // last part is "]", bars are all but last
+  const bars = parts.slice(0, -1)
+
+  const musicLines: string[] = []
+  for (let i = 0; i < bars.length; i += barsPerLine) {
+    const chunk = bars.slice(i, i + barsPerLine)
+    const isLast = i + barsPerLine >= bars.length
+    musicLines.push('|' + chunk.join('|') + (isLast ? '|]' : '|'))
+  }
+
+  return [...header, ...musicLines].join('\n')
+}
+
 export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
 
@@ -11,8 +34,9 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
       patterns.forEach((p, i) => {
         const el = document.getElementById(`rv-${uid}-${i}`)
         if (!el) return
-        const staffwidth = Math.max(window.innerWidth - 80, 280)
-        ABCJS.renderAbc(`rv-${uid}-${i}`, p.abc, {
+        const staffwidth = Math.max(window.innerWidth - 72, 280)
+        const abc4 = splitBarsPerLine(p.abc, 4)
+        ABCJS.renderAbc(`rv-${uid}-${i}`, abc4, {
           staffwidth,
           scale: 1.1,
           foregroundColor: '#f0ece0',
@@ -21,7 +45,6 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
           paddingbottom: 8,
           paddingright: 10,
           paddingleft: 10,
-          wrap: { minSpacing: 1.2, maxSpacing: 2.5, preferredMeasuresPerLine: 4 },
         } as Parameters<typeof ABCJS.renderAbc>[2])
       })
     })
