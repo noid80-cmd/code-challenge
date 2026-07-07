@@ -55,14 +55,17 @@ function fixBeaming(abc: string): string {
 }
 
 function toPercFormat(abc: string): string {
-  return abc.replace(/^(V:\d+[^\n]*)/gm, (m) => {
-    let out = m
-    if (out.includes('clef=perc')) out = out.replace('clef=perc', 'clef=none')
-    if (!out.includes('clef=')) out += ' clef=none'
-    if (!out.includes('stafflines')) out += ' stafflines=1'
-    if (!out.includes('stem=')) out += ' stem=up'
-    return out
-  })
+  // K:perc causes abcjs to render slash/x noteheads — use K:C for standard ovals
+  return abc
+    .replace(/^K:perc$/gim, 'K:C')
+    .replace(/^(V:\d+[^\n]*)/gm, (m) => {
+      let out = m
+      if (out.includes('clef=perc')) out = out.replace('clef=perc', 'clef=none')
+      if (!out.includes('clef=')) out += ' clef=none'
+      if (!out.includes('stafflines')) out += ' stafflines=1'
+      if (!out.includes('stem=')) out += ' stem=up'
+      return out
+    })
 }
 
 function splitIntoChunks(abc: string, chunkSize: number): string[] {
