@@ -134,7 +134,7 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
           if (!el) return
           // Measure the actual rendered container width so the SVG doesn't overflow
           const containerWidth = el.parentElement?.clientWidth ?? 300
-          const staffwidth = Math.max(containerWidth - 4, 200)
+          const staffwidth = Math.max(containerWidth - 20, 180)
           ABCJS.renderAbc(`rv-${uid}-${i}-${c}`, chunkAbc, {
             staffwidth,
             scale: 0.8,
