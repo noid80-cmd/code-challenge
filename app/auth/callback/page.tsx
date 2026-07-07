@@ -4,9 +4,6 @@ import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
 async function afterLogin(supabase: ReturnType<typeof createClient>) {
-  // Force server to re-set cookies with maxAge
-  try { await fetch('/api/refresh-session', { method: 'POST' }) } catch {}
-  // Store refresh_token in localStorage for iOS PWA recovery (cookies may be cleared on force-kill)
   try {
     const { data: { session } } = await supabase.auth.getSession()
     if (session?.refresh_token) {

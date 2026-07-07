@@ -14,11 +14,10 @@ export function OAuthHandler() {
     window.history.replaceState({}, '', clean.toString())
     // Exchange in PWA context where code_verifier cookie exists
     const supabase = createClient()
-    supabase.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
-      if (error) { router.push('/login?err=' + encodeURIComponent(error.message)); return }
-      try { await fetch('/api/refresh-session', { method: 'POST' }) } catch {}
+    supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+      if (error) { window.location.href = '/login?err=' + encodeURIComponent(error.message); return }
       if (data.session?.refresh_token) localStorage.setItem('sb_rt', data.session.refresh_token)
-      router.refresh()
+      window.location.href = '/'
     })
   }, [router])
   return null
