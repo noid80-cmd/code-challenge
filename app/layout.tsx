@@ -3,8 +3,8 @@ import './globals.css'
 import Script from 'next/script'
 
 export const metadata: Metadata = {
-  title: '코드 챌린지',
-  description: '매일 코드초견 챌린지 — 연주하고 공유하세요',
+  title: 'PlayDaily',
+  description: '매일 코드·리듬 챌린지 — 연주하고 공유하세요',
   manifest: '/manifest.json',
   icons: {
     icon: '/icon-192.png',

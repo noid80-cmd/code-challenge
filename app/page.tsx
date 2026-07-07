@@ -7,6 +7,7 @@ import type { User } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
 import { localDate, challengeDate } from '@/lib/date'
 const ChordPlayer = dynamic(() => import('./components/ChordPlayer'), { ssr: false })
+const RhythmViewer = dynamic(() => import('./components/RhythmViewer'), { ssr: false })
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
 
@@ -75,7 +76,8 @@ function PushBanner({ user }: { user: User }) {
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type Challenge = {
   id: string; date: string; title: string; description?: string; level: string
-  chords: { progressions: Progression[] }
+  type: 'chord' | 'rhythm'
+  chords: { progressions?: Progression[]; patterns?: { label: string; abc: string }[] }
 }
 type Submission = {
   id: string; challenge_id: string; video_url: string; caption?: string
@@ -113,6 +115,7 @@ function calcStreak(dates: string[]) {
 }
 
 export default function HomePage() {
+  const [challengeType, setChallengeType] = useState<'chord' | 'rhythm'>('chord')
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [submissions, setSubmissions] = useState<Submission[]>([])
@@ -125,14 +128,14 @@ export default function HomePage() {
   const [totalCount, setTotalCount] = useState(0)
   const [uploadedToday, setUploadedToday] = useState(false)
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (type: 'chord' | 'rhythm' = 'chord') => {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
 
     const { date: chDate, isBeforeNoon } = challengeDate()
     setIsBeforeNoon(isBeforeNoon)
-    const { data: ch } = await supabase.from('challenges').select('*').eq('date', chDate).order('created_at', { ascending: false }).limit(1).single()
+    const { data: ch } = await supabase.from('challenges').select('*').eq('date', chDate).eq('type', type).order('created_at', { ascending: false }).limit(1).maybeSingle()
     setChallenge(ch)
 
     if (ch) {
@@ -168,7 +171,7 @@ export default function HomePage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => { load(challengeType) }, [load, challengeType])
 
   async function toggleLike(submissionId: string, liked: boolean) {
     if (!user) { window.location.href = '/login'; return }
@@ -226,7 +229,7 @@ export default function HomePage() {
             </svg>
           </div>
           <span style={{ fontWeight: 900, fontSize: 16, color: '#f0ece0', letterSpacing: '-0.03em' }}>
-            코드 챌린지
+            PlayDaily
           </span>
         </Link>
 
@@ -277,6 +280,22 @@ export default function HomePage() {
       </header>
 
       <main style={{ maxWidth: 560, margin: '0 auto', padding: '32px 16px 100px' }}>
+
+        {/* 챌린지 타입 탭 */}
+        <div style={{ display: 'flex', gap: 6, marginBottom: 24, background: 'rgba(240,236,224,0.05)', borderRadius: 14, padding: 4 }}>
+          {(['chord', 'rhythm'] as const).map(t => (
+            <button key={t} onClick={() => { setChallengeType(t); setChallenge(null); setSubmissions([]) }} style={{
+              flex: 1, padding: '9px', borderRadius: 11, border: 'none', cursor: 'pointer',
+              background: challengeType === t ? 'rgba(240,236,224,0.12)' : 'transparent',
+              color: challengeType === t ? '#f0ece0' : '#403830',
+              fontSize: 13, fontWeight: 800,
+              outline: challengeType === t ? '1px solid rgba(240,236,224,0.2)' : 'none',
+              transition: 'all 0.15s',
+            }}>
+              {t === 'chord' ? '🎵 코드챌린지' : '🥁 리듬챌린지'}
+            </button>
+          ))}
+        </div>
 
         {/* Date */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
@@ -338,7 +357,10 @@ export default function HomePage() {
                   {challenge.description}
                 </p>
               )}
-              <ChordPlayer progressions={challenge.chords?.progressions ?? []} title={challenge.title} />
+              {challenge.type === 'rhythm'
+                ? <RhythmViewer patterns={challenge.chords?.patterns ?? []} />
+                : <ChordPlayer progressions={challenge.chords?.progressions ?? []} title={challenge.title} />
+              }
               <div style={{ marginTop: 16 }}>
                 {user ? (
                   <Link href="/upload" style={{
@@ -369,7 +391,7 @@ export default function HomePage() {
               borderRadius: 22, padding: '48px 20px', textAlign: 'center',
             }}>
               <p style={{ color: '#605850', fontSize: 15, fontWeight: 700, marginBottom: 5 }}>오늘의 챌린지를 준비 중이에요</p>
-              <p style={{ color: '#303028', fontSize: 13 }}>매일 낮 12시에 새로운 코드 진행이 올라와요</p>
+              <p style={{ color: '#303028', fontSize: 13 }}>매일 낮 12시에 새로운 {challengeType === 'rhythm' ? '리듬 패턴' : '코드 진행'}이 올라와요</p>
               {isAdmin && (
                 <Link href="/admin" style={{
                   display: 'inline-block', marginTop: 22, padding: '9px 20px', borderRadius: 10,
