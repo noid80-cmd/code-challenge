@@ -66,14 +66,27 @@ function parseBarSum(bar: string): number {
 function validateABC(patterns: Array<{ abc: string }>): boolean {
   for (const p of patterns) {
     const text = (p.abc as string).replace(/\\n/g, '\n')
-    const barLine = text.split('\n').find((l: string) => l.trim().startsWith('|'))
-    if (!barLine) return false
-    const bars = barLine.trim().replace(/\|]$/, '|').split('|').filter((b: string) => b.trim() !== '')
-    for (const bar of bars) {
-      const sum = parseBarSum(bar)
-      if (Math.abs(sum - 8) > 0.01) {
-        console.error(`[cron-rhythm] bar sum=${sum} (expected 8): "${bar}"`)
-        return false
+    // Reject 16th rests (z/) — never standard in drum notation
+    if (/z\//.test(text)) {
+      console.error(`[cron-rhythm] 16th rest (z/) found — not standard`)
+      return false
+    }
+    // 16th notes (B/) must come in groups of 4
+    const sixteenths = (text.match(/B\//g) || []).length
+    if (sixteenths % 4 !== 0) {
+      console.error(`[cron-rhythm] ${sixteenths} 16th notes — must be multiple of 4`)
+      return false
+    }
+    const barLines = text.split('\n').filter((l: string) => l.trim().startsWith('|'))
+    if (barLines.length === 0) return false
+    for (const barLine of barLines) {
+      const bars = barLine.trim().replace(/\|]$/, '|').split('|').filter((b: string) => b.trim() !== '')
+      for (const bar of bars) {
+        const sum = parseBarSum(bar)
+        if (Math.abs(sum - 8) > 0.01) {
+          console.error(`[cron-rhythm] bar sum=${sum} (expected 8): "${bar}"`)
+          return false
+        }
       }
     }
   }
@@ -193,8 +206,8 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
       rhythmLevel === 'beginner'
         ? `초급: 4분음표(B2)·8분음표(B)·대응 쉼표만 사용. 셋잇단음표·16분음표 금지.\n예시 8마디(각 마디 합=8 검증됨):\n|B2 B2 B2 B2|B2 BB z2 B2|BB BB z2 B2|B2 z2 BB z2|BB z2 B2 B2|B2 BB BB z2|z2 B2 BB B2|B4 z4|]`
         : rhythmLevel === 'advanced'
-        ? `고급: 당김음·16분음표·셋잇단음표를 불규칙하게 혼합. 마디마다 패턴 다르게.\n예시 8마디(각 마디 합=8 검증됨):\n|B/B/B/B/ (3BBB z B B z|z B B/ z/ B/B/ (3BBB z2|(3BBB B/ z/ B/B/ z B z2|z2 B/ z/ B/B/ (3BBB B z|B z B/B/B/B/ (3BBB z B|(3BBB z2 B/B/B/B/ B z|z B (3BBB B/B/B/B/ z2|B/ z/ B/B/ z2 (3BBB B z|]`
-        : `중급: 당김음 필수(z B 또는 B z B 패턴), 셋잇단음표 최소 3마디, 16분음표 2마디 이상. 단순 반복 패턴 금지.\n예시 8마디(각 마디 합=8 검증됨):\n|z B z B z2 (3BBB|(3BBB z2 BB z2|z2 (3BBB B/B/B/B/ z2|z2 B/B/B/B/ (3BBB z2|z2 BB z (3BBB B|B z (3BBB z B B2|(3BBB BB z (3BBB z|z2 B/B/B/B/ BB z2|]`
+        ? `고급: 당김음·셋잇단음표를 불규칙하게 혼합. 마디마다 다른 패턴. 셋잇단음표 최소 5마디.\n예시 8마디(각 마디 합=8 검증됨):\n|(3BBB z B (3BBB z B|B z B/B/B/B/ (3BBB z B|z2 z B (3BBB z B|B B z (3BBB z B z|B/B/B/B/ B z (3BBB z B|z B (3BBB B z B z|(3BBB B z B/B/B/B/ z B|B z B z (3BBB z B|]`
+        : `중급: 당김음 필수(z B 또는 B z B 패턴), 셋잇단음표 최소 3마디, 16분음표 2마디 이상. 단순 반복 패턴 금지.\n예시 8마디(각 마디 합=8 검증됨):\n|z2 BB z2 BB|(3BBB z2 BB z2|z B z B z2 (3BBB|z2 B/B/B/B/ (3BBB z2|(3BBB z B (3BBB z B|z B (3BBB z2 BB|BB (3BBB z2 z B|z2 B/B/B/B/ BB z2|]`
 
     const rhythmPrompt = `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
@@ -207,10 +220,11 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 - 앞 4마디: 기본 그루브 확립, 뒤 4마디: 변형·발전
 
 박자 계산 규칙 (L:1/8 기준, 4/4박자 = 1마디 = 8단위):
-  B/ = 0.5  B = 1  B2 = 2  B4 = 4
-  z/ = 0.5  z = 1  z2 = 2  z4 = 4
+  B = 1  B2 = 2  B4 = 4  z = 1  z2 = 2  z4 = 4
   (3BBB = 2 (셋잇단음표 3개 = 총 2단위)
-  BB = 1+1 = 2,  B/B/ = 0.5+0.5 = 1,  B/B/B/B/ = 0.5×4 = 2
+  BB = 1+1 = 2,  B/B/B/B/ = 0.5×4 = 2
+
+16분음표 규칙: B/B/B/B/ (4개 묶음 = 2단위) 형태로만 사용. 개별 B/ 또는 z/ 절대 금지.
 
 각 마디를 출력하기 전에 합계가 정확히 8인지 계산하세요. 8이 아니면 수정하세요.
 
