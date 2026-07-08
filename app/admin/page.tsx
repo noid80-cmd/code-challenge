@@ -115,6 +115,9 @@ export default function AdminPage() {
     if (!rhythmDrafts || rhythmDrafts.length === 0) {
       setError('생성된 챌린지가 없어요.'); return
     }
+    const draftsToSave = [...rhythmDrafts]
+    // Clear drafts immediately so the green button disappears on click
+    setRhythmDrafts(null)
     setSaving(true); setError(''); setSuccess('')
     const supabase = createClient()
     const { data: existing } = await supabase.from('challenges')
@@ -122,7 +125,7 @@ export default function AdminPage() {
       .order('seq', { ascending: false }).limit(1).maybeSingle()
     let nextSeq = (existing?.seq ?? 0) + 1
 
-    for (const draft of rhythmDrafts) {
+    for (const draft of draftsToSave) {
       if (!draft.title.trim() || draft.patterns.length === 0) continue
       const { error } = await supabase.from('challenges').insert({
         date: selectedDate,
@@ -139,8 +142,8 @@ export default function AdminPage() {
         setSaving(false); return
       }
     }
-    setSuccess(`${selectedDate} 리듬 챌린지 ${rhythmDrafts.length}개 저장됐어요!`)
-    setRhythmDrafts(null); await loadChallenges()
+    setSuccess(`${selectedDate} 리듬 챌린지 ${draftsToSave.length}개 저장됐어요!`)
+    await loadChallenges()
     setSaving(false)
   }
 
