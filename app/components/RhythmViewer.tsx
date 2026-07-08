@@ -151,9 +151,11 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
     <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {allChunks.map((chunks, i) => (
         <div key={i}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: '#a0988c', marginBottom: 8, letterSpacing: '0.05em' }}>
-            {patterns[i].label}
-          </div>
+          {patterns[i].label && (
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#a0988c', marginBottom: 8, letterSpacing: '0.05em' }}>
+              {patterns[i].label}
+            </div>
+          )}
           <div style={{ background: 'rgba(240,236,224,0.04)', borderRadius: 12, overflow: 'hidden' }}>
             {chunks.map((_, c) => (
               <div key={c} id={`rv-${uid}-${i}-${c}`} />

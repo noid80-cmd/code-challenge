@@ -12,15 +12,17 @@ function buildPrompt(level: string) {
       : `중급: 8분음표 기반에 16분음표(B/)와 셋잇단음표((3BBB)를 혼합. 당김음 포함.
 예시 마디: |BB z2 B/B/B/B/ B2| |(3BBB BB z2 B2| |B/B/B/B/ (3BBB BB z2|`
 
-  return `드럼/리듬 초견 챌린지를 위한 ABC notation 리듬 패턴 2개를 생성하세요.
+  return `드럼/리듬 초견 챌린지를 위한 ABC notation 리듬 패턴 1개를 생성하세요.
 
 난이도: ${levelGuide}
 
-공통 조건:
-- 4/4박자, 정확히 4마디, 겹세로줄(|])로 끝낼 것
+조건:
+- 4/4박자, 정확히 8마디, 겹세로줄(|])로 끝낼 것
 - K:perc, L:1/8, V:1 clef=none stafflines=1 stem=up
 - 음표는 B(타격), z(쉼표)만 사용
 - 각 마디 총합 = 정확히 8 (L:1/8 기준)
+- 앞 4마디: 기본 그루브 확립
+- 뒤 4마디: 당김음·16분음표·셋잇단음표로 변형·발전
 
 음표 길이 (반드시 지킬 것):
 - B/ = 16분음표 = 0.5
@@ -36,9 +38,6 @@ function buildPrompt(level: string) {
 - 셋잇단음표: (3BBB (공백 없이)
 - 서로 다른 묶음 사이는 공백으로 구분
 
-A 패턴: 규칙적인 그루브 중심
-B 패턴: 당김음·쉼표를 활용한 복잡한 리듬
-
 JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 {
   "title": "리듬 챌린지 제목",
@@ -46,12 +45,8 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
   "level": "${level}",
   "patterns": [
     {
-      "label": "A 패턴",
-      "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|BB z2 B/B/B/B/ B2|BB BB z2 B2|(3BBB BB z2 B2|B/B/B/B/ (3BBB BB z2|]"
-    },
-    {
-      "label": "B 패턴",
-      "abc": "X:2\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|B/B/B/B/ z2 BB z2|(3BBB z2 B/B/B/B/ z2|BB z2 (3BBB z2|B/B/z2 BB (3BBB z2|]"
+      "label": "",
+      "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|BB z2 B/B/B/B/ B2|BB BB z2 B2|(3BBB BB z2 B2|B/B/B/B/ (3BBB BB z2|(3BBB z2 B/B/B/B/ z2|BB z2 (3BBB BB z2|B/B/z2 (3BBB B/B/B/B/ z2|B4 z4|]"
     }
   ]
 }`
