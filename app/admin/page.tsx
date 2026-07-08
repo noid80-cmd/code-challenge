@@ -120,17 +120,18 @@ export default function AdminPage() {
     setRhythmDrafts(null)
     setSaving(true); setError(''); setSuccess('')
     const supabase = createClient()
-    const { data: existing } = await supabase.from('challenges')
-      .select('seq').eq('date', selectedDate).eq('type', 'rhythm')
-      .order('seq', { ascending: false }).limit(1).maybeSingle()
-    let nextSeq = (existing?.seq ?? 0) + 1
 
     for (const draft of draftsToSave) {
       if (!draft.title.trim() || draft.patterns.length === 0) continue
+      // Re-query max seq right before each insert to avoid unique constraint conflicts
+      const { data: curMax } = await supabase.from('challenges')
+        .select('seq').eq('date', selectedDate).eq('type', 'rhythm')
+        .order('seq', { ascending: false }).limit(1).maybeSingle()
+      const seq = (curMax?.seq ?? 0) + 1
       const { error } = await supabase.from('challenges').insert({
         date: selectedDate,
         type: 'rhythm',
-        seq: nextSeq++,
+        seq,
         title: draft.title.trim(),
         description: draft.description.trim() || null,
         chords: { patterns: draft.patterns },
@@ -138,7 +139,7 @@ export default function AdminPage() {
       })
       if (error) {
         setError(error.message.includes('duplicate') || error.message.includes('unique')
-          ? `seq${nextSeq - 1} 저장 실패: 이미 있어요.` : error.message)
+          ? `seq${seq} 저장 실패: 이미 있어요.` : error.message)
         setSaving(false); return
       }
     }
