@@ -4,17 +4,24 @@ import Anthropic from '@anthropic-ai/sdk'
 function buildPrompt(level: string) {
   const levelGuide =
     level === 'beginner'
-      ? `초급: 4분음표·8분음표·쉼표만 사용. 단순하고 예측 가능한 리듬.
-예시 마디: |B2 B2 B2 B2| |BB BB z2 B2| |B2 BB z2 B2|`
+      ? `초급: 4분음표(B2)·8분음표(B)·대응 쉼표만 사용. 셋잇단음표·16분음표 금지.
+예시 8마디:
+|B2 B2 B2 B2|B2 BB z2 B2|BB BB z2 B2|B2 z2 BB z2|BB z2 B2 B2|B2 BB BB z2|z2 B2 BB B2|B4 z4|]`
       : level === 'advanced'
-      ? `고급: 실제 음악 시험 수준의 복잡한 리듬.
-- 16분음표 연속(B/B/B/B/)과 쉼표(z/)를 불규칙하게 혼합
-- 셋잇단음표((3BBB)를 예상치 못한 위치에 배치
-- 16분음표+쉼표 혼합: B/ z/ B/ z/ 패턴
-- 마디마다 리듬 패턴이 달라야 함
-예시 마디: |B/B/ z/ B/ (3BBB B/ z/ B/B/| |z/ B/ B/B/ z2 (3BBB B/|`
-      : `중급: 8분음표 기반에 16분음표(B/)와 셋잇단음표((3BBB)를 혼합. 당김음 포함.
-예시 마디: |BB z2 B/B/B/B/ B2| |(3BBB BB z2 B2| |B/B/B/B/ (3BBB BB z2|`
+      ? `고급: 아래 요소를 적극 혼합하여 읽기 어려운 리듬을 만들어라.
+- 당김음: z B z B z B / B z B z / B/ z/ B/ z/ 패턴을 여러 마디에 사용
+- 16분음표 연속: B/B/B/B/ B/ z/ B/B/ 등 빠른 패턴
+- 셋잇단음표 불규칙 배치: (3BBB z2 B2 / B2 (3BBB z2 등
+- 마디마다 리듬 패턴이 달라야 함. 연속 2마디 이상 같은 패턴 금지.
+예시 8마디:
+|B/ z/ B/ z/ B/B/B/B/ z2|z2 (3BBB B/ z/ B/B/ z/|B/B/ z/ B/ (3BBB B/ z/ B/B/|z/ B/ B/B/ z2 (3BBB B/|(3BBB z/ B/ B/B/ B/ z/ B/|B/ z/ (3BBB z/ B/ B/B/ z/|z2 B/B/B/B/ (3BBB z2|B/ z/ B/ z/ (3BBB B/ z/|]`
+      : `중급: 당김음(syncopation)을 반드시 포함하고 셋잇단음표도 활용.
+- 당김음 필수: 박자 2,4번째에 시작하는 음 / z B 패턴 / B z B 패턴
+- 셋잇단음표 최소 3마디에 사용: (3BBB
+- 16분음표 2마디 이상 사용: B/B/ 또는 B/B/B/B/
+- 단순 B2 B2 B2 B2 또는 BB BB BB BB 같은 패턴 금지
+예시 8마디:
+|z2 BB z2 B/B/B/B/|BB z2 (3BBB BB z2|(3BBB z2 B/B/ BB z2|z2 B/B/B/B/ (3BBB z2|BB z2 (3BBB z2 B2|z2 (3BBB BB z2 B/B/B/B/|(3BBB BB z2 BB z2|z2 B/B/B/B/ BB z2|]`
 
   return `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 

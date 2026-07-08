@@ -135,10 +135,10 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 
     const rhythmLevelGuide =
       rhythmLevel === 'beginner'
-        ? `초급: 4분음표·8분음표·쉼표만 사용. 단순하고 예측 가능한 리듬.\n예시 마디: |B2 B2 B2 B2| |BB BB z2 B2| |B2 BB z2 B2|`
+        ? `초급: 4분음표(B2)·8분음표(B)·대응 쉼표만 사용. 셋잇단음표·16분음표 금지.\n예시 8마디:\n|B2 B2 B2 B2|B2 BB z2 B2|BB BB z2 B2|B2 z2 BB z2|BB z2 B2 B2|B2 BB BB z2|z2 B2 BB B2|B4 z4|]`
         : rhythmLevel === 'advanced'
-        ? `고급: 16분음표·셋잇단음표·당김음을 복잡하게 혼합.\n예시 마디: |B/B/ z/ B/ (3BBB B/ z/ B/B/| |z/ B/ B/B/ z2 (3BBB B/|`
-        : `중급: 8분음표 기반에 16분음표(B/)와 셋잇단음표((3BBB)를 혼합. 당김음 포함.\n예시 마디: |BB z2 B/B/B/B/ B2| |(3BBB BB z2 B2| |B/B/B/B/ (3BBB BB z2|`
+        ? `고급: 당김음·16분음표·셋잇단음표를 불규칙하게 혼합. 마디마다 패턴 다르게.\n예시 8마디:\n|B/ z/ B/ z/ B/B/B/B/ z2|z2 (3BBB B/ z/ B/B/ z/|B/B/ z/ B/ (3BBB B/ z/ B/B/|z/ B/ B/B/ z2 (3BBB B/|(3BBB z/ B/ B/B/ B/ z/ B/|B/ z/ (3BBB z/ B/ B/B/ z/|z2 B/B/B/B/ (3BBB z2|B/ z/ B/ z/ (3BBB B/ z/|]`
+        : `중급: 당김음 필수(z B 또는 B z B 패턴), 셋잇단음표 최소 3마디, 16분음표 2마디 이상. 단순 반복 패턴 금지.\n예시 8마디:\n|z2 BB z2 B/B/B/B/|BB z2 (3BBB BB z2|(3BBB z2 B/B/ BB z2|z2 B/B/B/B/ (3BBB z2|BB z2 (3BBB z2 B2|z2 (3BBB BB z2 B/B/B/B/|(3BBB BB z2 BB z2|z2 B/B/B/B/ BB z2|]`
 
     const rhythmMsg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
