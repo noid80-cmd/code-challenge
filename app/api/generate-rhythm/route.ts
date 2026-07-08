@@ -94,13 +94,10 @@ export async function POST(req: NextRequest) {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4096,
-      messages: [
-        { role: 'user', content: buildPrompt(level) },
-        { role: 'assistant', content: '[' },
-      ],
+      system: 'You are a JSON generator. Output only a valid JSON array. No explanations, no reasoning text, no markdown. Start your response directly with [ and end with ].',
+      messages: [{ role: 'user', content: buildPrompt(level) }],
     })
-    // Prepend '[' because we used assistant prefill to force JSON-only output
-    const text = '[' + (message.content[0].type === 'text' ? message.content[0].text : '')
+    const text = message.content[0].type === 'text' ? message.content[0].text : ''
     const jsonStr = extractJsonArray(text)
     if (!jsonStr) {
       console.error('[generate-rhythm] no JSON array in response:', text.slice(0, 500))
