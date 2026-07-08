@@ -7,7 +7,15 @@ function getNoteDur(tok: string): number {
   if (tok.startsWith('(')) {
     const m = tok.match(/^\((\d+)/)
     const n = m ? parseInt(m[1]) : 3
-    return n === 3 ? 2 : n === 2 ? 3 : n === 5 ? 4 : 2
+    const mDefault = n === 3 ? 2 : n === 2 ? 3 : n === 5 ? 4 : 2
+    // Detect base note duration: (3BBB→1→2, (3B2B2B2→2→4
+    const noteM = tok.match(/\(\d+[Bz](\d*)(\/?)/)
+    let baseDur = 1
+    if (noteM) {
+      if (noteM[1]) baseDur = parseInt(noteM[1])
+      else if (noteM[2]) baseDur = 0.5
+    }
+    return mDefault * baseDur
   }
   if (tok.includes('/')) return 0.5
   const m = tok.match(/(\d+)$/)

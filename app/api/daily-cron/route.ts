@@ -35,8 +35,19 @@ function parseBarSum(bar: string): number {
       let nStr = ''
       while (i < s.length && /\d/.test(s[i])) { nStr += s[i]; i++ }
       const n = parseInt(nStr || '3')
-      const tupDur = n === 2 ? 3 : n === 3 ? 2 : n === 4 ? 3 : n === 5 ? 4 : 2
-      total += tupDur
+      const mDefault = n === 2 ? 3 : n === 3 ? 2 : n === 4 ? 3 : n === 5 ? 4 : 2
+      // Peek at first note for base duration: (3BBB=1→2, (3B2B2B2=2→4
+      let peekI = i
+      while (peekI < s.length && s[peekI] === ' ') peekI++
+      let baseDur = 1
+      if (peekI < s.length && (s[peekI] === 'B' || s[peekI] === 'z')) {
+        peekI++
+        let basNumStr = ''
+        while (peekI < s.length && /\d/.test(s[peekI])) { basNumStr += s[peekI]; peekI++ }
+        if (basNumStr) baseDur = parseInt(basNumStr)
+        else if (peekI < s.length && s[peekI] === '/') baseDur = 0.5
+      }
+      total += mDefault * baseDur
       let left = n
       while (i < s.length && left > 0) {
         if (s[i] === ' ') { i++; continue }
@@ -66,9 +77,13 @@ function parseBarSum(bar: string): number {
 function validateABC(patterns: Array<{ abc: string }>): boolean {
   for (const p of patterns) {
     const text = (p.abc as string).replace(/\\n/g, '\n')
-    // Reject 16th rests (z/) — non-standard in drum notation
+    // Reject 16th rests (z/) and duplets (2 — non-standard in drum notation
     if (/z\//.test(text)) {
       console.error(`[cron-rhythm] 16th rest (z/) found — not standard`)
+      return false
+    }
+    if (/\(2/.test(text)) {
+      console.error(`[cron-rhythm] duplet (2 found — not standard`)
       return false
     }
     const barLines = text.split('\n').filter((l: string) => l.trim().startsWith('|'))
@@ -198,26 +213,27 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 
     const rhythmLevelGuide =
       rhythmLevel === 'beginner'
-        ? `초급: BB·z2·B2·z B·B z 블록만 사용. (3BBB·B/B/B/B/ 금지.\n예시 마디: BB z2 BB z2 / z2 BB z2 BB / B2 z2 BB z2 / z B BB B z / BB z B B2 z2`
+        ? `초급: BB·z2·B2·z B·B z 블록만 사용. (3BBB·B/B/B/B/·(3B2B2B2 금지.\n예시 마디: BB z2 BB z2 / z2 BB z2 BB / B2 z2 BB z2 / z B BB B2 z2 / BB z B z2 B2`
         : rhythmLevel === 'advanced'
-        ? `고급: 모든 블록 사용. 마디마다 패턴 달리하고 셋잇단 5마디 이상.\n예시 마디: (3BBB z B (3BBB z B / z B (3BBB B z B z / B/B/B/B/ z B (3BBB z B / (3BBB B z B/B/B/B/ z B / z B z B (3BBB z B`
-        : `중급: (3BBB 3마디 이상, B/B/B/B/ 2마디 이상, z B(당김) 3마디 이상.\n예시 마디: z B z B z2 (3BBB / (3BBB z2 BB z2 / z2 B/B/B/B/ (3BBB z2 / z B (3BBB z B z2 / (3BBB z B (3BBB z B`
+        ? `고급: B/B/B/B/ 6마디 이상, (3BBB 5마디 이상, (3B2B2B2 2마디 이상.\n예시 마디: B/B/B/B/ z B (3BBB z B / (3BBB B/B/B/B/ z B z B / (3B2B2B2 B/B/B/B/ z B / B/B/B/B/ (3BBB z B B/B/B/B/ / (3B2B2B2 (3BBB z B`
+        : `중급: B/B/B/B/ 4마디 이상, (3BBB 3마디 이상, z B 3마디 이상, (3B2B2B2 1마디 이상.\n예시 마디: B/B/B/B/ z B (3BBB z2 / z B z B z2 (3BBB / (3B2B2B2 B/B/B/B/ z B / (3BBB z B B/B/B/B/ z B / z2 B/B/B/B/ (3BBB z2`
 
     const rhythmPrompt = `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
 난이도: ${rhythmLevelGuide}
 
-마디 구성 방법 — 아래 2단위 블록을 정확히 4개 골라 이어 붙이면 항상 8단위가 됩니다:
-  BB        = 8분음표 2개 (2단위)
-  z2        = 4분쉼표 (2단위)
-  B2        = 4분음표 (2단위)
-  z B       = 8분쉼표+8분음표 (2단위, 당김음)
-  B z       = 8분음표+8분쉼표 (2단위)
-  (3BBB     = 셋잇단음표 3개 (2단위)
-  B/B/B/B/  = 16분음표 4개 (2단위)
+마디 구성 방법 — 8단위를 채우는 두 가지 방법:
 
-예시: (3BBB + z B + z2 + BB = "(3BBB z B z2 BB" → 2+2+2+2 = 8 ✓
-규칙: 블록 4개만 사용. B/ 단독·z/ 사용 금지.
+▶ 방법1: 2단위 블록 정확히 4개 이어 붙이기
+  BB=8분2개(2) z2=4분쉼표(2) B2=4분음표(2) z B=당김음(2) B z=8분+쉼표(2) (3BBB=1박3연음(2) B/B/B/B/=16분4개(2)
+
+▶ 방법2: 4단위 블록 1개 + 2단위 블록 2개
+  (3B2B2B2=2박3연음(4단위) 예: (3B2B2B2 BB z2 → 4+2+2=8 ✓
+
+방법1 예: "(3BBB z B z2 BB" → 2+2+2+2=8 ✓
+방법2 예: "(3B2B2B2 B/B/B/B/ z B" → 4+2+2=8 ✓
+
+절대 금지: B/ 단독, z/, (2 사용 금지
 
 공통:
 - 4/4박자, 정확히 8마디, 겹세로줄(|])로 끝낼 것
