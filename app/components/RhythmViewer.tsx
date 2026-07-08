@@ -93,7 +93,8 @@ function splitIntoChunks(abc: string, chunkSize: number): string[] {
   // Placing it after V: puts it in the voice/body context which is ignored.
   const preVLines = headerLines.filter(l => {
     const t = l.trim()
-    return !t.startsWith('V:') && !t.startsWith('M:') && !t.startsWith('Q:')
+    // Q: (tempo) removed to save vertical space; M: (time sig) kept for layout/stretch
+    return !t.startsWith('V:') && !t.startsWith('Q:')
   })
   const vLine = headerLines.find(l => l.trim().startsWith('V:')) ?? ''
   const header = preVLines.join('\n') + '\n%%stretchlast 1\n' + vLine
