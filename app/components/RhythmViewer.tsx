@@ -122,9 +122,8 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
   useEffect(() => {
     if (!containerRef.current) return
     const containerWidth = containerRef.current.clientWidth
-    // staffwidth accounts for abcjs adding ~20px of internal margin on top of staffwidth,
-    // and scale:0.8 using CSS transform (doesn't shrink DOM size), so we subtract both.
-    const staffwidth = Math.max(Math.round(containerWidth * 0.8) - 24, 180)
+    // All patterns share the same staffwidth so bar lines stay vertically aligned.
+    const staffwidth = Math.max(containerWidth - 20, 180)
 
     import('abcjs').then(ABCJS => {
       allChunks.forEach((chunks, i) => {
@@ -142,6 +141,13 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
             paddingleft: 0,
             minPadding: 0,
           } as Parameters<typeof ABCJS.renderAbc>[2])
+          // abcjs scale uses CSS transform — SVG DOM size stays large and clips.
+          // Setting width=100% uses the SVG's viewBox to proportionally fit the container.
+          const svg = el.querySelector('svg')
+          if (svg) {
+            svg.style.width = '100%'
+            svg.style.height = 'auto'
+          }
         })
       })
     })
