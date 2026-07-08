@@ -223,9 +223,7 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
     const rhythmLevel = Math.random() < 0.7 ? 'intermediate' : 'advanced'
 
     const rhythmLevelGuide =
-      rhythmLevel === 'beginner'
-        ? `초급: BB·z2·B2·z B·B z 블록만. 예시: BB z2 BB z2 / z2 BB z2 BB / B2 z2 BB z2 / z B BB B2 z2`
-        : rhythmLevel === 'advanced'
+      rhythmLevel === 'advanced'
         ? `고급: 마디=8단위. 8분+16분 조합·붓점·쉼표 적극 활용.\n2단위블록(음표): B B/ B/=8분+16분+16분 B/ B/ B=16분+16분+8분 B/ B B/=싱코페이션 B>B=붓점 B<B=역붓점\n2단위블록(쉼표): z B/ B/ B B/ z/ B/ z/ B z>B B>z z2 (3zBB (3BzB\n4단위블록: (3B2B2B2 (3B2z2B2 z4\n예시: B B/ B/ z B (3zBB z2 / B>B z B B/ B/ B z B / z4 B B/ B/ z B / B/ B B/ z B B>B z2`
         : `중급: 2단위×4 또는 4단위×1+2단위×2. 8분+16분 조합과 붓점 포함.\n2단위블록: BB B2 B/B/B/B/ B B/ B/ B/ B/ B B/ B B/ B>B B<B z2 z B B z z>B B>z (3BBB (3zBB (3BzB\n4단위블록: (3B2B2B2 (3B2z2B2 z4\n예시: B B/ B/ z B (3BBB z2 / B>B z B B/ B/ B/ z B / (3B2B2B2 B B/ B/ z B / B/ B B/ z B B>B z2`
 
