@@ -418,7 +418,7 @@ export default function AdminPage() {
         {!editingId && (
           <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
             {(['chord', 'rhythm'] as const).map(t => (
-              <button key={t} onClick={() => { setChallengeTypeForNew(t); setDraft(null); setRhythmDrafts(null); setError('') }} style={{
+              <button key={t} onClick={() => { setChallengeTypeForNew(t); setDraft(null); setRhythmDrafts(null); setError(''); setSuccess('') }} style={{
                 flex: 1, padding: '9px', borderRadius: 9, border: 'none', cursor: 'pointer',
                 background: challengeTypeForNew === t ? 'rgba(99,102,241,0.2)' : 'transparent',
                 color: challengeTypeForNew === t ? '#a5b4fc' : '#555570',

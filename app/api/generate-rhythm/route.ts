@@ -25,7 +25,7 @@ function buildPrompt(level: string) {
 - 4/4박자, 정확히 8마디, 겹세로줄(|])로 끝낼 것
 - K:perc, L:1/8, V:1 clef=none stafflines=1 stem=up
 - 음표는 B(타격), z(쉼표)만 사용
-- 각 마디 총합 = 정확히 8 (L:1/8 기준) ← 반드시 검증 후 출력
+- 각 마디 총합 = 정확히 8 (L:1/8 기준)
 - 앞 4마디: 기본 그루브 확립, 뒤 4마디: 변형·발전
 
 음표 길이 (반드시 지킬 것):
@@ -94,9 +94,13 @@ export async function POST(req: NextRequest) {
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4096,
-      messages: [{ role: 'user', content: buildPrompt(level) }],
+      messages: [
+        { role: 'user', content: buildPrompt(level) },
+        { role: 'assistant', content: '[' },
+      ],
     })
-    const text = message.content[0].type === 'text' ? message.content[0].text : ''
+    // Prepend '[' because we used assistant prefill to force JSON-only output
+    const text = '[' + (message.content[0].type === 'text' ? message.content[0].text : '')
     const jsonStr = extractJsonArray(text)
     if (!jsonStr) {
       console.error('[generate-rhythm] no JSON array in response:', text.slice(0, 500))
