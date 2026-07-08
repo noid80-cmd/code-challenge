@@ -146,6 +146,15 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
             paddingleft: 0,
             minPadding: 0,
           } as Parameters<typeof ABCJS.renderAbc>[2])
+          // Remove height attribute so viewBox controls aspect ratio at width=100%
+          // (keeping height attr causes non-uniform scale → distorted/missing noteheads)
+          const svg = el.querySelector('svg')
+          if (svg) {
+            svg.removeAttribute('height')
+            svg.style.width = '100%'
+            svg.style.display = 'block'
+            svg.style.overflow = 'visible'
+          }
         })
       })
     })

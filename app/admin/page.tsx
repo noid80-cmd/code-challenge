@@ -71,7 +71,7 @@ export default function AdminPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [membersLoaded, setMembersLoaded] = useState(false)
   const [challengeTypeForNew, setChallengeTypeForNew] = useState<'chord' | 'rhythm'>('chord')
-  const [rhythmDraft, setRhythmDraft] = useState<RhythmDraft | null>(null)
+  const [rhythmDrafts, setRhythmDrafts] = useState<RhythmDraft[] | null>(null)
   const [generatingRhythm, setGeneratingRhythm] = useState(false)
   const [rhythmLevel, setRhythmLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('intermediate')
 
@@ -95,12 +95,16 @@ export default function AdminPage() {
   }, [router, loadChallenges])
 
   async function generateRhythm() {
-    setGeneratingRhythm(true); setError(''); setRhythmDraft(null)
+    setGeneratingRhythm(true); setError(''); setRhythmDrafts(null)
     try {
       const res = await fetch('/api/generate-rhythm', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ level: rhythmLevel }) })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '생성 실패')
-      setRhythmDraft({ title: data.title, description: data.description || '', patterns: data.patterns ?? [] })
+      setRhythmDrafts((data.challenges ?? []).map((ch: RhythmDraft) => ({
+        title: ch.title ?? '',
+        description: ch.description ?? '',
+        patterns: ch.patterns ?? [],
+      })))
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : '생성 실패')
     }
@@ -108,33 +112,35 @@ export default function AdminPage() {
   }
 
   async function saveRhythmChallenge() {
-    if (!rhythmDraft || !rhythmDraft.title.trim() || rhythmDraft.patterns.length === 0) {
-      setError('제목과 패턴이 필요해요.'); return
+    if (!rhythmDrafts || rhythmDrafts.length === 0) {
+      setError('생성된 챌린지가 없어요.'); return
     }
     setSaving(true); setError(''); setSuccess('')
     const supabase = createClient()
-    // seq: 같은 날 리듬챌린지 개수 + 1 (하루 여러 개 허용)
     const { data: existing } = await supabase.from('challenges')
       .select('seq').eq('date', selectedDate).eq('type', 'rhythm')
       .order('seq', { ascending: false }).limit(1).maybeSingle()
-    const seq = (existing?.seq ?? 0) + 1
+    let nextSeq = (existing?.seq ?? 0) + 1
 
-    const { error } = await supabase.from('challenges').insert({
-      date: selectedDate,
-      type: 'rhythm',
-      seq,
-      title: rhythmDraft.title.trim(),
-      description: rhythmDraft.description.trim() || null,
-      chords: { patterns: rhythmDraft.patterns },
-      level: rhythmLevel,
-    })
-    if (error) {
-      setError(error.message.includes('duplicate') || error.message.includes('unique')
-        ? `${selectedDate} 리듬 챌린지 seq${seq}가 이미 있어요.` : error.message)
-    } else {
-      setSuccess(`${selectedDate} 리듬 챌린지 #${seq} 저장됐어요!`)
-      setRhythmDraft(null); await loadChallenges()
+    for (const draft of rhythmDrafts) {
+      if (!draft.title.trim() || draft.patterns.length === 0) continue
+      const { error } = await supabase.from('challenges').insert({
+        date: selectedDate,
+        type: 'rhythm',
+        seq: nextSeq++,
+        title: draft.title.trim(),
+        description: draft.description.trim() || null,
+        chords: { patterns: draft.patterns },
+        level: rhythmLevel,
+      })
+      if (error) {
+        setError(error.message.includes('duplicate') || error.message.includes('unique')
+          ? `seq${nextSeq - 1} 저장 실패: 이미 있어요.` : error.message)
+        setSaving(false); return
+      }
     }
+    setSuccess(`${selectedDate} 리듬 챌린지 ${rhythmDrafts.length}개 저장됐어요!`)
+    setRhythmDrafts(null); await loadChallenges()
     setSaving(false)
   }
 
@@ -409,7 +415,7 @@ export default function AdminPage() {
         {!editingId && (
           <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
             {(['chord', 'rhythm'] as const).map(t => (
-              <button key={t} onClick={() => { setChallengeTypeForNew(t); setDraft(null); setRhythmDraft(null); setError('') }} style={{
+              <button key={t} onClick={() => { setChallengeTypeForNew(t); setDraft(null); setRhythmDrafts(null); setError('') }} style={{
                 flex: 1, padding: '9px', borderRadius: 9, border: 'none', cursor: 'pointer',
                 background: challengeTypeForNew === t ? 'rgba(99,102,241,0.2)' : 'transparent',
                 color: challengeTypeForNew === t ? '#a5b4fc' : '#555570',
@@ -443,29 +449,35 @@ export default function AdminPage() {
             </button>
             {error && <p style={{ color: '#f87171', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>{error}</p>}
             {success && <p style={{ color: '#34d399', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>{success}</p>}
-            {rhythmDraft && (
+            {rhythmDrafts && rhythmDrafts.length > 0 && (
               <div style={{ background: '#0e0e1a', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: '#818cf8', marginBottom: 16 }}>생성된 리듬 챌린지</div>
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>제목</label>
-                  <input value={rhythmDraft.title} onChange={e => setRhythmDraft({ ...rhythmDraft, title: e.target.value })}
-                    style={inputStyle} />
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#818cf8', marginBottom: 16 }}>
+                  생성된 리듬 챌린지 {rhythmDrafts.length}개
                 </div>
-                <div style={{ marginBottom: 16 }}>
-                  <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>설명 (선택)</label>
-                  <textarea value={rhythmDraft.description} onChange={e => setRhythmDraft({ ...rhythmDraft, description: e.target.value })}
-                    rows={2} style={{ ...inputStyle, resize: 'none' }} />
-                </div>
-                {rhythmDraft.patterns.map((p, i) => (
-                  <div key={i} style={{ marginBottom: 12, padding: 12, background: 'rgba(99,102,241,0.07)', borderRadius: 10 }}>
-                    <div style={{ fontSize: 11, color: '#6666aa', fontWeight: 700, marginBottom: 6 }}>{p.label}</div>
-                    <textarea value={p.abc} onChange={e => setRhythmDraft({ ...rhythmDraft, patterns: rhythmDraft.patterns.map((pp, j) => j === i ? { ...pp, abc: e.target.value } : pp) })}
-                      rows={4} style={{ ...inputStyle, resize: 'vertical', fontSize: 11, fontFamily: 'monospace' }} />
+                {rhythmDrafts.map((draft, di) => (
+                  <div key={di} style={{ marginBottom: di < rhythmDrafts.length - 1 ? 20 : 0, paddingBottom: di < rhythmDrafts.length - 1 ? 20 : 0, borderBottom: di < rhythmDrafts.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none' }}>
+                    <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 700, marginBottom: 10 }}>챌린지 {di + 1}</div>
+                    <div style={{ marginBottom: 10 }}>
+                      <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>제목</label>
+                      <input value={draft.title} onChange={e => setRhythmDrafts(rhythmDrafts.map((d, j) => j === di ? { ...d, title: e.target.value } : d))}
+                        style={inputStyle} />
+                    </div>
+                    <div style={{ marginBottom: 10 }}>
+                      <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>설명 (선택)</label>
+                      <textarea value={draft.description} onChange={e => setRhythmDrafts(rhythmDrafts.map((d, j) => j === di ? { ...d, description: e.target.value } : d))}
+                        rows={2} style={{ ...inputStyle, resize: 'none' }} />
+                    </div>
+                    {draft.patterns.map((p, pi) => (
+                      <div key={pi} style={{ marginBottom: 8, padding: 10, background: 'rgba(99,102,241,0.07)', borderRadius: 10 }}>
+                        <textarea value={p.abc} onChange={e => setRhythmDrafts(rhythmDrafts.map((d, j) => j !== di ? d : { ...d, patterns: d.patterns.map((pp, k) => k === pi ? { ...pp, abc: e.target.value } : pp) }))}
+                          rows={3} style={{ ...inputStyle, resize: 'vertical', fontSize: 11, fontFamily: 'monospace' }} />
+                      </div>
+                    ))}
                   </div>
                 ))}
                 <button onClick={saveRhythmChallenge} disabled={saving}
-                  style={{ width: '100%', padding: '13px', borderRadius: 13, border: 'none', background: saving ? '#1a1a2e' : 'linear-gradient(135deg, #059669, #10b981)', color: saving ? '#444466' : '#fff', fontSize: 15, fontWeight: 700, cursor: saving ? 'default' : 'pointer' }}>
-                  {saving ? '저장 중...' : '✓ 리듬 챌린지 저장하기'}
+                  style={{ width: '100%', padding: '13px', borderRadius: 13, border: 'none', marginTop: 16, background: saving ? '#1a1a2e' : 'linear-gradient(135deg, #059669, #10b981)', color: saving ? '#444466' : '#fff', fontSize: 15, fontWeight: 700, cursor: saving ? 'default' : 'pointer' }}>
+                  {saving ? '저장 중...' : `✓ 리듬 챌린지 ${rhythmDrafts.length}개 저장하기`}
                 </button>
               </div>
             )}
