@@ -115,65 +115,62 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
 
-  const allChunks = useMemo(
-    () => patterns.map(p =>
-      splitIntoChunks(p.abc, 2)
-        .map(c => fixBeaming(toPercFormat(c)))
-    ),
+  // Render each pattern as a single tune so abcjs auto-wraps rows.
+  // Interior rows fill naturally; only the last row needs stretchlast.
+  const processedPatterns = useMemo(
+    () => patterns.map(p => {
+      const lines = p.abc.replace(/\\n/g, '\n').split('\n')
+      // Insert %%stretchlast 1 just before the V: line
+      const vIdx = lines.findIndex(l => l.trim().startsWith('V:'))
+      if (vIdx >= 0) lines.splice(vIdx, 0, '%%stretchlast 1')
+      return fixBeaming(toPercFormat(lines.join('\n')))
+    }),
     [patterns]
   )
 
   useEffect(() => {
     if (!containerRef.current) return
     const containerWidth = containerRef.current.clientWidth
-    // abcjs adds ~20px internal margin on top of staffwidth.
-    // Subtracting 40px gives 20px buffer so SVG never overflows the container.
     const staffwidth = Math.max(containerWidth - 50, 180)
 
     import('abcjs').then(ABCJS => {
-      allChunks.forEach((chunks, i) => {
-        chunks.forEach((chunkAbc, c) => {
-          const el = document.getElementById(`rv-${uid}-${i}-${c}`)
-          if (!el) return
-          ABCJS.renderAbc(`rv-${uid}-${i}-${c}`, chunkAbc, {
-            staffwidth,
-            format: { stretchlast: 1 },
-            scale: 0.8,
-            foregroundColor: '#f0ece0',
-            selectionColor: 'none',
-            paddingtop: 4,
-            paddingbottom: 4,
-            paddingright: 0,
-            paddingleft: 0,
-            minPadding: 0,
-          } as Parameters<typeof ABCJS.renderAbc>[2])
-          // Remove height attribute so viewBox controls aspect ratio at width=100%
-          // (keeping height attr causes non-uniform scale → distorted/missing noteheads)
-          const svg = el.querySelector('svg')
-          if (svg) {
-            svg.removeAttribute('height')
-            svg.style.width = '100%'
-            svg.style.display = 'block'
-            svg.style.overflow = 'visible'
-          }
-        })
+      processedPatterns.forEach((abc, i) => {
+        const el = document.getElementById(`rv-${uid}-${i}`)
+        if (!el) return
+        ABCJS.renderAbc(`rv-${uid}-${i}`, abc, {
+          staffwidth,
+          format: { stretchlast: 1 },
+          scale: 0.8,
+          foregroundColor: '#f0ece0',
+          selectionColor: 'none',
+          paddingtop: 4,
+          paddingbottom: 4,
+          paddingright: 0,
+          paddingleft: 0,
+          minPadding: 0,
+        } as Parameters<typeof ABCJS.renderAbc>[2])
+        const svg = el.querySelector('svg')
+        if (svg) {
+          svg.removeAttribute('height')
+          svg.style.width = '100%'
+          svg.style.display = 'block'
+          svg.style.overflow = 'visible'
+        }
       })
     })
-  }, [allChunks, uid])
+  }, [processedPatterns, uid])
 
   return (
     <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {allChunks.map((chunks, i) => (
+      {patterns.map((p, i) => (
         <div key={i}>
-          {patterns[i].label && (
+          {p.label && (
             <div style={{ fontSize: 12, fontWeight: 700, color: '#a0988c', marginBottom: 8, letterSpacing: '0.05em' }}>
-              {patterns[i].label}
+              {p.label}
             </div>
           )}
           <div style={{ background: 'rgba(240,236,224,0.04)', borderRadius: 12, overflow: 'hidden' }}>
-            {chunks.map((_, c) => (
-              <div key={c} id={`rv-${uid}-${i}-${c}`} />
-            ))}
+            <div id={`rv-${uid}-${i}`} />
           </div>
         </div>
       ))}
