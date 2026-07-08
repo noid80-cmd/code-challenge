@@ -17,7 +17,7 @@ function buildPrompt(level: string) {
 난이도: ${levelGuide}
 
 공통 조건:
-- 4/4박자, 정확히 8마디, 겹세로줄(|])로 끝낼 것
+- 4/4박자, 정확히 4마디, 겹세로줄(|])로 끝낼 것
 - K:perc, L:1/8, V:1 clef=none stafflines=1 stem=up
 - 음표는 B(타격), z(쉼표)만 사용
 - 각 마디 총합 = 정확히 8 (L:1/8 기준)
@@ -47,11 +47,11 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
   "patterns": [
     {
       "label": "A 패턴",
-      "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|BB z2 B/B/B/B/ B2|BB BB z2 B2|(3BBB BB z2 B2|B/B/B/B/ (3BBB BB z2|BB z2 B/B/B/B/ B2|BB BB z2 B2|(3BBB BB z2 B2|B4 z4|]"
+      "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|BB z2 B/B/B/B/ B2|BB BB z2 B2|(3BBB BB z2 B2|B/B/B/B/ (3BBB BB z2|]"
     },
     {
       "label": "B 패턴",
-      "abc": "X:2\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|B/B/B/B/ z2 BB z2|(3BBB z2 B/B/B/B/ z2|BB z2 (3BBB z2|B/B/z2 BB (3BBB z2|B/B/B/B/ z2 BB z2|(3BBB z2 B/B/B/B/ z2|BB z2 (3BBB z2|B4 z4|]"
+      "abc": "X:2\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|B/B/B/B/ z2 BB z2|(3BBB z2 B/B/B/B/ z2|BB z2 (3BBB z2|B/B/z2 BB (3BBB z2|]"
     }
   ]
 }`

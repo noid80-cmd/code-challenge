@@ -113,7 +113,7 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
 
   const allChunks = useMemo(
     () => patterns.map(p =>
-      splitIntoChunks(p.abc, 4)
+      splitIntoChunks(p.abc, 2)
         .map(c => fixBeaming(toPercFormat(c)))
     ),
     [patterns]
@@ -124,7 +124,7 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
     const containerWidth = containerRef.current.clientWidth
     // abcjs adds ~20px internal margin on top of staffwidth.
     // Subtracting 40px gives 20px buffer so SVG never overflows the container.
-    const staffwidth = Math.max(containerWidth - 40, 180)
+    const staffwidth = Math.max(containerWidth - 50, 180)
 
     import('abcjs').then(ABCJS => {
       allChunks.forEach((chunks, i) => {
