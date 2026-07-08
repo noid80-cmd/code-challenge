@@ -137,6 +137,7 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
           if (!el) return
           ABCJS.renderAbc(`rv-${uid}-${i}-${c}`, chunkAbc, {
             staffwidth,
+            stretchlast: true,
             scale: 0.8,
             foregroundColor: '#f0ece0',
             selectionColor: 'none',

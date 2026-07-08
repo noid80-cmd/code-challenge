@@ -3,8 +3,8 @@ import Anthropic from '@anthropic-ai/sdk'
 import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
 
-function extractJsonArray(text: string): string | null {
-  const start = text.indexOf('[')
+function extractJsonObject(text: string): string | null {
+  const start = text.indexOf('{')
   if (start === -1) return null
   let depth = 0
   let inString = false
@@ -15,8 +15,8 @@ function extractJsonArray(text: string): string | null {
     if (ch === '\\' && inString) { escape = true; continue }
     if (ch === '"') { inString = !inString; continue }
     if (inString) continue
-    if (ch === '[' || ch === '{') depth++
-    else if (ch === ']' || ch === '}') {
+    if (ch === '{') depth++
+    else if (ch === '}') {
       depth--
       if (depth === 0) return text.slice(start, i + 1)
     }
@@ -123,34 +123,30 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
     }
   }
 
-  // ── 리듬챌린지 (2개) ─────────────────────────────────────
-  const { count: rhythmCount } = await supabase
-    .from('challenges').select('id', { count: 'exact', head: true })
-    .eq('date', today).eq('type', 'rhythm')
+  // ── 리듬챌린지 (패턴 2개를 하나의 레코드로) ────────────────
+  const { data: existingRhythm } = await supabase
+    .from('challenges').select('id, title').eq('date', today).eq('type', 'rhythm').maybeSingle()
 
-  let rhythmTitle: string | null = null
+  let rhythmTitle: string | null = existingRhythm?.title ?? null
 
-  if ((rhythmCount ?? 0) < 2) {
-    const rhythmLevels = ['beginner', 'intermediate', 'advanced'] as const
-    const rhythmLevelWeights = [0.3, 0.5, 0.2]
+  if (!existingRhythm) {
     const rRand = Math.random()
-    const rhythmLevel = rRand < rhythmLevelWeights[0] ? rhythmLevels[0]
-      : rRand < rhythmLevelWeights[0] + rhythmLevelWeights[1] ? rhythmLevels[1]
-      : rhythmLevels[2]
+    const rhythmLevel = rRand < 0.3 ? 'beginner' : rRand < 0.8 ? 'intermediate' : 'advanced'
 
     const rhythmLevelGuide =
       rhythmLevel === 'beginner'
         ? `초급: 4분음표·8분음표·쉼표만 사용. 단순하고 예측 가능한 리듬.\n예시 마디: |B2 B2 B2 B2| |BB BB z2 B2| |B2 BB z2 B2|`
         : rhythmLevel === 'advanced'
-        ? `고급: 16분음표·셋잇단음표·당김음을 복잡하게 혼합. 불규칙 악센트 포함.\n예시 마디: |B/B/ z/ B/ (3BBB B/ z/ B/B/| |z/ B/ B/B/ z2 (3BBB B/|`
+        ? `고급: 16분음표·셋잇단음표·당김음을 복잡하게 혼합.\n예시 마디: |B/B/ z/ B/ (3BBB B/ z/ B/B/| |z/ B/ B/B/ z2 (3BBB B/|`
         : `중급: 8분음표 기반에 16분음표(B/)와 셋잇단음표((3BBB)를 혼합. 당김음 포함.\n예시 마디: |BB z2 B/B/B/B/ B2| |(3BBB BB z2 B2| |B/B/B/B/ (3BBB BB z2|`
 
     const rhythmMsg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 4096,
+      system: 'You are a JSON generator. Output only a valid JSON object. No explanations, no reasoning text, no markdown. Start your response directly with { and end with }.',
       messages: [{
         role: 'user',
-        content: `드럼/리듬 초견 챌린지 2개를 생성하세요. 두 챌린지는 서로 다른 리듬 테마/성격이어야 합니다.
+        content: `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
 난이도: ${rhythmLevelGuide}
 
@@ -165,45 +161,32 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 - B/ = 16분음표 = 0.5, B = 8분음표 = 1, B2 = 4분음표 = 2, B4 = 2분음표 = 4
 - (3BBB = 셋잇단음표 = 총합 2
 
-JSON 배열로만 응답 (다른 텍스트 없이):
-[
-  {
-    "title": "리듬 챌린지 제목1",
-    "description": "간단한 설명",
-    "level": "${rhythmLevel}",
-    "patterns": [{"label": "", "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|...|]"}]
-  },
-  {
-    "title": "리듬 챌린지 제목2",
-    "description": "간단한 설명",
-    "level": "${rhythmLevel}",
-    "patterns": [{"label": "", "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|...|]"}]
-  }
-]`,
+JSON 객체로만 응답:
+{
+  "title": "챌린지 제목",
+  "description": "간단한 설명 (1-2문장)",
+  "level": "${rhythmLevel}",
+  "patterns": [
+    {"label": "패턴 1", "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|...|]"},
+    {"label": "패턴 2", "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|...|]"}
+  ]
+}`,
       }],
     })
 
     const rhythmText = rhythmMsg.content[0].type === 'text' ? rhythmMsg.content[0].text : ''
-    const rhythmJsonStr = extractJsonArray(rhythmText)
+    const rhythmJsonStr = extractJsonObject(rhythmText)
     if (rhythmJsonStr) {
-      const rhythmChallenges: Array<{ title: string; description: string; level: string; patterns: unknown[] }> = JSON.parse(rhythmJsonStr)
-      for (const ch of rhythmChallenges) {
-        // Always re-query max seq before inserting to avoid unique constraint conflicts
-        const { data: curMax } = await supabase.from('challenges')
-          .select('seq').eq('date', today).eq('type', 'rhythm')
-          .order('seq', { ascending: false }).limit(1).maybeSingle()
-        const seq = (curMax?.seq ?? 0) + 1
-        await supabase.from('challenges').insert({
-          date: today,
-          type: 'rhythm',
-          seq,
-          level: rhythmLevel,
-          title: ch.title,
-          description: ch.description,
-          chords: { patterns: ch.patterns },
-        })
-      }
-      rhythmTitle = rhythmChallenges[0]?.title ?? null
+      const ch: { title: string; description: string; level: string; patterns: unknown[] } = JSON.parse(rhythmJsonStr)
+      await supabase.from('challenges').insert({
+        date: today,
+        type: 'rhythm',
+        level: rhythmLevel,
+        title: ch.title,
+        description: ch.description,
+        chords: { patterns: ch.patterns },
+      })
+      rhythmTitle = ch.title
     }
   }
 
