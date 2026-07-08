@@ -3,6 +3,27 @@ import Anthropic from '@anthropic-ai/sdk'
 import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
 
+function extractJsonArray(text: string): string | null {
+  const start = text.indexOf('[')
+  if (start === -1) return null
+  let depth = 0
+  let inString = false
+  let escape = false
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i]
+    if (escape) { escape = false; continue }
+    if (ch === '\\' && inString) { escape = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (ch === '[' || ch === '{') depth++
+    else if (ch === ']' || ch === '}') {
+      depth--
+      if (depth === 0) return text.slice(start, i + 1)
+    }
+  }
+  return null
+}
+
 export async function GET(req: NextRequest) {
   webpush.setVapidDetails(
     `mailto:${process.env.VAPID_EMAIL}`,
@@ -163,9 +184,9 @@ JSON 배열로만 응답 (다른 텍스트 없이):
     })
 
     const rhythmText = rhythmMsg.content[0].type === 'text' ? rhythmMsg.content[0].text : ''
-    const rhythmMatch = rhythmText.match(/\[\s*\{[\s\S]*\}\s*\]/)
-    if (rhythmMatch) {
-      const rhythmChallenges: Array<{ title: string; description: string; level: string; patterns: unknown[] }> = JSON.parse(rhythmMatch[0])
+    const rhythmJsonStr = extractJsonArray(rhythmText)
+    if (rhythmJsonStr) {
+      const rhythmChallenges: Array<{ title: string; description: string; level: string; patterns: unknown[] }> = JSON.parse(rhythmJsonStr)
       for (const ch of rhythmChallenges) {
         // Always re-query max seq before inserting to avoid unique constraint conflicts
         const { data: curMax } = await supabase.from('challenges')

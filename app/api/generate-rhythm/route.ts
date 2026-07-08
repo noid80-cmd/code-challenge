@@ -63,6 +63,27 @@ JSON 배열로만 응답 (다른 텍스트 없이):
 ]`
 }
 
+function extractJsonArray(text: string): string | null {
+  const start = text.indexOf('[')
+  if (start === -1) return null
+  let depth = 0
+  let inString = false
+  let escape = false
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i]
+    if (escape) { escape = false; continue }
+    if (ch === '\\' && inString) { escape = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (ch === '[' || ch === '{') depth++
+    else if (ch === ']' || ch === '}') {
+      depth--
+      if (depth === 0) return text.slice(start, i + 1)
+    }
+  }
+  return null
+}
+
 export async function POST(req: NextRequest) {
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY가 없어요.' }, { status: 500 })
@@ -76,13 +97,12 @@ export async function POST(req: NextRequest) {
       messages: [{ role: 'user', content: buildPrompt(level) }],
     })
     const text = message.content[0].type === 'text' ? message.content[0].text : ''
-    // Match a JSON array of objects: starts with [{ and ends with }]
-    const jsonMatch = text.match(/\[\s*\{[\s\S]*\}\s*\]/)
-    if (!jsonMatch) {
+    const jsonStr = extractJsonArray(text)
+    if (!jsonStr) {
       console.error('[generate-rhythm] no JSON array in response:', text.slice(0, 500))
       return NextResponse.json({ error: `파싱 실패: ${text.slice(0, 200)}` }, { status: 500 })
     }
-    const challenges = JSON.parse(jsonMatch[0])
+    const challenges = JSON.parse(jsonStr)
     return NextResponse.json({ challenges })
   } catch (e: unknown) {
     return NextResponse.json({ error: e instanceof Error ? e.message : '생성 실패' }, { status: 500 })
