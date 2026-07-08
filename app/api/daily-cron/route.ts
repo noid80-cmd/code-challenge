@@ -3,6 +3,8 @@ import Anthropic from '@anthropic-ai/sdk'
 import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
 
+export const maxDuration = 120
+
 function extractJsonObject(text: string): string | null {
   const start = text.indexOf('{')
   if (start === -1) return null
@@ -28,6 +30,8 @@ function parseBarSum(bar: string): number {
   let total = 0
   let i = 0
   const s = bar.trim()
+  let pendingMod = 1
+
   while (i < s.length) {
     if (s[i] === ' ') { i++; continue }
     if (s[i] === '(') {
@@ -36,7 +40,6 @@ function parseBarSum(bar: string): number {
       while (i < s.length && /\d/.test(s[i])) { nStr += s[i]; i++ }
       const n = parseInt(nStr || '3')
       const mDefault = n === 2 ? 3 : n === 3 ? 2 : n === 4 ? 3 : n === 5 ? 4 : 2
-      // Peek at first note for base duration: (3BBB=1→2, (3B2B2B2=2→4
       let peekI = i
       while (peekI < s.length && s[peekI] === ' ') peekI++
       let baseDur = 1
@@ -48,6 +51,7 @@ function parseBarSum(bar: string): number {
         else if (peekI < s.length && s[peekI] === '/') baseDur = 0.5
       }
       total += mDefault * baseDur
+      pendingMod = 1
       let left = n
       while (i < s.length && left > 0) {
         if (s[i] === ' ') { i++; continue }
@@ -66,7 +70,16 @@ function parseBarSum(bar: string): number {
       const num = numStr ? parseInt(numStr) : 1
       let slashes = 0
       while (i < s.length && s[i] === '/') { slashes++; i++ }
-      total += slashes > 0 ? num / Math.pow(2, slashes) : num
+      const baseDur = slashes > 0 ? num / Math.pow(2, slashes) : num
+      const dur = baseDur * pendingMod
+      pendingMod = 1
+      if (i < s.length && s[i] === '>') {
+        total += dur * 1.5; pendingMod = 0.5; i++
+      } else if (i < s.length && s[i] === '<') {
+        total += dur * 0.5; pendingMod = 1.5; i++
+      } else {
+        total += dur
+      }
       continue
     }
     i++
@@ -77,17 +90,12 @@ function parseBarSum(bar: string): number {
 function validateABC(patterns: Array<{ abc: string }>): boolean {
   for (const p of patterns) {
     const text = (p.abc as string).replace(/\\n/g, '\n')
-    // Reject 16th rests, duplets, and notes/rests longer than 2 units (B4, B8, z4…)
-    if (/z\//.test(text)) {
-      console.error(`[cron-rhythm] 16th rest (z/) found — not standard`)
-      return false
-    }
     if (/\(2/.test(text)) {
-      console.error(`[cron-rhythm] duplet (2 found — not standard`)
+      console.error(`[cron-rhythm] duplet (2 found`)
       return false
     }
-    if (/[Bz][3-9]/.test(text)) {
-      console.error(`[cron-rhythm] note/rest ≥3 units (B4/B8/z4 etc) — not in block vocabulary`)
+    if (/B[4-9]/.test(text)) {
+      console.error(`[cron-rhythm] note B4 or longer`)
       return false
     }
     const barLines = text.split('\n').filter((l: string) => l.trim().startsWith('|'))
@@ -97,7 +105,7 @@ function validateABC(patterns: Array<{ abc: string }>): boolean {
       for (const bar of bars) {
         const sum = parseBarSum(bar)
         if (Math.abs(sum - 8) > 0.01) {
-          console.error(`[cron-rhythm] bar sum=${sum} (expected 8): "${bar}"`)
+          console.error(`[cron-rhythm] bar sum=${sum}: "${bar}"`)
           return false
         }
       }
@@ -217,35 +225,21 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 
     const rhythmLevelGuide =
       rhythmLevel === 'beginner'
-        ? `초급: BB·z2·B2·z B·B z 블록만 사용. (3BBB·B/B/B/B/·(3B2B2B2 금지.\n예시 마디: BB z2 BB z2 / z2 BB z2 BB / B2 z2 BB z2 / z B BB B2 z2 / BB z B z2 B2`
+        ? `초급: BB·z2·B2·z B·B z 블록만. 예시: BB z2 BB z2 / z2 BB z2 BB / B2 z2 BB z2 / z B BB B2 z2`
         : rhythmLevel === 'advanced'
-        ? `고급: B/B/B/B/ 6마디 이상, (3BBB 5마디 이상, (3B2B2B2 2마디 이상.\n예시 마디: B/B/B/B/ z B (3BBB z B / (3BBB B/B/B/B/ z B z B / (3B2B2B2 B/B/B/B/ z B / B/B/B/B/ (3BBB z B B/B/B/B/ / (3B2B2B2 (3BBB z B`
-        : `중급: B/B/B/B/ 4마디 이상, (3BBB 3마디 이상, z B 3마디 이상, (3B2B2B2 1마디 이상.\n예시 마디: B/B/B/B/ z B (3BBB z2 / z B z B z2 (3BBB / (3B2B2B2 B/B/B/B/ z B / (3BBB z B B/B/B/B/ z B / z2 B/B/B/B/ (3BBB z2`
+        ? `고급: 자유 조합(합계=8). 다양한 쉼표·점리듬 사용.\n쉼표: z/=16분(B/그룹내) z=8분 z2=4분 z4=2분 z3=점4분 z>B=점8분쉼표+16분\n셋잇단쉼표(2단위): (3zBB (3BzB (3BBz / 2박3연음쉼표(4단위): (3z2B2B2 (3B2z2B2\n점리듬(2단위): B>z z>B\n예시: z/B/B/B/ z B (3zBB z2 / B>z (3BzB z B z>B / z4 z/B/B/B/ z B / z3 B z2 B/B/B/B/`
+        : `중급: 2단위×4 또는 4단위×1+2단위×2. 쉼표 다양하게.\n추가블록(2단위): z/B/B/B/ B/z/B/B/ z>B B>z (3zBB (3BzB (3BBz\n추가블록(4단위): z4 (3z2B2B2 (3B2z2B2\n예시: z/B/B/B/ z B (3BBB z2 / z>B (3BBB z B B/B/B/B/ / z4 B/B/B/B/ z B / (3BzB z B B/B/B/B/ z B`
 
     const rhythmPrompt = `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
 난이도: ${rhythmLevelGuide}
 
-마디 구성 방법 — 8단위를 채우는 두 가지 방법:
-
-【블록 목록】
-2단위 블록: BB  z2  B2  z B  B z  (3BBB  B/B/B/B/
-4단위 블록: (3B2B2B2  ← 2박 3연음! 2단위 블록 두 개 자리를 차지함
-
-⚠️ (3BBB = 1박(2단위),  (3B2B2B2 = 2박(4단위) — 다릅니다!
-
-마디 = 8단위. 두 가지 방법만 허용:
-  방법A: 2단위 블록 × 4 = 8  →  예: (3BBB + z B + z2 + BB = 8 ✓
-  방법B: (3B2B2B2 × 1 + 2단위 블록 × 2 = 8  →  예: (3B2B2B2 + BB + z2 = 8 ✓
-
-❌ 잘못된 예: (3B2B2B2 + z B + (3BBB + z2 = 4+2+2+2 = 10 ✗ (5박!)
-   → (3B2B2B2 사용 시 블록은 총 3개(자신 1 + 2단위 2)만 사용
-
-절대 금지: B/ 단독, z/, (2, B4, B8, z4, z8 등 3단위 이상 단일음표 사용 금지
-
 공통:
 - 4/4박자, 정확히 8마디, 겹세로줄(|])로 끝낼 것
 - K:perc, L:1/8, V:1 clef=none stafflines=1 stem=up
+- 각 마디 합계 반드시 8단위
+- (3BBB=1박(2단위) vs (3B2B2B2=2박(4단위) 구분 필수
+- 금지: B4·B8(음표만), (2
 
 JSON 객체로만 응답:
 {

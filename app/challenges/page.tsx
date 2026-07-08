@@ -9,19 +9,21 @@ type ChallengeItem = {
   id: string
   date: string
   title: string
+  type: string
   submissions: { count: number }[]
 }
 
 export default function ChallengesPage() {
   const [challenges, setChallenges] = useState<ChallengeItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [tab, setTab] = useState<'chord' | 'rhythm'>('chord')
 
   useEffect(() => {
     async function load() {
       const supabase = createClient()
       const { data: chs } = await supabase
         .from('challenges')
-        .select('id, date, title')
+        .select('id, date, title, type')
         .order('date', { ascending: false })
 
       if (!chs) { setLoading(false); return }
@@ -47,6 +49,7 @@ export default function ChallengesPage() {
   }, [])
 
   const today = localDate()
+  const filtered = challenges.filter(ch => ch.type === tab)
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0a0a08', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
@@ -72,14 +75,39 @@ export default function ChallengesPage() {
         <div style={{ width: 48 }} />
       </header>
 
+      {/* Tab bar */}
+      <div style={{
+        display: 'flex', gap: 0,
+        borderBottom: '1px solid rgba(240,236,224,0.08)',
+        background: 'rgba(8,8,8,0.7)',
+        position: 'sticky', top: 54, zIndex: 40,
+      }}>
+        {(['chord', 'rhythm'] as const).map(t => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            style={{
+              flex: 1, padding: '13px 0', border: 'none', cursor: 'pointer',
+              background: 'transparent',
+              fontSize: 13, fontWeight: 800, letterSpacing: '-0.01em',
+              color: tab === t ? '#f0ece0' : '#403830',
+              borderBottom: tab === t ? '2px solid #f0ece0' : '2px solid transparent',
+              transition: 'color 0.15s, border-color 0.15s',
+            }}
+          >
+            {t === 'chord' ? '코드 초견' : '리듬 초견'}
+          </button>
+        ))}
+      </div>
+
       <main style={{ maxWidth: 560, margin: '0 auto', padding: '24px 16px 100px' }}>
-        {challenges.length === 0 ? (
+        {filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
             <p style={{ color: '#303028', fontSize: 14 }}>아직 챌린지가 없어요</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {challenges.map(ch => {
+            {filtered.map(ch => {
               const isToday = ch.date === today
               const count = ch.submissions?.[0]?.count ?? 0
               return (

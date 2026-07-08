@@ -1,22 +1,27 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 
-// ── ABC bar duration validator ──────────────────────────────────────────────
-// L:1/8 기준: B=1, B2=2, B/=0.5, (3BBB=2, (3B2B2B2=4 (2박 3연음)
+export const maxDuration = 120  // Vercel: allow up to 2 minutes
+
+// ── ABC bar duration parser ──────────────────────────────────────────────────
+// L:1/8: B=1, B2=2, B/=0.5, z=1, z2=2, z3=3(점4분), z4=4(2분), z/=0.5
+// (3BBB=2, (3B2B2B2=4, B>z=1.5+0.5=2, z>B=1.5+0.5=2
 function parseBarSum(bar: string): number {
   let total = 0
   let i = 0
   const s = bar.trim()
+  let pendingMod = 1  // modifier from preceding > or <
+
   while (i < s.length) {
     if (s[i] === ' ') { i++; continue }
+
     if (s[i] === '(') {
       i++
       let nStr = ''
       while (i < s.length && /\d/.test(s[i])) { nStr += s[i]; i++ }
       const n = parseInt(nStr || '3')
       const mDefault = n === 2 ? 3 : n === 3 ? 2 : n === 4 ? 3 : n === 5 ? 4 : 2
-      // Peek at first note to determine base note duration:
-      // (3BBB=1 → 2*1=2, (3B2B2B2=2 → 2*2=4 (2박 3연음)
+      // Peek at first note for base duration: (3BBB→1→2, (3B2B2B2→2→4
       let peekI = i
       while (peekI < s.length && s[peekI] === ' ') peekI++
       let baseDur = 1
@@ -28,6 +33,7 @@ function parseBarSum(bar: string): number {
         else if (peekI < s.length && s[peekI] === '/') baseDur = 0.5
       }
       total += mDefault * baseDur
+      pendingMod = 1
       let left = n
       while (i < s.length && left > 0) {
         if (s[i] === ' ') { i++; continue }
@@ -39,6 +45,7 @@ function parseBarSum(bar: string): number {
       }
       continue
     }
+
     if (s[i] === 'B' || s[i] === 'z') {
       i++
       let numStr = ''
@@ -46,9 +53,24 @@ function parseBarSum(bar: string): number {
       const num = numStr ? parseInt(numStr) : 1
       let slashes = 0
       while (i < s.length && s[i] === '/') { slashes++; i++ }
-      total += slashes > 0 ? num / Math.pow(2, slashes) : num
+      const baseDur = slashes > 0 ? num / Math.pow(2, slashes) : num
+      const dur = baseDur * pendingMod
+      pendingMod = 1
+      // Broken rhythm: B>z = B×1.5, then z×0.5 (next note gets pendingMod=0.5)
+      if (i < s.length && s[i] === '>') {
+        total += dur * 1.5
+        pendingMod = 0.5
+        i++
+      } else if (i < s.length && s[i] === '<') {
+        total += dur * 0.5
+        pendingMod = 1.5
+        i++
+      } else {
+        total += dur
+      }
       continue
     }
+
     i++
   }
   return total
@@ -57,17 +79,13 @@ function parseBarSum(bar: string): number {
 function validateABC(patterns: Array<{ abc: string }>): boolean {
   for (const p of patterns) {
     const text = (p.abc as string).replace(/\\n/g, '\n')
-    // Reject 16th rests, duplets, and notes/rests longer than 2 units (B4, B8, z4…)
-    if (/z\//.test(text)) {
-      console.error(`[rhythm] 16th rest (z/) found — not standard`)
-      return false
-    }
+    // Ban duplets and long notes (notes ≥4 units — rests of any length are OK)
     if (/\(2/.test(text)) {
       console.error(`[rhythm] duplet (2 found — not standard`)
       return false
     }
-    if (/[Bz][3-9]/.test(text)) {
-      console.error(`[rhythm] note/rest ≥3 units (B4/B8/z4 etc) — not in block vocabulary`)
+    if (/B[4-9]/.test(text)) {
+      console.error(`[rhythm] note B4 or longer — too long for percussion`)
       return false
     }
     const barLines = text.split('\n').filter((l: string) => l.trim().startsWith('|'))
@@ -90,7 +108,7 @@ function validateABC(patterns: Array<{ abc: string }>): boolean {
 function buildPrompt(level: string) {
   const levelGuide =
     level === 'beginner'
-      ? `초급: BB·z2·B2·z B·B z 블록만 사용. (3BBB·B/B/B/B/·(3B2B2B2 금지.
+      ? `초급: BB·z2·B2·z B·B z 블록만 사용. 아래 블록 4개 이어 붙이면 항상 8단위.
 초급 예시 마디:
   BB z2 BB z2
   z2 BB z2 BB
@@ -101,51 +119,61 @@ function buildPrompt(level: string) {
   z2 z B BB BB
   BB z2 z B B2`
       : level === 'advanced'
-      ? `고급: 모든 블록 사용. B/B/B/B/ 6마디 이상, (3BBB 5마디 이상, (3B2B2B2 2마디 이상.
-고급 예시 마디:
-  B/B/B/B/ z B (3BBB z B
-  (3BBB B/B/B/B/ z B z B
-  z B B/B/B/B/ (3BBB BB
-  B/B/B/B/ (3BBB z B B/B/B/B/
-  (3B2B2B2 B/B/B/B/ z B
-  B/B/B/B/ z B B/B/B/B/ z2
-  (3B2B2B2 (3BBB z B
-  z B (3BBB B/B/B/B/ z B`
-      : `중급: B/B/B/B/ 4마디 이상, (3BBB 3마디 이상, z B(당김) 3마디 이상, (3B2B2B2 1마디 이상.
+      ? `고급: 마디=8단위. 다양한 쉼표·점리듬 적극 활용.
+
+쉼표 종류:
+  z/   = 16분쉼표(0.5) — 반드시 B/ 그룹 안에서만: z/B/B/B/ 또는 B/z/B/B/
+  z    = 8분쉼표(1)
+  z2   = 4분쉼표(2)
+  z3   = 점4분쉼표(3) — 1단위 요소(B 또는 z)와 조합
+  z4   = 2분쉼표(4) — 2단위 블록 2개와 조합
+  z>B  = 점8분쉼표+16분음표(2) — 2단위 블록으로 사용 가능
+  B>z  = 점8분음표+16분쉼표(2)
+
+셋잇단 쉼표(각 2단위): (3zBB  (3BzB  (3BBz
+2박3연음 쉼표포함(각 4단위): (3z2B2B2  (3B2z2B2  (3B2B2z2
+
+고급 예시 마디 (반드시 합계=8):
+  z/B/B/B/ z B (3zBB z2       (2+2+2+2=8)
+  B>z (3BzB z B z>B            (2+2+1+1+2=8)
+  z4 z/B/B/B/ z B              (4+2+2=8)
+  z3 B z2 B/B/B/B/             (3+1+2+2=8)
+  (3B2z2B2 z>B z B             (4+2+1+1=8)
+  B/z/B/B/ (3BBz z B z2        (2+2+2+2=8)
+  z>B (3BzB B/B/B/B/ z B       (2+2+2+2=8)
+  z4 (3zBB B/B/B/B/            (4+2+2=8)`
+      : `중급: 2단위 블록×4 또는 4단위 블록×1+2단위×2. 쉼표 다양하게.
+
+2단위 블록:
+  BB  z2  B2  z B  B z  (3BBB  B/B/B/B/
+  z/B/B/B/  B/z/B/B/  z>B  B>z
+  (3zBB  (3BzB  (3BBz
+
+4단위 블록:
+  (3B2B2B2  (3z2B2B2  (3B2z2B2  z4
+
+⚠️ (3BBB=2단위 vs (3B2B2B2=4단위 — 헷갈리지 말 것
+방법A: 2단위×4=8 / 방법B: 4단위×1+2단위×2=8
+
 중급 예시 마디:
-  z B z B z2 (3BBB
-  B/B/B/B/ z B (3BBB z2
-  z2 B/B/B/B/ (3BBB z2
-  (3B2B2B2 B/B/B/B/ z B
-  (3BBB z B B/B/B/B/ z B
-  B/B/B/B/ BB z B (3BBB
-  z B (3BBB z2 B/B/B/B/
-  B/B/B/B/ z B z2 (3BBB`
+  z/B/B/B/ z B (3BBB z2
+  (3BzB z B B/B/B/B/ z B
+  z>B (3BBB z B B/B/B/B/
+  z4 B/B/B/B/ z B
+  (3B2z2B2 z/B/B/B/ z B
+  z/B/B/B/ (3zBB z B z2
+  z>B z B (3BzB B/B/B/B/
+  z4 (3BzB B/B/B/B/`
 
   return `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
 난이도: ${levelGuide}
 
-마디 구성 방법 — 8단위를 채우는 두 가지 방법:
-
-【블록 목록】
-2단위 블록: BB  z2  B2  z B  B z  (3BBB  B/B/B/B/
-4단위 블록: (3B2B2B2  ← 2박 3연음! 2단위 블록 두 개 자리를 차지함
-
-⚠️ (3BBB = 1박(2단위),  (3B2B2B2 = 2박(4단위) — 다릅니다!
-
-마디 = 8단위. 두 가지 방법만 허용:
-  방법A: 2단위 블록 × 4 = 8  →  예: (3BBB + z B + z2 + BB = 8 ✓
-  방법B: (3B2B2B2 × 1 + 2단위 블록 × 2 = 8  →  예: (3B2B2B2 + BB + z2 = 8 ✓
-
-❌ 잘못된 예: (3B2B2B2 + z B + (3BBB + z2 = 4+2+2+2 = 10 ✗ (5박!)
-   → (3B2B2B2 사용 시 블록은 총 3개(자신 1 + 2단위 2)만 사용
-
-절대 금지: B/ 단독, z/, (2, B4, B8, z4, z8 등 3단위 이상 단일음표 사용 금지
-
-공통:
+공통 규칙:
 - 4/4박자, 정확히 8마디, 겹세로줄(|])로 끝낼 것
 - K:perc, L:1/8, V:1 clef=none stafflines=1 stem=up
+- 각 마디는 반드시 합계 8단위 (±0)
+- 절대 금지: B4·B8(음표만, 쉼표 z4는 허용), (2, B/ 완전 단독 사용
 
 JSON 객체로만 응답:
 {
@@ -224,7 +252,6 @@ export async function POST() {
       break
     }
 
-    // Fallback: return last parsed result even if validation failed
     if (!challenge) {
       console.error('[generate-rhythm] all attempts failed validation, returning last result')
       challenge = lastParsed
