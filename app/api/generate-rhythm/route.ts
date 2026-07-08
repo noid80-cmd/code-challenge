@@ -66,12 +66,15 @@ export async function POST(req: NextRequest) {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: [{ role: 'user', content: buildPrompt(level) }],
     })
     const text = message.content[0].type === 'text' ? message.content[0].text : ''
     const jsonMatch = text.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) return NextResponse.json({ error: '파싱 실패' }, { status: 500 })
+    if (!jsonMatch) {
+      console.error('[generate-rhythm] no JSON in response:', text.slice(0, 500))
+      return NextResponse.json({ error: `파싱 실패: ${text.slice(0, 200)}` }, { status: 500 })
+    }
     const data = JSON.parse(jsonMatch[0])
     return NextResponse.json(data)
   } catch (e: unknown) {
