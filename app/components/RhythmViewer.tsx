@@ -91,7 +91,10 @@ function splitIntoChunks(abc: string, chunkSize: number): string[] {
   // %%stretchlast must be placed BEFORE the V: declaration so it lands in the
   // tune-level header context (abctune.formatting) that layout.js reads.
   // Placing it after V: puts it in the voice/body context which is ignored.
-  const preVLines = headerLines.filter(l => !l.trim().startsWith('V:'))
+  const preVLines = headerLines.filter(l => {
+    const t = l.trim()
+    return !t.startsWith('V:') && !t.startsWith('M:') && !t.startsWith('Q:')
+  })
   const vLine = headerLines.find(l => l.trim().startsWith('V:')) ?? ''
   const header = preVLines.join('\n') + '\n%%stretchlast 1\n' + vLine
 
