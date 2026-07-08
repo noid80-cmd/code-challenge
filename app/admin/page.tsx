@@ -138,8 +138,7 @@ export default function AdminPage() {
         level: rhythmLevel,
       })
       if (error) {
-        setError(error.message.includes('duplicate') || error.message.includes('unique')
-          ? `seq${seq} 저장 실패: 이미 있어요.` : error.message)
+        setError(`seq${seq} 오류: ${error.message}`)
         setSaving(false); return
       }
     }
