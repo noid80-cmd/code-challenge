@@ -23,6 +23,9 @@ function getNoteDur(tok: string): number {
 }
 
 function beamBar(bar: string): string {
+  // Preserve broken rhythm notation — abcjs handles > and < directly
+  if (bar.includes('>') || bar.includes('<')) return bar
+
   const noteRe = /\(\d+(?:[Bz][0-9]*\/?)+|[Bz][0-9]*\/?/g
   const notes: Array<{ tok: string; dur: number; pos: number }> = []
   let cumPos = 0
@@ -39,11 +42,30 @@ function beamBar(bar: string): string {
   while (i < notes.length) {
     const cur = notes[i]
     const next = notes[i + 1]
+    const next2 = notes[i + 2]
     if (cur.tok.startsWith('(')) { out.push(cur.tok); i++; continue }
+
+    // B B/ B/ → BB/B/ (8th + two 16ths beamed)
+    if (cur.tok === 'B' && cur.dur === 1 && cur.pos % 2 === 0 &&
+        next?.tok === 'B/' && next2?.tok === 'B/') {
+      out.push('BB/B/'); i += 3; continue
+    }
+    // B/ B/ B → B/B/B (two 16ths + 8th beamed)
+    if (cur.tok === 'B/' && cur.pos % 2 === 0 &&
+        next?.tok === 'B/' && next2?.tok === 'B') {
+      out.push('B/B/B'); i += 3; continue
+    }
+    // B/ B B/ → B/BB/ (16th + 8th + 16th beamed)
+    if (cur.tok === 'B/' && cur.pos % 2 === 0 &&
+        next?.tok === 'B' && next2?.tok === 'B/') {
+      out.push('B/BB/'); i += 3; continue
+    }
+    // BB → beam two 8ths
     if (cur.tok === 'B' && cur.dur === 1 && cur.pos % 2 === 0 &&
         next?.tok === 'B' && next.dur === 1) {
       out.push('BB'); i += 2; continue
     }
+    // B/ group → beam 16ths within beat
     if (cur.tok === 'B/' && cur.dur === 0.5) {
       const beatEnd = (Math.floor(cur.pos / 2) + 1) * 2
       let j = i

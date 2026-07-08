@@ -227,8 +227,8 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
       rhythmLevel === 'beginner'
         ? `초급: BB·z2·B2·z B·B z 블록만. 예시: BB z2 BB z2 / z2 BB z2 BB / B2 z2 BB z2 / z B BB B2 z2`
         : rhythmLevel === 'advanced'
-        ? `고급: 자유 조합(합계=8). 다양한 쉼표·점리듬 사용.\n쉼표: z/=16분(B/그룹내) z=8분 z2=4분 z4=2분 z3=점4분 z>B=점8분쉼표+16분\n셋잇단쉼표(2단위): (3zBB (3BzB (3BBz / 2박3연음쉼표(4단위): (3z2B2B2 (3B2z2B2\n점리듬(2단위): B>z z>B\n예시: z/B/B/B/ z B (3zBB z2 / B>z (3BzB z B z>B / z4 z/B/B/B/ z B / z3 B z2 B/B/B/B/`
-        : `중급: 2단위×4 또는 4단위×1+2단위×2. 쉼표 다양하게.\n추가블록(2단위): z/B/B/B/ B/z/B/B/ z>B B>z (3zBB (3BzB (3BBz\n추가블록(4단위): z4 (3z2B2B2 (3B2z2B2\n예시: z/B/B/B/ z B (3BBB z2 / z>B (3BBB z B B/B/B/B/ / z4 B/B/B/B/ z B / (3BzB z B B/B/B/B/ z B`
+        ? `고급: 마디=8단위. 8분+16분 조합·붓점·쉼표 적극 활용.\n2단위블록(음표): B B/ B/=8분+16분+16분 B/ B/ B=16분+16분+8분 B/ B B/=싱코페이션 B>B=붓점 B<B=역붓점\n2단위블록(쉼표): z B/ B/ B B/ z/ B/ z/ B z>B B>z z2 (3zBB (3BzB\n4단위블록: (3B2B2B2 (3B2z2B2 z4\n예시: B B/ B/ z B (3zBB z2 / B>B z B B/ B/ B z B / z4 B B/ B/ z B / B/ B B/ z B B>B z2`
+        : `중급: 2단위×4 또는 4단위×1+2단위×2. 8분+16분 조합과 붓점 포함.\n2단위블록: BB B2 B/B/B/B/ B B/ B/ B/ B/ B B/ B B/ B>B B<B z2 z B B z z>B B>z (3BBB (3zBB (3BzB\n4단위블록: (3B2B2B2 (3B2z2B2 z4\n예시: B B/ B/ z B (3BBB z2 / B>B z B B/ B/ B/ z B / (3B2B2B2 B B/ B/ z B / B/ B B/ z B B>B z2`
 
     const rhythmPrompt = `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
