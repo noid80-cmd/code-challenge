@@ -55,7 +55,6 @@ function fixBeaming(abc: string): string {
 }
 
 function toPercFormat(abc: string): string {
-  // K:perc causes abcjs to render slash/x noteheads — use K:C for standard ovals
   return abc
     .replace(/^K:perc$/gim, 'K:C')
     .replace(/^(V:\d+[^\n]*)/gm, (m) => {
@@ -88,23 +87,20 @@ function splitIntoChunks(abc: string, chunkSize: number): string[] {
 
   if (allBars.length === 0) return [text]
 
-  // %%stretchlast must be placed BEFORE the V: declaration so it lands in the
-  // tune-level header context (abctune.formatting) that layout.js reads.
-  // Placing it after V: puts it in the voice/body context which is ignored.
+  // %%stretchlast must be before V: so it lands in tune-level formatting context.
+  // Q: (tempo) removed to save vertical space; M: (time sig) kept for layout/stretch.
   const preVLines = headerLines.filter(l => {
     const t = l.trim()
-    // Q: (tempo) removed to save vertical space; M: (time sig) kept for layout/stretch
     return !t.startsWith('V:') && !t.startsWith('Q:')
   })
   const vLine = headerLines.find(l => l.trim().startsWith('V:')) ?? ''
   const header = preVLines.join('\n') + '\n%%stretchlast 1\n' + vLine
 
-  // Each chunk = separate tune so %%stretchlast applies to every line individually
   const chunks: string[] = []
   for (let i = 0; i < allBars.length; i += chunkSize) {
     const slice = allBars.slice(i, i + chunkSize)
     const isLast = i + chunkSize >= allBars.length
-    // Only first chunk shows M: (time sig); subsequent chunks suppress it to avoid repetition
+    // Only first chunk shows M: (time sig) to avoid repeating it every 2 bars
     const chunkHeader = i === 0 ? header : header.replace(/^M:[^\n]*\n?/m, '')
     chunks.push(chunkHeader + '\n' + '|' + slice.join('|') + (isLast ? '|]' : '|'))
   }
@@ -115,62 +111,63 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
 
-  // Render each pattern as a single tune so abcjs auto-wraps rows.
-  // Interior rows fill naturally; only the last row needs stretchlast.
-  const processedPatterns = useMemo(
-    () => patterns.map(p => {
-      const lines = p.abc.replace(/\\n/g, '\n').split('\n')
-      // Insert %%stretchlast 1 just before the V: line
-      const vIdx = lines.findIndex(l => l.trim().startsWith('V:'))
-      if (vIdx >= 0) lines.splice(vIdx, 0, '%%stretchlast 1')
-      return fixBeaming(toPercFormat(lines.join('\n')))
-    }),
+  // Split each pattern into 2-bar chunks so every row is a separate tune.
+  // This guarantees stretchlast applies to every row (each chunk is its only line).
+  const processedChunks = useMemo(
+    () => patterns.map(p => ({
+      label: p.label,
+      chunks: splitIntoChunks(p.abc, 2).map(c => fixBeaming(toPercFormat(c))),
+    })),
     [patterns]
   )
 
   useEffect(() => {
     if (!containerRef.current) return
     const containerWidth = containerRef.current.clientWidth
-    const staffwidth = Math.max(containerWidth - 50, 180)
 
     import('abcjs').then(ABCJS => {
-      processedPatterns.forEach((abc, i) => {
-        const el = document.getElementById(`rv-${uid}-${i}`)
-        if (!el) return
-        ABCJS.renderAbc(`rv-${uid}-${i}`, abc, {
-          staffwidth,
-          format: { stretchlast: 1 },
-          scale: 0.8,
-          foregroundColor: '#f0ece0',
-          selectionColor: 'none',
-          paddingtop: 4,
-          paddingbottom: 4,
-          paddingright: 0,
-          paddingleft: 0,
-          minPadding: 0,
-        } as Parameters<typeof ABCJS.renderAbc>[2])
-        const svg = el.querySelector('svg')
-        if (svg) {
-          svg.removeAttribute('height')
-          svg.style.width = '100%'
-          svg.style.display = 'block'
-          svg.style.overflow = 'visible'
-        }
+      processedChunks.forEach((pattern, pi) => {
+        pattern.chunks.forEach((abc, ci) => {
+          const el = document.getElementById(`rv-${uid}-${pi}-${ci}`)
+          if (!el) return
+          ABCJS.renderAbc(`rv-${uid}-${pi}-${ci}`, abc, {
+            staffwidth: containerWidth,
+            // format.stretchlast=1 forces every row (the only/last line of each chunk) to fill staffwidth
+            format: { stretchlast: 1 },
+            scale: 0.8,
+            foregroundColor: '#f0ece0',
+            selectionColor: 'none',
+            paddingtop: ci === 0 ? 4 : 0,
+            paddingbottom: 0,
+            paddingright: 0,
+            paddingleft: 0,
+            minPadding: 0,
+          } as Parameters<typeof ABCJS.renderAbc>[2])
+          const svg = el.querySelector('svg')
+          if (svg) {
+            svg.removeAttribute('height')
+            svg.style.width = '100%'
+            svg.style.display = 'block'
+            svg.style.overflow = 'visible'
+          }
+        })
       })
     })
-  }, [processedPatterns, uid])
+  }, [processedChunks, uid])
 
   return (
     <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {patterns.map((p, i) => (
-        <div key={i}>
-          {p.label && (
+      {processedChunks.map((pattern, pi) => (
+        <div key={pi}>
+          {pattern.label && (
             <div style={{ fontSize: 12, fontWeight: 700, color: '#a0988c', marginBottom: 8, letterSpacing: '0.05em' }}>
-              {p.label}
+              {pattern.label}
             </div>
           )}
           <div style={{ background: 'rgba(240,236,224,0.04)', borderRadius: 12, overflow: 'hidden' }}>
-            <div id={`rv-${uid}-${i}`} />
+            {pattern.chunks.map((_, ci) => (
+              <div key={ci} id={`rv-${uid}-${pi}-${ci}`} />
+            ))}
           </div>
         </div>
       ))}
