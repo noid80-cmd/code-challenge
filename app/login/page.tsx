@@ -44,7 +44,9 @@ export default function LoginPage() {
         // Hard redirect — ensures cookies are committed before next server request
         window.location.href = from
       } else {
-        localStorage.removeItem('sb_rt')
+        // Do NOT remove sb_rt — failure may be transient (network, Supabase hiccup).
+        // Leave it so future recovery attempts can still try the same token.
+        // If the token is truly expired, the user logs in and a fresh token is stored.
         setRecovering(false)
       }
     })

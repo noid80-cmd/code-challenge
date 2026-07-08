@@ -14,6 +14,12 @@ export function SessionSync() {
       }
     })
 
+    // On mount, immediately persist the refresh token if a session exists.
+    // This ensures sb_rt is stored even when onAuthStateChange fires late.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.refresh_token) localStorage.setItem('sb_rt', session.refresh_token)
+    })
+
     // iOS PWA clears cookies when the app backgrounds. On return, the middleware
     // would redirect to /login before React can render. Instead, proactively
     // refresh the session the moment the app becomes visible — this writes fresh
@@ -27,9 +33,9 @@ export function SessionSync() {
       const { data } = await supabase.auth.refreshSession({ refresh_token: rt })
       if (data.session) {
         localStorage.setItem('sb_rt', data.session.refresh_token)
-      } else {
-        localStorage.removeItem('sb_rt')
       }
+      // Do NOT remove sb_rt on failure — it may be a transient network error.
+      // The login page recovery will handle truly expired tokens gracefully.
     }
 
     document.addEventListener('visibilitychange', handleVisibility)
