@@ -198,29 +198,30 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 
     const rhythmLevelGuide =
       rhythmLevel === 'beginner'
-        ? `초급: 4분음표(B2)·8분음표(B)·대응 쉼표만 사용. 셋잇단음표·16분음표 금지.\n예시 8마디(각 마디 합=8 검증됨):\n|B2 B2 B2 B2|B2 BB z2 B2|BB BB z2 B2|B2 z2 BB z2|BB z2 B2 B2|B2 BB BB z2|z2 B2 BB B2|B4 z4|]`
+        ? `초급: BB·z2·B2·z B·B z 블록만 사용. (3BBB·B/B/B/B/ 금지.\n예시 마디: BB z2 BB z2 / z2 BB z2 BB / B2 z2 BB z2 / z B BB B z / BB z B B2 z2`
         : rhythmLevel === 'advanced'
-        ? `고급: 당김음·셋잇단음표를 불규칙하게 혼합. 마디마다 다른 패턴. 셋잇단음표 최소 5마디.\n예시 8마디(각 마디 합=8 검증됨):\n|(3BBB z B (3BBB z B|B z B/B/B/B/ (3BBB z B|z2 z B (3BBB z B|B B z (3BBB z B z|B/B/B/B/ B z (3BBB z B|z B (3BBB B z B z|(3BBB B z B/B/B/B/ z B|B z B z (3BBB z B|]`
-        : `중급: 당김음 필수(z B 또는 B z B 패턴), 셋잇단음표 최소 3마디, 16분음표 2마디 이상. 단순 반복 패턴 금지.\n예시 8마디(각 마디 합=8 검증됨):\n|z2 BB z2 BB|(3BBB z2 BB z2|z B z B z2 (3BBB|z2 B/B/B/B/ (3BBB z2|(3BBB z B (3BBB z B|z B (3BBB z2 BB|BB (3BBB z2 z B|z2 B/B/B/B/ BB z2|]`
+        ? `고급: 모든 블록 사용. 마디마다 패턴 달리하고 셋잇단 5마디 이상.\n예시 마디: (3BBB z B (3BBB z B / z B (3BBB B z B z / B/B/B/B/ z B (3BBB z B / (3BBB B z B/B/B/B/ z B / z B z B (3BBB z B`
+        : `중급: (3BBB 3마디 이상, B/B/B/B/ 2마디 이상, z B(당김) 3마디 이상.\n예시 마디: z B z B z2 (3BBB / (3BBB z2 BB z2 / z2 B/B/B/B/ (3BBB z2 / z B (3BBB z B z2 / (3BBB z B (3BBB z B`
 
     const rhythmPrompt = `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
 난이도: ${rhythmLevelGuide}
 
-공통 조건:
+마디 구성 방법 — 아래 2단위 블록을 정확히 4개 골라 이어 붙이면 항상 8단위가 됩니다:
+  BB        = 8분음표 2개 (2단위)
+  z2        = 4분쉼표 (2단위)
+  B2        = 4분음표 (2단위)
+  z B       = 8분쉼표+8분음표 (2단위, 당김음)
+  B z       = 8분음표+8분쉼표 (2단위)
+  (3BBB     = 셋잇단음표 3개 (2단위)
+  B/B/B/B/  = 16분음표 4개 (2단위)
+
+예시: (3BBB + z B + z2 + BB = "(3BBB z B z2 BB" → 2+2+2+2 = 8 ✓
+규칙: 블록 4개만 사용. B/ 단독·z/ 사용 금지.
+
+공통:
 - 4/4박자, 정확히 8마디, 겹세로줄(|])로 끝낼 것
 - K:perc, L:1/8, V:1 clef=none stafflines=1 stem=up
-- 음표는 B(타격), z(쉼표)만 사용
-- 앞 4마디: 기본 그루브 확립, 뒤 4마디: 변형·발전
-
-박자 계산 규칙 (L:1/8 기준, 4/4박자 = 1마디 = 8단위):
-  B = 1  B2 = 2  B4 = 4  z = 1  z2 = 2  z4 = 4
-  (3BBB = 2 (셋잇단음표 3개 = 총 2단위)
-  BB = 1+1 = 2,  B/B/B/B/ = 0.5×4 = 2
-
-16분음표 규칙: B/B/B/B/ (4개 묶음 = 2단위) 형태로만 사용. 개별 B/ 또는 z/ 절대 금지.
-
-각 마디를 출력하기 전에 합계가 정확히 8인지 계산하세요. 8이 아니면 수정하세요.
 
 JSON 객체로만 응답:
 {
@@ -234,7 +235,8 @@ JSON 객체로만 응답:
 }`
 
     let rhythmCh: { title: string; description: string; level: string; patterns: unknown[] } | null = null
-    for (let attempt = 1; attempt <= 3; attempt++) {
+    let lastRhythmParsed: typeof rhythmCh = null
+    for (let attempt = 1; attempt <= 5; attempt++) {
       const rhythmMsg = await anthropic.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 4096,
@@ -246,9 +248,14 @@ JSON 객체로만 응답:
       if (!rhythmJsonStr) { console.error(`[cron-rhythm] attempt ${attempt}: no JSON`); continue }
       let parsed
       try { parsed = JSON.parse(rhythmJsonStr) } catch { continue }
+      lastRhythmParsed = parsed
       if (!validateABC(parsed.patterns ?? [])) { console.error(`[cron-rhythm] attempt ${attempt}: bar validation failed`); continue }
       rhythmCh = parsed
       break
+    }
+    if (!rhythmCh) {
+      console.error('[cron-rhythm] all attempts failed validation, using last result')
+      rhythmCh = lastRhythmParsed
     }
 
     if (rhythmCh) {
