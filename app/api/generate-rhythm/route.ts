@@ -232,8 +232,7 @@ export async function POST() {
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY가 없어요.' }, { status: 500 })
   }
-  const r = Math.random()
-  const level = r < 0.3 ? 'beginner' : r < 0.8 ? 'intermediate' : 'advanced'
+  const level = Math.random() < 0.7 ? 'intermediate' : 'advanced'
 
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })

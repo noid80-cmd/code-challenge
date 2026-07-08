@@ -220,8 +220,7 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
   let rhythmTitle: string | null = existingRhythm?.title ?? null
 
   if (!existingRhythm) {
-    const rRand = Math.random()
-    const rhythmLevel = rRand < 0.3 ? 'beginner' : rRand < 0.8 ? 'intermediate' : 'advanced'
+    const rhythmLevel = Math.random() < 0.7 ? 'intermediate' : 'advanced'
 
     const rhythmLevelGuide =
       rhythmLevel === 'beginner'
