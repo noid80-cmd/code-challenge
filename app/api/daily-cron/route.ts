@@ -77,13 +77,17 @@ function parseBarSum(bar: string): number {
 function validateABC(patterns: Array<{ abc: string }>): boolean {
   for (const p of patterns) {
     const text = (p.abc as string).replace(/\\n/g, '\n')
-    // Reject 16th rests (z/) and duplets (2 — non-standard in drum notation
+    // Reject 16th rests, duplets, and notes/rests longer than 2 units (B4, B8, z4…)
     if (/z\//.test(text)) {
       console.error(`[cron-rhythm] 16th rest (z/) found — not standard`)
       return false
     }
     if (/\(2/.test(text)) {
       console.error(`[cron-rhythm] duplet (2 found — not standard`)
+      return false
+    }
+    if (/[Bz][3-9]/.test(text)) {
+      console.error(`[cron-rhythm] note/rest ≥3 units (B4/B8/z4 etc) — not in block vocabulary`)
       return false
     }
     const barLines = text.split('\n').filter((l: string) => l.trim().startsWith('|'))
@@ -237,7 +241,7 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 ❌ 잘못된 예: (3B2B2B2 + z B + (3BBB + z2 = 4+2+2+2 = 10 ✗ (5박!)
    → (3B2B2B2 사용 시 블록은 총 3개(자신 1 + 2단위 2)만 사용
 
-절대 금지: B/ 단독, z/, (2 사용 금지
+절대 금지: B/ 단독, z/, (2, B4, B8, z4, z8 등 3단위 이상 단일음표 사용 금지
 
 공통:
 - 4/4박자, 정확히 8마디, 겹세로줄(|])로 끝낼 것
