@@ -66,15 +66,9 @@ function parseBarSum(bar: string): number {
 function validateABC(patterns: Array<{ abc: string }>): boolean {
   for (const p of patterns) {
     const text = (p.abc as string).replace(/\\n/g, '\n')
-    // Reject 16th rests (z/) — never standard in drum notation
+    // Reject 16th rests (z/) — non-standard in drum notation
     if (/z\//.test(text)) {
       console.error(`[cron-rhythm] 16th rest (z/) found — not standard`)
-      return false
-    }
-    // 16th notes (B/) must come in groups of 4
-    const sixteenths = (text.match(/B\//g) || []).length
-    if (sixteenths % 4 !== 0) {
-      console.error(`[cron-rhythm] ${sixteenths} 16th notes — must be multiple of 4`)
       return false
     }
     const barLines = text.split('\n').filter((l: string) => l.trim().startsWith('|'))
