@@ -76,7 +76,8 @@ export async function POST(req: NextRequest) {
       messages: [{ role: 'user', content: buildPrompt(level) }],
     })
     const text = message.content[0].type === 'text' ? message.content[0].text : ''
-    const jsonMatch = text.match(/\[[\s\S]*\]/)
+    // Match a JSON array of objects: starts with [{ and ends with }]
+    const jsonMatch = text.match(/\[\s*\{[\s\S]*\}\s*\]/)
     if (!jsonMatch) {
       console.error('[generate-rhythm] no JSON array in response:', text.slice(0, 500))
       return NextResponse.json({ error: `파싱 실패: ${text.slice(0, 200)}` }, { status: 500 })
