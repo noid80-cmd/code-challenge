@@ -116,6 +116,7 @@ function calcStreak(dates: string[]) {
 export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [challenge, setChallenge] = useState<Challenge | null>(null)
+  const [extraChallenges, setExtraChallenges] = useState<Challenge[]>([])
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest')
   const [filterProg, setFilterProg] = useState<number | 'all'>('all')
@@ -134,11 +135,13 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
 
     const { date: chDate, isBeforeNoon } = challengeDate()
     setIsBeforeNoon(isBeforeNoon)
-    const { data: ch, error: chError } = await supabase.from('challenges').select('*')
+    const { data: chAll, error: chError } = await supabase.from('challenges').select('*')
       .eq('date', chDate).eq('type', type)
-      .order('created_at', { ascending: false }).limit(1).maybeSingle()
+      .order('seq', { ascending: true })
     if (chError) console.error('[ChallengeFeed] challenge query error:', chError)
+    const ch = chAll?.[0] ?? null
     setChallenge(ch)
+    setExtraChallenges(chAll?.slice(1) ?? [])
 
     if (ch) {
       const { data: subs } = await supabase
@@ -413,6 +416,41 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
               )}
             </div>
           )}
+          {extraChallenges.map(ec => (
+            <div key={ec.id} style={{
+              marginTop: 16,
+              background: 'linear-gradient(145deg, #111110, #0d0d0c)',
+              border: '1px solid rgba(240,236,224,0.2)', borderRadius: 22, padding: 22,
+              boxShadow: '0 0 0 1px rgba(240,236,224,0.06), 0 24px 60px rgba(240,236,224,0.1)',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                <h2 style={{ fontSize: 20, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.025em', margin: 0, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {ec.title}
+                </h2>
+                {ec.level && (() => {
+                  const levelMap: Record<string, { label: string; color: string; bg: string; border: string }> = {
+                    beginner:     { label: '초급', color: '#6fcf8a', bg: 'rgba(111,207,138,0.12)', border: 'rgba(111,207,138,0.3)' },
+                    intermediate: { label: '중급', color: '#f0c060', bg: 'rgba(240,192,96,0.12)',  border: 'rgba(240,192,96,0.3)'  },
+                    advanced:     { label: '고급', color: '#e07060', bg: 'rgba(224,112,96,0.12)',  border: 'rgba(224,112,96,0.3)'  },
+                  }
+                  const lv = levelMap[ec.level] ?? levelMap.intermediate
+                  return <span style={{ fontSize: 11, fontWeight: 800, color: lv.color, background: lv.bg, border: `1px solid ${lv.border}`, borderRadius: 7, padding: '3px 9px' }}>{lv.label}</span>
+                })()}
+              </div>
+              {ec.description && ec.description !== ec.title && (
+                <p style={{ fontSize: 13, color: '#605850', lineHeight: 1.7, marginBottom: 18 }}>{ec.description}</p>
+              )}
+              <RhythmViewer patterns={ec.chords?.patterns ?? []} />
+              <div style={{ marginTop: 16 }}>
+                <Link href={`/upload?type=${type}&challenge=${ec.id}`} style={{
+                  display: 'block', padding: '14px', borderRadius: 13,
+                  background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                  color: '#0a0a08', fontSize: 14, fontWeight: 800, textAlign: 'center',
+                  boxShadow: '0 6px 24px rgba(240,236,224,0.4)',
+                }}>챌린지 참여하기</Link>
+              </div>
+            </div>
+          ))}
         </section>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -28, marginBottom: 28 }}>

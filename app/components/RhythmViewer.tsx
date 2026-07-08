@@ -99,13 +99,16 @@ function splitIntoChunks(abc: string, chunkSize: number): string[] {
   const vLine = headerLines.find(l => l.trim().startsWith('V:')) ?? ''
   const header = preVLines.join('\n') + '\n%%stretchlast 1\n' + vLine
 
-  const tuneLines: string[] = []
+  // Each chunk = separate tune so %%stretchlast applies to every line individually
+  const chunks: string[] = []
   for (let i = 0; i < allBars.length; i += chunkSize) {
     const slice = allBars.slice(i, i + chunkSize)
     const isLast = i + chunkSize >= allBars.length
-    tuneLines.push('|' + slice.join('|') + (isLast ? '|]' : '|'))
+    // Only first chunk shows M: (time sig); subsequent chunks suppress it to avoid repetition
+    const chunkHeader = i === 0 ? header : header.replace(/^M:[^\n]*\n?/m, '')
+    chunks.push(chunkHeader + '\n' + '|' + slice.join('|') + (isLast ? '|]' : '|'))
   }
-  return [header + '\n' + tuneLines.join('\n')]
+  return chunks
 }
 
 export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {

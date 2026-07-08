@@ -113,9 +113,16 @@ export default function AdminPage() {
     }
     setSaving(true); setError(''); setSuccess('')
     const supabase = createClient()
+    // seq: 같은 날 리듬챌린지 개수 + 1 (하루 여러 개 허용)
+    const { data: existing } = await supabase.from('challenges')
+      .select('seq').eq('date', selectedDate).eq('type', 'rhythm')
+      .order('seq', { ascending: false }).limit(1).maybeSingle()
+    const seq = (existing?.seq ?? 0) + 1
+
     const { error } = await supabase.from('challenges').insert({
       date: selectedDate,
       type: 'rhythm',
+      seq,
       title: rhythmDraft.title.trim(),
       description: rhythmDraft.description.trim() || null,
       chords: { patterns: rhythmDraft.patterns },
@@ -123,9 +130,9 @@ export default function AdminPage() {
     })
     if (error) {
       setError(error.message.includes('duplicate') || error.message.includes('unique')
-        ? `${selectedDate} 리듬 챌린지가 이미 있어요.` : error.message)
+        ? `${selectedDate} 리듬 챌린지 seq${seq}가 이미 있어요.` : error.message)
     } else {
-      setSuccess(`${selectedDate} 리듬 챌린지가 저장됐어요!`)
+      setSuccess(`${selectedDate} 리듬 챌린지 #${seq} 저장됐어요!`)
       setRhythmDraft(null); await loadChallenges()
     }
     setSaving(false)
