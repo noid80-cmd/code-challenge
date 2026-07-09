@@ -249,9 +249,19 @@ JSON 객체로만 응답:
   ]
 }`
 
+    // Pre-verified fallback: all bars sum to exactly 8 units (L:1/8, 4/4)
+    const RHYTHM_FALLBACK = {
+      title: '드럼 초견 챌린지',
+      description: '16분음표·셋잇단음표·붓점 리듬을 포함한 중급 챌린지입니다.',
+      level: 'intermediate',
+      patterns: [
+        { label: '패턴 1', abc: 'X:1\nM:4/4\nL:1/8\nQ:1/4=100\nK:perc\nV:1 clef=none stafflines=1 stem=up\n|BB z2 BB z2|z2 BB z2 BB|B B/ B/ z B (3BBB z2|B/ B B/ z B (3BzB z2|B>B (3BBB z B z2|(3B2B2B2 B B/ B/ z B|z4 B/ B/ B (3BBB|B B/ B/ (3BzB z B z2|]' },
+        { label: '패턴 2', abc: 'X:1\nM:4/4\nL:1/8\nQ:1/4=100\nK:perc\nV:1 clef=none stafflines=1 stem=up\n|B/ B/ B (3BBB z B z2|B B/ B/ (3BBB z B z2|B/ B B/ z B B/ B/ B z B|B<B (3BBB z B z2|B>B z B B/ B/ B z B|z4 B B/ B/ z B|B/ B/ B (3BzB z B z2|B/ B B/ (3BzB z B z2|]' },
+      ],
+    }
+
     let rhythmCh: { title: string; description: string; level: string; patterns: unknown[] } | null = null
-    let lastRhythmParsed: typeof rhythmCh = null
-    for (let attempt = 1; attempt <= 5; attempt++) {
+    for (let attempt = 1; attempt <= 10; attempt++) {
       const rhythmMsg = await anthropic.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 4096,
@@ -263,13 +273,13 @@ JSON 객체로만 응답:
       if (!rhythmJsonStr) { console.error(`[cron-rhythm] attempt ${attempt}: no JSON`); continue }
       let parsed
       try { parsed = JSON.parse(rhythmJsonStr) } catch { continue }
-      lastRhythmParsed = parsed
       if (!validateABC(parsed.patterns ?? [])) { console.error(`[cron-rhythm] attempt ${attempt}: bar validation failed`); continue }
       rhythmCh = parsed
       break
     }
     if (!rhythmCh) {
-      console.error('[cron-rhythm] all attempts failed validation, skipping rhythm challenge')
+      console.error('[cron-rhythm] all 10 attempts failed — using hardcoded fallback')
+      rhythmCh = RHYTHM_FALLBACK
     }
 
     if (rhythmCh) {
