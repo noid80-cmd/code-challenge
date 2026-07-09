@@ -108,10 +108,6 @@ function validateABC(patterns: Array<{ abc: string }>): boolean {
           console.error(`[cron-rhythm] bar sum=${sum}: "${bar}"`)
           return false
         }
-        if (bar.trim().endsWith('z/')) {
-          console.error(`[cron-rhythm] bar ends with z/: "${bar}"`)
-          return false
-        }
       }
     }
   }
@@ -247,7 +243,6 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 
 ⚠️ ${zReq}
 ⚠️ (3BBB=2단위 / (3B2B2B2=4단위 혼동 금지
-⚠️ 마디 마지막 블록으로 B B/ z/ 또는 z B/ z/ 배치 금지
 
 ${rhythmExamples}
 
