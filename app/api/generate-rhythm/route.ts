@@ -98,6 +98,11 @@ function validateABC(patterns: Array<{ abc: string }>): boolean {
           console.error(`[rhythm] bar sum=${sum} (expected 8): "${bar}"`)
           return false
         }
+        // Ban bars ending with z/ — looks visually short before the barline
+        if (bar.trim().endsWith('z/')) {
+          console.error(`[rhythm] bar ends with z/ (16th rest at end): "${bar}"`)
+          return false
+        }
       }
     }
   }
@@ -151,6 +156,7 @@ ${blockMenu}
 
 ⚠️ ${zReq}
 ⚠️ (3BBB=2단위 블록 / (3B2B2B2=4단위 블록 — 혼동 금지
+⚠️ 마디 마지막 블록으로 B B/ z/ 또는 z B/ z/ 배치 금지 (마지막은 반드시 B 또는 z2 등으로 끝낼 것)
 
 ${examples}
 
