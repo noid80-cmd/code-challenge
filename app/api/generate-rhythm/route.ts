@@ -1,164 +1,111 @@
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 
-export const maxDuration = 120  // Vercel: allow up to 2 minutes
+export const maxDuration = 120
 
-// ── ABC bar duration parser ──────────────────────────────────────────────────
-// L:1/8: B=1, B2=2, B/=0.5, z=1, z2=2, z3=3(점4분), z4=4(2분), z/=0.5
-// (3BBB=2, (3B2B2B2=4, B>z=1.5+0.5=2, z>B=1.5+0.5=2
-function parseBarSum(bar: string): number {
-  let total = 0
-  let i = 0
-  const s = bar.trim()
-  let pendingMod = 1  // modifier from preceding > or <
-
-  while (i < s.length) {
-    if (s[i] === ' ') { i++; continue }
-
-    if (s[i] === '(') {
-      i++
-      let nStr = ''
-      while (i < s.length && /\d/.test(s[i])) { nStr += s[i]; i++ }
-      const n = parseInt(nStr || '3')
-      const mDefault = n === 2 ? 3 : n === 3 ? 2 : n === 4 ? 3 : n === 5 ? 4 : 2
-      // Peek at first note for base duration: (3BBB→1→2, (3B2B2B2→2→4
-      let peekI = i
-      while (peekI < s.length && s[peekI] === ' ') peekI++
-      let baseDur = 1
-      if (peekI < s.length && (s[peekI] === 'B' || s[peekI] === 'z')) {
-        peekI++
-        let basNumStr = ''
-        while (peekI < s.length && /\d/.test(s[peekI])) { basNumStr += s[peekI]; peekI++ }
-        if (basNumStr) baseDur = parseInt(basNumStr)
-        else if (peekI < s.length && s[peekI] === '/') baseDur = 0.5
-      }
-      total += mDefault * baseDur
-      pendingMod = 1
-      let left = n
-      while (i < s.length && left > 0) {
-        if (s[i] === ' ') { i++; continue }
-        if (s[i] === 'B' || s[i] === 'z') {
-          left--; i++
-          while (i < s.length && /\d/.test(s[i])) i++
-          while (i < s.length && s[i] === '/') i++
-        } else break
-      }
-      continue
-    }
-
-    if (s[i] === 'B' || s[i] === 'z') {
-      i++
-      let numStr = ''
-      while (i < s.length && /\d/.test(s[i])) { numStr += s[i]; i++ }
-      const num = numStr ? parseInt(numStr) : 1
-      let slashes = 0
-      while (i < s.length && s[i] === '/') { slashes++; i++ }
-      const baseDur = slashes > 0 ? num / Math.pow(2, slashes) : num
-      const dur = baseDur * pendingMod
-      pendingMod = 1
-      // Broken rhythm: B>z = B×1.5, then z×0.5 (next note gets pendingMod=0.5)
-      if (i < s.length && s[i] === '>') {
-        total += dur * 1.5
-        pendingMod = 0.5
-        i++
-      } else if (i < s.length && s[i] === '<') {
-        total += dur * 0.5
-        pendingMod = 1.5
-        i++
-      } else {
-        total += dur
-      }
-      continue
-    }
-
-    i++
-  }
-  return total
+// All bars pre-verified: each = exactly 8 eighth-note units (4/4, L:1/8)
+const BAR_PATTERNS: Record<string, string> = {
+  A: 'BB z2 BB z2',
+  B: 'z2 BB z2 BB',
+  C: 'B B/ B/ z B (3BBB z2',
+  D: 'B/ B/ B z B (3BzB z2',
+  E: 'B/ B B/ z B (3BBB z2',
+  F: 'B>B z2 B>B z2',
+  G: 'B>B (3BBB z B z2',
+  H: 'B<B z B (3BBB z2',
+  I: '(3BzB z B B B/ B/ z2',
+  J: '(3B2B2B2 BB z2',
+  K: '(3B2B2B2 z2 BB',
+  L: '(3B2B2B2 z B B z',
+  M: 'z4 B B/ B/ z B',
+  N: 'z4 (3BBB z2',
+  O: 'B/B/B/B/ z B (3BBB z2',
+  P: 'B B/ z/ z B (3BBB z2',
+  Q: 'B/ z/ B z B (3BzB z2',
+  R: 'z/ B/ B z B (3BBB z2',
+  S: 'z B/ z/ z B (3BBB z2',
+  T: 'B>B B/ z/ B z B z2',
+  U: 'B>B z/ B/ B (3BzB z2',
+  V: '(3B2B2B2 B B/ z/ B/ z/ B',
+  W: 'z4 B B/ z/ B/ z/ B',
+  X: 'B B/ z/ B/ z/ B z B z2',
+  Y: 'z/ B/ B B B/ z/ (3BBB z2',
+  Z: 'B/ z/ B B B/ z/ (3BzB z2',
 }
 
-function validateABC(patterns: Array<{ abc: string }>): boolean {
-  for (const p of patterns) {
-    const text = (p.abc as string).replace(/\\n/g, '\n')
-    // Ban duplets and long notes (notes ≥4 units — rests of any length are OK)
-    if (/\(2/.test(text)) {
-      console.error(`[rhythm] duplet (2 found — not standard`)
-      return false
+function assemblePatternsABC(
+  aiPatterns: Array<{ label: string; bars: string[] }>
+): Array<{ label: string; abc: string }> | null {
+  const result: Array<{ label: string; abc: string }> = []
+  for (const p of aiPatterns) {
+    if (!Array.isArray(p.bars) || p.bars.length !== 8) {
+      console.error(`[rhythm] bars.length=${p.bars?.length ?? 'missing'}`)
+      return null
     }
-    if (/B[4-9]/.test(text)) {
-      console.error(`[rhythm] note B4 or longer — too long for percussion`)
-      return false
-    }
-    const barLines = text.split('\n').filter((l: string) => l.trim().startsWith('|'))
-    if (barLines.length === 0) return false
-    for (const barLine of barLines) {
-      const bars = barLine.trim().replace(/\|]$/, '|').split('|').filter((b: string) => b.trim() !== '')
-      for (const bar of bars) {
-        const sum = parseBarSum(bar)
-        if (Math.abs(sum - 8) > 0.01) {
-          console.error(`[rhythm] bar sum=${sum} (expected 8): "${bar}"`)
-          return false
-        }
+    const barTexts: string[] = []
+    for (const id of p.bars) {
+      const barText = BAR_PATTERNS[String(id).toUpperCase()]
+      if (!barText) {
+        console.error(`[rhythm] unknown pattern ID: "${id}"`)
+        return null
       }
+      barTexts.push(barText)
     }
+    const abc =
+      'X:1\nM:4/4\nL:1/8\nQ:1/4=100\nK:perc\nV:1 clef=none stafflines=1 stem=up\n|' +
+      barTexts.join('|') + '|]'
+    result.push({ label: String(p.label || `패턴 ${result.length + 1}`), abc })
   }
-  return true
+  return result.length >= 2 ? result : null
 }
 
-// ── Prompt builder ───────────────────────────────────────────────────────────
 function buildPrompt(level: string) {
-  // All block lists are pre-verified: each 2-unit block = exactly 2 eighth-note units
-  const blockMenu = `아래 블록 목록에서만 선택해 마디를 구성하세요. 합산 계산 불필요.
-마디 = [2단위 블록 × 4] 또는 [4단위 블록 × 1 + 2단위 블록 × 2]
-
-■ 2단위 블록 (각 = 정확히 2단위):
-  음표:  BB  B2  B B/ B/  B/ B/ B  B/ B B/  B>B  B<B  B/B/B/B/  (3BBB  (3zBB  (3BzB  (3BBz
-  z/포함: B B/ z/  B/ z/ B  z/ B/ B  z B/ z/
-  쉼표:  z2  z B  B z  z>B  B>z
-
-■ 4단위 블록 (각 = 정확히 4단위):
-  (3B2B2B2  z4  (3B2z2B2`
-
-  const examples = level === 'advanced'
-    ? `예시 마디 (블록 이어 붙이기):
-  [B B/ B/]+[z B]+[(3zBB]+[z2]         → B B/ B/ z B (3zBB z2
-  [B>B]+[B/ z/ B]+[z/ B/ B]+[z2]       → B>B B/ z/ B z/ B/ B z2
-  [z/ B/ B]+[B B/ z/]+[(3BBB]+[z2]     → z/ B/ B B B/ z/ (3BBB z2
-  [z>B]+[B/ z/ B]+[(3BzB]+[B B/ z/]   → z>B B/ z/ B (3BzB B B/ z/
-  [(3B2B2B2]+[B/ z/ B]+[z/ B/ B]       → (3B2B2B2 B/ z/ B z/ B/ B
-  [z4]+[B B/ z/]+[B/ z/ B]             → z4 B B/ z/ B/ z/ B
-  [B/ z/ B]+[z/ B/ B]+[B/ z/ B]+[z2]  → B/ z/ B z/ B/ B B/ z/ B z2
-  [B>B]+[z/ B/ B]+[B B/ z/]+[B<B]     → B>B z/ B/ B B B/ z/ B<B`
-    : `예시 마디 (블록 이어 붙이기):
-  [B B/ B/]+[z B]+[(3BBB]+[z2]         → B B/ B/ z B (3BBB z2
-  [B>B]+[B/ z/ B]+[z/ B/ B]+[z2]       → B>B B/ z/ B z/ B/ B z2
-  [B/ z/ B]+[z B]+[(3BzB]+[z2]         → B/ z/ B z B (3BzB z2
-  [z/ B/ B]+[B B/ z/]+[(3BBB]+[z2]     → z/ B/ B B B/ z/ (3BBB z2
-  [(3B2B2B2]+[B/ z/ B]+[z/ B/ B]       → (3B2B2B2 B/ z/ B z/ B/ B
-  [B<B]+[z B]+[(3BBB]+[B/ z/ B]        → B<B z B (3BBB B/ z/ B
-  [z4]+[B B/ z/]+[B/ z/ B]             → z4 B B/ z/ B/ z/ B
-  [z/ B/ B]+[z B]+[B>z]+[B/ z/ B]     → z/ B/ B z B B>z B/ z/ B`
-
-  const zReq = level === 'advanced'
-    ? '각 마디에 z/블록(B B/ z/ / B/ z/ B / z/ B/ B / z B/ z/) 최소 1개 포함'
-    : '8마디 전체에서 z/ 블록(B B/ z/ / B/ z/ B / z/ B/ B / z B/ z/)을 4개 이상 사용 (매 마디 필수 아님)'
-
   const levelLabel = level === 'advanced' ? '고급' : '중급'
+  const levelRule = level === 'advanced'
+    ? '각 패턴에 P~Z 중 최소 4개 포함 (나머지는 A~O)'
+    : '각 패턴에 P~Z 중 2~3개 포함 (나머지는 A~O)'
 
   return `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
 난이도: ${levelLabel}
-${blockMenu}
 
-⚠️ ${zReq}
-⚠️ (3BBB=2단위 블록 / (3B2B2B2=4단위 블록 — 혼동 금지
+아래 마디 패턴 라이브러리에서 각 패턴에 대해 정확히 8개 마디 ID를 선택하세요.
+각 패턴은 정확히 4박자입니다.
 
-${examples}
+[심플 패턴 A~O]
+A: BB z2 BB z2
+B: z2 BB z2 BB
+C: B B/ B/ z B (3BBB z2
+D: B/ B/ B z B (3BzB z2
+E: B/ B B/ z B (3BBB z2
+F: B>B z2 B>B z2
+G: B>B (3BBB z B z2
+H: B<B z B (3BBB z2
+I: (3BzB z B B B/ B/ z2
+J: (3B2B2B2 BB z2
+K: (3B2B2B2 z2 BB
+L: (3B2B2B2 z B B z
+M: z4 B B/ B/ z B
+N: z4 (3BBB z2
+O: B/B/B/B/ z B (3BBB z2
 
-공통 규칙:
-- 4/4박자, 정확히 8마디, 겹세로줄(|])로 끝낼 것
-- K:perc, L:1/8, V:1 clef=none stafflines=1 stem=up
-- 반드시 위 블록 목록에서만 선택할 것 (임의 조합 금지)
-- 절대 금지: B4·B8(음표), (2
+[16분쉼표(z/) 포함 패턴 P~Z]
+P: B B/ z/ z B (3BBB z2
+Q: B/ z/ B z B (3BzB z2
+R: z/ B/ B z B (3BBB z2
+S: z B/ z/ z B (3BBB z2
+T: B>B B/ z/ B z B z2
+U: B>B z/ B/ B (3BzB z2
+V: (3B2B2B2 B B/ z/ B/ z/ B
+W: z4 B B/ z/ B/ z/ B
+X: B B/ z/ B/ z/ B z B z2
+Y: z/ B/ B B B/ z/ (3BBB z2
+Z: B/ z/ B B B/ z/ (3BzB z2
+
+규칙:
+- ${levelRule}
+- 두 패턴이 서로 다른 리듬 특성을 갖도록 조합
+- 같은 ID 최대 2번 반복 가능
 
 JSON 객체로만 응답:
 {
@@ -166,19 +113,12 @@ JSON 객체로만 응답:
   "description": "간단한 설명 (1-2문장)",
   "level": "${level}",
   "patterns": [
-    {
-      "label": "패턴 1",
-      "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|...|]"
-    },
-    {
-      "label": "패턴 2",
-      "abc": "X:1\\nM:4/4\\nL:1/8\\nQ:1/4=100\\nK:perc\\nV:1 clef=none stafflines=1 stem=up\\n|...|]"
-    }
+    {"label": "패턴 1", "bars": ["C", "A", "G", "D", "R", "E", "J", "P"]},
+    {"label": "패턴 2", "bars": ["B", "H", "C", "Q", "A", "D", "M", "E"]}
   ]
 }`
 }
 
-// ── JSON extractor ───────────────────────────────────────────────────────────
 function extractJsonObject(text: string): string | null {
   const start = text.indexOf('{')
   if (start === -1) return null
@@ -200,7 +140,6 @@ function extractJsonObject(text: string): string | null {
   return null
 }
 
-// ── Route handler ────────────────────────────────────────────────────────────
 export async function POST() {
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY가 없어요.' }, { status: 500 })
@@ -211,39 +150,29 @@ export async function POST() {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     let challenge = null
-    let lastParsed = null
     for (let attempt = 1; attempt <= 5; attempt++) {
       const message = await client.messages.create({
         model: 'claude-sonnet-4-6',
-        max_tokens: 4096,
+        max_tokens: 1024,
         system: 'You are a JSON generator. Output only a valid JSON object. No explanations, no reasoning text, no markdown. Start your response directly with { and end with }.',
         messages: [{ role: 'user', content: buildPrompt(level) }],
       })
       const text = message.content[0].type === 'text' ? message.content[0].text : ''
       const jsonStr = extractJsonObject(text)
-      if (!jsonStr) {
-        console.error(`[generate-rhythm] attempt ${attempt}: no JSON in response`)
-        continue
-      }
+      if (!jsonStr) { console.error(`[generate-rhythm] attempt ${attempt}: no JSON`); continue }
       let parsed
       try { parsed = JSON.parse(jsonStr) } catch { continue }
-      lastParsed = parsed
-      if (!validateABC(parsed.patterns ?? [])) {
-        console.error(`[generate-rhythm] attempt ${attempt}: bar validation failed`)
-        continue
+
+      const assembled = assemblePatternsABC(parsed.patterns ?? [])
+      if (!assembled) { console.error(`[generate-rhythm] attempt ${attempt}: assembly failed`); continue }
+
+      challenge = {
+        title: String(parsed.title || '드럼 초견 챌린지'),
+        description: String(parsed.description || ''),
+        level,
+        patterns: assembled,
       }
-      // Log each bar's content + sum for debugging wrong-looking bars
-      for (const p of (parsed.patterns ?? [])) {
-        const dbgText = (p.abc as string).replace(/\\n/g, '\n')
-        const dbgLines = dbgText.split('\n').filter((l: string) => l.trim().startsWith('|'))
-        for (const dbgLine of dbgLines) {
-          const dbgBars = dbgLine.trim().replace(/\|]$/, '|').split('|').filter((b: string) => b.trim() !== '')
-          dbgBars.forEach((bar: string, idx: number) => {
-            console.log(`[rhythm-ok] a${attempt} ${(p as {label:string}).label} bar${idx+1}: ${parseBarSum(bar).toFixed(2)}u | "${bar.trim()}"`)
-          })
-        }
-      }
-      challenge = parsed
+      console.log(`[generate-rhythm] success attempt=${attempt} level=${level}`)
       break
     }
 
