@@ -48,9 +48,11 @@ export default function LandingPage() {
             width: 32, height: 32, borderRadius: '50%', overflow: 'hidden',
             background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 13, fontWeight: 800, color: '#0a0a08',
+            fontSize: 13, fontWeight: 800, color: '#0a0a08', flexShrink: 0,
           }}>
-            {(user.email ?? '?').slice(0, 1).toUpperCase()}
+            {(user.user_metadata?.avatar_url || user.user_metadata?.picture)
+              ? <img src={user.user_metadata.avatar_url || user.user_metadata.picture} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : (user.email ?? '?').slice(0, 1).toUpperCase()}
           </Link>
         ) : (
           <Link href="/login" style={{
@@ -62,7 +64,7 @@ export default function LandingPage() {
       </header>
 
       {/* 메인 */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px 60px' }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '15vh 20px 20px' }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.15em', color: '#403830', marginBottom: 12, textTransform: 'uppercase' }}>
             {dateStr}

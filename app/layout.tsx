@@ -33,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           style={{ position: 'fixed', bottom: 10, left: '50%', transform: 'translateX(-50%)',
             fontSize: 13, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.05em',
             textDecoration: 'underline', textUnderlineOffset: 3, zIndex: 9999, whiteSpace: 'nowrap' }}>
-          by KH Music
+          by KHMUSIC
         </a>
       </body>
       <Script id="sw-register" strategy="afterInteractive">{`
