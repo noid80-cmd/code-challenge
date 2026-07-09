@@ -106,102 +106,59 @@ function validateABC(patterns: Array<{ abc: string }>): boolean {
 
 // ── Prompt builder ───────────────────────────────────────────────────────────
 function buildPrompt(level: string) {
-  const levelGuide =
-    level === 'beginner'
-      ? `초급: BB·z2·B2·z B·B z 블록만 사용. 아래 블록 4개 이어 붙이면 항상 8단위.
-초급 예시 마디:
-  BB z2 BB z2
-  z2 BB z2 BB
-  B2 z2 BB z2
-  z B BB B2 z2
-  BB z B B2 z2
-  B2 BB z B z2
-  z2 z B BB BB
-  BB z2 z B B2`
-      : level === 'advanced'
-      ? `고급: 마디=8단위. 다양한 음표·쉼표 조합 적극 활용.
+  // All block lists are pre-verified: each 2-unit block = exactly 2 eighth-note units
+  const blockMenu = `아래 블록 목록에서만 선택해 마디를 구성하세요. 합산 계산 불필요.
+마디 = [2단위 블록 × 4] 또는 [4단위 블록 × 1 + 2단위 블록 × 2]
 
-단위 계산 규칙: B=1, B/=0.5, z=1, z/=0.5, z2=2, z4=4, (3BBB=2, (3B2B2B2=4
+■ 2단위 블록 (각 = 정확히 2단위):
+  음표:  BB  B2  B B/ B/  B/ B/ B  B/ B B/  B>B  B<B  B/B/B/B/  (3BBB  (3zBB  (3BzB  (3BBz
+  z/포함: B B/ z/  B/ z/ B  z/ B/ B  z B/ z/
+  쉼표:  z2  z B  B z  z>B  B>z
 
-2단위 블록 — 음표 조합 (각 블록 합계=2):
-  BB         = 1+1=2
-  B B/ B/    = 1+0.5+0.5=2  (셔플)
-  B/ B/ B    = 0.5+0.5+1=2
-  B/ B B/    = 0.5+1+0.5=2  (싱코페이션)
-  B>B        = 1.5+0.5=2    (붓점)
-  B<B        = 0.5+1.5=2    (역붓점)
-  B/B/B/B/   = 0.5×4=2
-  (3BBB      = 2
+■ 4단위 블록 (각 = 정확히 4단위):
+  (3B2B2B2  z4  (3B2z2B2`
 
-2단위 블록 — z/(16분쉼표) 포함 (각 합계=2):
-  B B/ z/    = 1+0.5+0.5=2  ← 16분쉼표
-  B/ z/ B    = 0.5+0.5+1=2  ← 16분쉼표
-  z/ B/ B    = 0.5+0.5+1=2  ← 16분쉼표
-  z B/ z/    = 1+0.5+0.5=2  ← 16분쉼표
-  B>z        = 1.5+0.5=2    ← 붓점+쉼표
-  z>B        = 1.5+0.5=2    ← 붓점+쉼표
+  const examples = level === 'advanced'
+    ? `예시 마디 (블록 이어 붙이기):
+  [B B/ B/]+[z B]+[(3zBB]+[z2]         → B B/ B/ z B (3zBB z2
+  [B>B]+[B/ z/ B]+[z/ B/ B]+[z2]       → B>B B/ z/ B z/ B/ B z2
+  [z/ B/ B]+[B B/ z/]+[(3BBB]+[z2]     → z/ B/ B B B/ z/ (3BBB z2
+  [z>B]+[B/ z/ B]+[(3BzB]+[B B/ z/]   → z>B B/ z/ B (3BzB B B/ z/
+  [(3B2B2B2]+[B/ z/ B]+[z/ B/ B]       → (3B2B2B2 B/ z/ B z/ B/ B
+  [z4]+[B B/ z/]+[B/ z/ B]             → z4 B B/ z/ B/ z/ B
+  [B/ z/ B]+[z/ B/ B]+[B/ z/ B]+[z2]  → B/ z/ B z/ B/ B B/ z/ B z2
+  [B>B]+[z/ B/ B]+[B B/ z/]+[B<B]     → B>B z/ B/ B B B/ z/ B<B`
+    : `예시 마디 (블록 이어 붙이기):
+  [B B/ B/]+[z B]+[(3BBB]+[z2]         → B B/ B/ z B (3BBB z2
+  [B>B]+[B/ z/ B]+[z/ B/ B]+[z2]       → B>B B/ z/ B z/ B/ B z2
+  [B/ z/ B]+[z B]+[(3BzB]+[z2]         → B/ z/ B z B (3BzB z2
+  [z/ B/ B]+[B B/ z/]+[(3BBB]+[z2]     → z/ B/ B B B/ z/ (3BBB z2
+  [(3B2B2B2]+[B/ z/ B]+[z/ B/ B]       → (3B2B2B2 B/ z/ B z/ B/ B
+  [B<B]+[z B]+[(3BBB]+[B/ z/ B]        → B<B z B (3BBB B/ z/ B
+  [z4]+[B B/ z/]+[B/ z/ B]             → z4 B B/ z/ B/ z/ B
+  [z/ B/ B]+[z B]+[B>z]+[B/ z/ B]     → z/ B/ B z B B>z B/ z/ B`
 
-2단위 블록 — 일반 쉼표:
-  z2=2  z B=2  B z=2  (3zBB=2  (3BzB=2
+  const zReq = level === 'advanced'
+    ? '각 마디에 z/블록(B B/ z/ / B/ z/ B / z/ B/ B / z B/ z/) 최소 2개 포함'
+    : '각 마디에 z/블록(B B/ z/ / B/ z/ B / z/ B/ B / z B/ z/) 최소 1개 포함'
 
-4단위 블록:
-  (3B2B2B2=4  z4=4  (3B2z2B2=4
-
-⚠️ z/(16분쉼표, 0.5단위) 각 패턴에 반드시 최소 2회 이상 사용
-
-고급 예시 마디 (합계=8):
-  B B/ z/ z B (3zBB z2          (2+2+2+2=8)  ← z/포함
-  B>B B/ z/ B z/ B/ B z2        (2+2+2+2=8)  ← z/포함
-  B/ z/ B z B (3BBB z2          (2+2+2+2=8)  ← z/포함
-  z/ B/ B B B/ z/ (3BBB z2      (2+2+2+2=8)  ← z/포함
-  z4 B B/ z/ z/ B/ B            (4+2+2=8)    ← z/포함
-  B/ z/ B B/ z/ B (3BzB z2      (2+2+2+2=8)  ← z/포함
-  (3B2B2B2 B/ z/ B z B          (4+2+2=8)    ← z/포함
-  z>B B/ z/ B (3BzB B B/ z/     (2+2+2+2=8)  ← z/포함`
-      : `중급: 2단위 블록×4 또는 4단위 블록×1+2단위×2.
-
-단위 계산 규칙: B=1, B/=0.5, z=1, z/=0.5, z2=2, z4=4, (3BBB=2, (3B2B2B2=4
-
-2단위 블록 — 음표 (각 합계=2):
-  BB=2  B2=2  B/B/B/B/=2
-  B B/ B/=2  B/ B/ B=2  B/ B B/=2
-  B>B=2  B<B=2
-  (3BBB=2  (3zBB=2  (3BzB=2  (3BBz=2
-
-2단위 블록 — z/(16분쉼표) 포함 (각 합계=2):
-  B B/ z/    = 1+0.5+0.5=2  ← 16분쉼표
-  B/ z/ B    = 0.5+0.5+1=2  ← 16분쉼표
-  z/ B/ B    = 0.5+0.5+1=2  ← 16분쉼표
-  z B/ z/    = 1+0.5+0.5=2  ← 16분쉼표
-
-2단위 블록 — 일반 쉼표 (각 합계=2):
-  z2=2  z B=2  B z=2  z>B=2  B>z=2
-
-4단위 블록:
-  (3B2B2B2=4  (3B2z2B2=4  z4=4
-
-⚠️ (3BBB=2단위 vs (3B2B2B2=4단위 구분 필수
-⚠️ z/(16분쉼표, 0.5단위) 각 패턴에 반드시 최소 2회 이상 사용
-
-중급 예시 마디 (합계=8):
-  B B/ z/ z B (3BBB z2           (2+2+2+2=8)  ← z/포함
-  B>B B/ z/ B z/ B/ B z2         (2+2+2+2=8)  ← z/포함
-  B/ z/ B z B (3BzB z2           (2+2+2+2=8)  ← z/포함
-  z/ B/ B B B/ z/ (3BBB z2       (2+2+2+2=8)  ← z/포함
-  (3B2B2B2 B/ z/ B z/ B/ B       (4+2+2=8)    ← z/포함
-  B<B z B (3BBB B/ z/ B          (2+2+2+2=8)  ← z/포함
-  z4 B B/ z/ B/ z/ B             (4+2+2=8)    ← z/포함
-  z/ B/ B z B B>z B/ z/ B        (2+2+2+2=8)  ← z/포함`
+  const levelLabel = level === 'advanced' ? '고급' : '중급'
 
   return `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
-난이도: ${levelGuide}
+난이도: ${levelLabel}
+${blockMenu}
+
+⚠️ ${zReq}
+⚠️ (3BBB=2단위 블록 / (3B2B2B2=4단위 블록 — 혼동 금지
+
+${examples}
 
 공통 규칙:
 - 4/4박자, 정확히 8마디, 겹세로줄(|])로 끝낼 것
 - K:perc, L:1/8, V:1 clef=none stafflines=1 stem=up
-- 각 마디는 반드시 합계 8단위 (±0)
-- 절대 금지: B4·B8(음표만, 쉼표 z4는 허용), (2, B/ 완전 단독 사용
+- 반드시 위 블록 목록에서만 선택할 것 (임의 조합 금지)
+- 절대 금지: B4·B8(음표), (2
 
 JSON 객체로만 응답:
 {
