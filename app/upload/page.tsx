@@ -313,55 +313,73 @@ export default function UploadPage() {
 
       {/* 카메라 오버레이 — 항상 DOM에 마운트, CSS로만 표시/숨김 */}
       <div style={{ position: 'fixed', inset: 0, background: '#000', zIndex: 100, display: recordMode ? 'flex' : 'none', flexDirection: 'column' }}>
-        {/* 코드 오버레이 */}
+        {/* 악보/코드 오버레이 */}
         <div style={{
           position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
-          background: 'linear-gradient(to bottom, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0) 100%)',
-          padding: '52px 16px 32px',
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.1) 100%)',
+          padding: '52px 16px 28px',
         }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(240,236,224,0.4)', letterSpacing: '0.12em', marginBottom: 12 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(240,236,224,0.4)', letterSpacing: '0.12em', marginBottom: 10 }}>
             {challenge?.title}
           </div>
-          {(() => {
-            const progressions = challenge?.chords?.progressions ?? []
-            const prog = progressions[selectedProgression]
-            if (!prog) return null
-            const measures = normalizeMeasures(prog.chords)
-            const rows: string[][][] = []
-            for (let i = 0; i < measures.length; i += 4) rows.push(measures.slice(i, i + 4))
-            return (
-              <div>
-                {progressions.length > 1 && (
-                  <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(240,236,224,0.4)', letterSpacing: '0.1em', marginBottom: 6 }}>
-                    {prog.label}
-                  </div>
-                )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {rows.map((row, ri) => (
-                    <div key={ri} style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
-                      {row.map((measure, mi) => (
-                        <div key={mi} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                          {mi > 0 && (
-                            <div style={{ width: 1.5, height: 28, background: 'rgba(240,236,224,0.35)', margin: '0 3px', borderRadius: 1 }} />
-                          )}
-                          {measure.map((chord, ci) => (
-                            <span key={ci} style={{
-                              padding: '5px 10px', borderRadius: 7,
-                              background: 'rgba(240,236,224,0.13)',
-                              border: '1px solid rgba(240,236,224,0.28)',
-                              backdropFilter: 'blur(8px)',
-                              fontSize: 14, fontWeight: 900, color: '#f8f4ec',
-                              letterSpacing: '-0.01em',
-                            }}>{chord}</span>
-                          ))}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
+          {challenge?.type === 'rhythm' ? (
+            // 리듬 챌린지: 악보 오버레이
+            (() => {
+              const patterns = challenge?.chords?.patterns ?? []
+              const pattern = patterns[selectedProgression]
+              if (!pattern) return null
+              return (
+                <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 10, padding: '8px 10px', overflow: 'hidden' }}>
+                  {patterns.length > 1 && (
+                    <div style={{ fontSize: 9, fontWeight: 700, color: '#666', marginBottom: 4 }}>{pattern.label}</div>
+                  )}
+                  <RhythmViewer patterns={[pattern]} />
                 </div>
-              </div>
-            )
-          })()}
+              )
+            })()
+          ) : (
+            // 코드 챌린지: 코드 오버레이
+            (() => {
+              const progressions = challenge?.chords?.progressions ?? []
+              const prog = progressions[selectedProgression]
+              if (!prog) return null
+              const measures = normalizeMeasures(prog.chords)
+              const rows: string[][][] = []
+              for (let i = 0; i < measures.length; i += 4) rows.push(measures.slice(i, i + 4))
+              return (
+                <div>
+                  {progressions.length > 1 && (
+                    <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(240,236,224,0.4)', letterSpacing: '0.1em', marginBottom: 6 }}>
+                      {prog.label}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {rows.map((row, ri) => (
+                      <div key={ri} style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+                        {row.map((measure, mi) => (
+                          <div key={mi} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            {mi > 0 && (
+                              <div style={{ width: 1.5, height: 28, background: 'rgba(240,236,224,0.35)', margin: '0 3px', borderRadius: 1 }} />
+                            )}
+                            {measure.map((chord, ci) => (
+                              <span key={ci} style={{
+                                padding: '5px 10px', borderRadius: 7,
+                                background: 'rgba(240,236,224,0.13)',
+                                border: '1px solid rgba(240,236,224,0.28)',
+                                backdropFilter: 'blur(8px)',
+                                fontSize: 14, fontWeight: 900, color: '#f8f4ec',
+                                letterSpacing: '-0.01em',
+                              }}>{chord}</span>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()
+          )}
         </div>
 
         {/* 카메라 프리뷰 */}
