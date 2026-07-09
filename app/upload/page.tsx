@@ -323,17 +323,19 @@ export default function UploadPage() {
             {challenge?.title}
           </div>
           {challenge?.type === 'rhythm' ? (
-            // 리듬 챌린지: 악보 오버레이
+            // 리듬 챌린지: 악보 오버레이 (반투명 — 결과 영상엔 미포함)
             (() => {
               const patterns = challenge?.chords?.patterns ?? []
               const pattern = patterns[selectedProgression]
               if (!pattern) return null
               return (
-                <div style={{ background: 'rgba(255,255,255,0.92)', borderRadius: 10, padding: '8px 10px', overflow: 'hidden' }}>
+                <div style={{ background: 'rgba(0,0,0,0.55)', borderRadius: 10, padding: '8px 10px', overflow: 'hidden', backdropFilter: 'blur(4px)' }}>
                   {patterns.length > 1 && (
-                    <div style={{ fontSize: 9, fontWeight: 700, color: '#666', marginBottom: 4 }}>{pattern.label}</div>
+                    <div style={{ fontSize: 9, fontWeight: 700, color: 'rgba(255,255,255,0.6)', marginBottom: 4 }}>{pattern.label}</div>
                   )}
-                  <RhythmViewer patterns={[pattern]} />
+                  <div style={{ filter: 'invert(1) brightness(1.8)', maxHeight: 180, overflow: 'hidden' }}>
+                    <RhythmViewer patterns={[pattern]} />
+                  </div>
                 </div>
               )
             })()
