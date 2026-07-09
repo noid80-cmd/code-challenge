@@ -297,7 +297,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
               </Link>
             </>
           ) : (
-            <Link href="/login" style={{
+            <Link href={`/login?from=/${type}`} style={{
               padding: '6px 14px', borderRadius: 8,
               background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
               color: '#0a0a08', fontSize: 13, fontWeight: 800,

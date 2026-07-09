@@ -25,23 +25,26 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState('')
   const [resetSent, setResetSent] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
-  // If cookies were cleared (iOS PWA) but localStorage has a refresh token, recover silently
+  // Recover silently whenever sb_rt exists — regardless of whether ?from= is in the URL.
+  // iOS can restore the PWA directly to /login (without ?from=) after an app kill,
+  // or the user may tap the "로그인" button which also links to /login without ?from=.
+  // In both cases we should transparently restore the session and redirect home.
   const [recovering, setRecovering] = useState(() => {
     if (typeof window === 'undefined') return false
-    const from = new URLSearchParams(window.location.search).get('from')
-    const rt = localStorage.getItem('sb_rt')
-    return !!(from && rt)
+    return !!localStorage.getItem('sb_rt')
   })
 
   useEffect(() => {
-    const from = new URLSearchParams(window.location.search).get('from')
     const rt = localStorage.getItem('sb_rt')
-    if (!from || !rt) { setRecovering(false); return }
+    if (!rt) { setRecovering(false); return }
+    // Default to /chord (the PWA home) when there is no ?from= param.
+    const from = new URLSearchParams(window.location.search).get('from') ?? '/chord'
     const supabase = createClient()
     supabase.auth.refreshSession({ refresh_token: rt }).then(async ({ data }) => {
       if (data.session) {
         localStorage.setItem('sb_rt', data.session.refresh_token)
-        // Force server-side Set-Cookie so iOS doesn't clear cookies on next app kill
+        // Pin the restored session to HTTP Set-Cookie headers so iOS keeps it
+        // across the next app kill.
         try {
           const res = await fetch('/api/refresh-session', { method: 'POST' })
           if (res.ok) {
@@ -49,10 +52,10 @@ export default function LoginPage() {
             if (newRt) localStorage.setItem('sb_rt', newRt)
           }
         } catch {}
-        // Hard redirect — ensures cookies are committed before next server request
         window.location.href = from
       } else {
-        // Do NOT remove sb_rt — failure may be transient (network, Supabase hiccup).
+        // Token is truly expired or invalid — clear it and show the login form.
+        localStorage.removeItem('sb_rt')
         setRecovering(false)
       }
     })
