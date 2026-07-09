@@ -139,8 +139,8 @@ function buildPrompt(level: string) {
   [z/ B/ B]+[z B]+[B>z]+[B/ z/ B]     → z/ B/ B z B B>z B/ z/ B`
 
   const zReq = level === 'advanced'
-    ? '각 마디에 z/블록(B B/ z/ / B/ z/ B / z/ B/ B / z B/ z/) 최소 2개 포함'
-    : '각 마디에 z/블록(B B/ z/ / B/ z/ B / z/ B/ B / z B/ z/) 최소 1개 포함'
+    ? '각 마디에 z/블록(B B/ z/ / B/ z/ B / z/ B/ B / z B/ z/) 최소 1개 포함'
+    : '8마디 전체에서 z/ 블록(B B/ z/ / B/ z/ B / z/ B/ B / z B/ z/)을 4개 이상 사용 (매 마디 필수 아님)'
 
   const levelLabel = level === 'advanced' ? '고급' : '중급'
 
@@ -231,6 +231,17 @@ export async function POST() {
       if (!validateABC(parsed.patterns ?? [])) {
         console.error(`[generate-rhythm] attempt ${attempt}: bar validation failed`)
         continue
+      }
+      // Log each bar's content + sum for debugging wrong-looking bars
+      for (const p of (parsed.patterns ?? [])) {
+        const dbgText = (p.abc as string).replace(/\\n/g, '\n')
+        const dbgLines = dbgText.split('\n').filter((l: string) => l.trim().startsWith('|'))
+        for (const dbgLine of dbgLines) {
+          const dbgBars = dbgLine.trim().replace(/\|]$/, '|').split('|').filter((b: string) => b.trim() !== '')
+          dbgBars.forEach((bar: string, idx: number) => {
+            console.log(`[rhythm-ok] a${attempt} ${(p as {label:string}).label} bar${idx+1}: ${parseBarSum(bar).toFixed(2)}u | "${bar.trim()}"`)
+          })
+        }
       }
       challenge = parsed
       break

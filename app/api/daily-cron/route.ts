@@ -223,8 +223,8 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
     const rhythmLevel = Math.random() < 0.7 ? 'intermediate' : 'advanced'
 
     const zReq = rhythmLevel === 'advanced'
-      ? '각 마디에 z/블록(B B/ z/ / B/ z/ B / z/ B/ B / z B/ z/) 최소 2개 포함'
-      : '각 마디에 z/블록(B B/ z/ / B/ z/ B / z/ B/ B / z B/ z/) 최소 1개 포함'
+      ? '각 마디에 z/블록(B B/ z/ / B/ z/ B / z/ B/ B / z B/ z/) 최소 1개 포함'
+      : '8마디 전체에서 z/ 블록(B B/ z/ / B/ z/ B / z/ B/ B / z B/ z/)을 4개 이상 사용 (매 마디 필수 아님)'
 
     const rhythmExamples = rhythmLevel === 'advanced'
       ? `예시: [B B/ B/]+[z B]+[(3zBB]+[z2]→B B/ B/ z B (3zBB z2 / [B>B]+[B/ z/ B]+[z/ B/ B]+[z2]→B>B B/ z/ B z/ B/ B z2 / [z>B]+[B/ z/ B]+[(3BzB]+[B B/ z/]→z>B B/ z/ B (3BzB B B/ z/ / [z4]+[B B/ z/]+[B/ z/ B]→z4 B B/ z/ B/ z/ B`
@@ -287,6 +287,17 @@ JSON 객체로만 응답:
       let parsed
       try { parsed = JSON.parse(rhythmJsonStr) } catch { continue }
       if (!validateABC(parsed.patterns ?? [])) { console.error(`[cron-rhythm] attempt ${attempt}: bar validation failed`); continue }
+      // Log passing bars for debugging
+      for (const p of (parsed.patterns ?? [])) {
+        const dbgText = (p as {abc:string}).abc.replace(/\\n/g, '\n')
+        const dbgLines = dbgText.split('\n').filter((l: string) => l.trim().startsWith('|'))
+        for (const dbgLine of dbgLines) {
+          const dbgBars = dbgLine.trim().replace(/\|]$/, '|').split('|').filter((b: string) => b.trim() !== '')
+          dbgBars.forEach((bar: string, idx: number) => {
+            console.log(`[cron-rhythm-ok] a${attempt} ${(p as {label:string}).label} bar${idx+1}: ${parseBarSum(bar).toFixed(2)}u | "${bar.trim()}"`)
+          })
+        }
+      }
       rhythmCh = parsed
       break
     }
