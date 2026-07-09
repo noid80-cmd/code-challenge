@@ -2,53 +2,69 @@
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+// Pin the current session to HTTP Set-Cookie headers without rotating the RT.
+// Called after every TOKEN_REFRESHED so HTTP cookies always reflect the latest session.
+// iOS clears JS-set cookies on PWA kill but keeps HTTP Set-Cookie cookies — this is
+// what keeps users logged in across app restarts.
+function pinSession(at: string, rt: string) {
+  fetch('/api/pin-session', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ at, rt }),
+  }).catch(() => {})
+}
+
 export function SessionSync() {
   useEffect(() => {
     const supabase = createClient()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.refresh_token) {
         localStorage.setItem('sb_rt', session.refresh_token)
+        // After every token refresh (browser-side auto-refresh or explicit sign-in),
+        // pin the new session to HTTP cookies so iOS keeps it across app kills.
+        if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
+          pinSession(session.access_token, session.refresh_token)
+        }
       } else if (event === 'SIGNED_OUT') {
-        localStorage.removeItem('sb_rt')
+        // SIGNED_OUT can fire spuriously: iOS keeps the old HTTP cookie (with an already-
+        // rotated refresh token) after killing the PWA. The browser client reads it, tries
+        // to refresh, fails, and emits SIGNED_OUT — even though the user never logged out.
+        // Instead of deleting sb_rt here (which breaks recovery), try to restore the session
+        // using the last known good refresh token from localStorage.
+        const rt = localStorage.getItem('sb_rt')
+        if (rt) {
+          supabase.auth.refreshSession({ refresh_token: rt }).then(({ data }) => {
+            if (data.session) {
+              localStorage.setItem('sb_rt', data.session.refresh_token)
+              pinSession(data.session.access_token, data.session.refresh_token)
+            } else {
+              // Token is genuinely invalid (e.g. user explicitly logged out elsewhere).
+              localStorage.removeItem('sb_rt')
+            }
+          }).catch(() => {})
+        }
       }
     })
 
-    // On mount, persist the refresh token and force a server-side Set-Cookie refresh.
-    // sessionStorage clears when the PWA is killed — so on every new app open we call
-    // /api/refresh-session which converts JavaScript-set cookies into HTTP Set-Cookie
-    // header cookies that iOS persists across app kills.
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!session?.refresh_token) return
-      localStorage.setItem('sb_rt', session.refresh_token)
-      if (!sessionStorage.getItem('_sr')) {
-        sessionStorage.setItem('_sr', '1')
-        try {
-          const res = await fetch('/api/refresh-session', { method: 'POST' })
-          if (res.ok) {
-            const { rt } = await res.json()
-            if (rt) localStorage.setItem('sb_rt', rt)
-          }
-        } catch {}
-      }
+    // On mount, sync sb_rt with whatever session is in cookies right now.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.refresh_token) localStorage.setItem('sb_rt', session.refresh_token)
     })
 
-    // iOS PWA clears cookies when the app backgrounds. On return, the middleware
-    // would redirect to /login before React can render. Instead, proactively
-    // refresh the session the moment the app becomes visible — this writes fresh
-    // cookies client-side so the next server request finds a valid session.
+    // On visibility change: if cookies are gone but sb_rt exists, proactively refresh
+    // before the next navigation hits the server (avoids a /login redirect).
     const handleVisibility = async () => {
       if (document.visibilityState !== 'visible') return
       const rt = localStorage.getItem('sb_rt')
       if (!rt) return
       const { data: { session } } = await supabase.auth.getSession()
-      if (session) return // Still valid
+      if (session) return
       const { data } = await supabase.auth.refreshSession({ refresh_token: rt })
       if (data.session) {
         localStorage.setItem('sb_rt', data.session.refresh_token)
+        pinSession(data.session.access_token, data.session.refresh_token)
       }
-      // Do NOT remove sb_rt on failure — it may be a transient network error.
-      // The login page recovery will handle truly expired tokens gracefully.
     }
 
     document.addEventListener('visibilitychange', handleVisibility)

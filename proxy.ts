@@ -4,15 +4,9 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const publicPaths = ['/login', '/signup', '/auth', '/api', '/intro', '/chord', '/rhythm', '/challenges', '/ranking']
-
-  // '/' is the landing page — public for everyone (and the old PWA start_url)
-  if (pathname === '/' || publicPaths.some(p => pathname.startsWith(p))) {
-    return NextResponse.next()
-  }
+  const isPublic = pathname === '/' || publicPaths.some(p => pathname.startsWith(p))
 
   // iOS PWA OAuth handoff: allow auth params through without session check.
-  // _oauthcode = PKCE code to exchange in PWA context
-  // _at / _rt   = implicit-flow tokens handed off from Safari to PWA
   if (request.nextUrl.searchParams.has('_oauthcode') ||
       request.nextUrl.searchParams.has('_at')) {
     return NextResponse.next()
@@ -37,24 +31,29 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const { data: { user }, error: userError } = await supabase.auth.getUser()
+  // Run getSession() for ALL pages (public and protected).
+  // For public pages this is critical on iOS PWA: if the access token is expired,
+  // getSession() refreshes it using the refresh-token cookie and writes new tokens via
+  // Set-Cookie response headers. HTTP Set-Cookie cookies survive iOS app kills;
+  // JavaScript-set cookies (document.cookie) do not — so keeping the server in sync
+  // ensures the session survives across PWA restarts.
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
 
-  if (userError) {
-    // getUser() failed (network error / Supabase unreachable) — fall back to
-    // local session check so transient failures don't log the user out.
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session) {
+  if (isPublic) {
+    // Return supabaseResponse so any Set-Cookie headers from a session refresh are sent.
+    return supabaseResponse
+  }
+
+  if (sessionError || !session) {
+    // getSession failed or returned no session — fall back to getUser() which also
+    // handles transient failures more gracefully.
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('from', pathname)
       return NextResponse.redirect(loginUrl)
     }
     return supabaseResponse
-  }
-
-  if (!user) {
-    const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('from', pathname)
-    return NextResponse.redirect(loginUrl)
   }
 
   return supabaseResponse
