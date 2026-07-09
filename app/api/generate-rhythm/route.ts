@@ -151,11 +151,11 @@ function buildPrompt(level: string) {
 
 고급 예시 마디 (합계=8):
   B B/ z/ z B (3zBB z2          (2+2+2+2=8)  ← z/포함
-  B>B B/ z/ B z/ B/ B>z         (2+2+2+2=8)  ← z/포함
+  B>B B/ z/ B z/ B/ B z2        (2+2+2+2=8)  ← z/포함
   B/ z/ B z B (3BBB z2          (2+2+2+2=8)  ← z/포함
-  z/ B/ B B B/ z/ z B           (2+2+2+2=8)  ← z/포함
+  z/ B/ B B B/ z/ (3BBB z2      (2+2+2+2=8)  ← z/포함
   z4 B B/ z/ z/ B/ B            (4+2+2=8)    ← z/포함
-  B/ z/ B z/ B/ B B>z           (2+2+2+2=8)  ← z/포함
+  B/ z/ B B/ z/ B (3BzB z2      (2+2+2+2=8)  ← z/포함
   (3B2B2B2 B/ z/ B z B          (4+2+2=8)    ← z/포함
   z>B B/ z/ B (3BzB B B/ z/     (2+2+2+2=8)  ← z/포함`
       : `중급: 2단위 블록×4 또는 4단위 블록×1+2단위×2.
@@ -185,12 +185,12 @@ function buildPrompt(level: string) {
 
 중급 예시 마디 (합계=8):
   B B/ z/ z B (3BBB z2           (2+2+2+2=8)  ← z/포함
-  B>B B/ z/ B z/ B/ B z          (2+2+2+2=8)  ← z/포함
+  B>B B/ z/ B z/ B/ B z2         (2+2+2+2=8)  ← z/포함
   B/ z/ B z B (3BzB z2           (2+2+2+2=8)  ← z/포함
-  z/ B/ B B B/ z/ z B            (2+2+2+2=8)  ← z/포함
+  z/ B/ B B B/ z/ (3BBB z2       (2+2+2+2=8)  ← z/포함
   (3B2B2B2 B/ z/ B z/ B/ B       (4+2+2=8)    ← z/포함
-  B<B z B B/ z/ B/B/B/B/         (2+2+2+2=8)  ← z/포함
-  z4 B/ z/ B z B B/ z/           (4+2+2=8)    ← z/포함
+  B<B z B (3BBB B/ z/ B          (2+2+2+2=8)  ← z/포함
+  z4 B B/ z/ B/ z/ B             (4+2+2=8)    ← z/포함
   z/ B/ B z B B>z B/ z/ B        (2+2+2+2=8)  ← z/포함`
 
   return `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
@@ -277,11 +277,6 @@ export async function POST() {
       }
       challenge = parsed
       break
-    }
-
-    if (!challenge) {
-      console.error('[generate-rhythm] all attempts failed validation, returning last result')
-      challenge = lastParsed
     }
 
     if (!challenge) {

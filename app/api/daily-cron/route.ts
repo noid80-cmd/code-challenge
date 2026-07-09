@@ -224,8 +224,8 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 
     const rhythmLevelGuide =
       rhythmLevel === 'advanced'
-        ? `고급: 마디=8단위. 단위: B=1 B/=0.5 z=1 z/=0.5 z2=2 z4=4 (3BBB=2 (3B2B2B2=4\n2단위블록(음표): BB=2 B B/ B/=2 B/ B/ B=2 B/ B B/=2 B>B=2 B<B=2 B/B/B/B/=2 (3BBB=2\n2단위블록(z/16분쉼표포함): B B/ z/=2 B/ z/ B=2 z/ B/ B=2 z B/ z/=2 B>z=2 z>B=2\n2단위블록(일반쉼표): z2=2 z B=2 B z=2 (3zBB=2 (3BzB=2\n4단위블록: (3B2B2B2=4 z4=4 (3B2z2B2=4\n⚠️z/(16분쉼표) 각 패턴 최소 2회 필수\n예시: B B/ z/ z B (3zBB z2 / B>B B/ z/ B z/ B/ B>z / z4 B/ z/ B z/ B/ B / z/ B/ B z B (3BzB B/ z/ B`
-        : `중급: 2단위×4 또는 4단위×1+2단위×2. 단위: B=1 B/=0.5 z=1 z/=0.5 z2=2 z4=4 (3BBB=2 (3B2B2B2=4\n2단위블록(음표): BB=2 B B/ B/=2 B/ B/ B=2 B/ B B/=2 B>B=2 B<B=2 (3BBB=2 (3zBB=2 (3BzB=2\n2단위블록(z/16분쉼표포함): B B/ z/=2 B/ z/ B=2 z/ B/ B=2 z B/ z/=2\n2단위블록(일반쉼표): z2=2 z B=2 B z=2 z>B=2 B>z=2\n4단위블록: (3B2B2B2=4 (3B2z2B2=4 z4=4\n⚠️z/(16분쉼표) 각 패턴 최소 2회 필수\n예시: B B/ z/ z B (3BBB z2 / B/ z/ B z B B/ z/ z B / (3B2B2B2 B/ z/ B z/ B/ B / z/ B/ B B B/ z/ B>z`
+        ? `고급: 마디=8단위. 단위: B=1 B/=0.5 z=1 z/=0.5 z2=2 z4=4 (3BBB=2 (3B2B2B2=4\n2단위블록(음표): BB=2 B B/ B/=2 B/ B/ B=2 B/ B B/=2 B>B=2 B<B=2 B/B/B/B/=2 (3BBB=2\n2단위블록(z/16분쉼표포함): B B/ z/=2 B/ z/ B=2 z/ B/ B=2 z B/ z/=2 B>z=2 z>B=2\n2단위블록(일반쉼표): z2=2 z B=2 B z=2 (3zBB=2 (3BzB=2\n4단위블록: (3B2B2B2=4 z4=4 (3B2z2B2=4\n⚠️z/(16분쉼표) 각 패턴 최소 2회 필수\n예시: B B/ z/ z B (3zBB z2 / B>B B/ z/ B z/ B/ B z2 / z4 B/ z/ B z/ B/ B / z/ B/ B z B (3BzB B/ z/ B`
+        : `중급: 2단위×4 또는 4단위×1+2단위×2. 단위: B=1 B/=0.5 z=1 z/=0.5 z2=2 z4=4 (3BBB=2 (3B2B2B2=4\n2단위블록(음표): BB=2 B B/ B/=2 B/ B/ B=2 B/ B B/=2 B>B=2 B<B=2 (3BBB=2 (3zBB=2 (3BzB=2\n2단위블록(z/16분쉼표포함): B B/ z/=2 B/ z/ B=2 z/ B/ B=2 z B/ z/=2\n2단위블록(일반쉼표): z2=2 z B=2 B z=2 z>B=2 B>z=2\n4단위블록: (3B2B2B2=4 (3B2z2B2=4 z4=4\n⚠️z/(16분쉼표) 각 패턴 최소 2회 필수\n예시: B B/ z/ z B (3BBB z2 / B/ z/ B (3BBB z B z2 / (3B2B2B2 B/ z/ B z/ B/ B / z/ B/ B B B/ z/ (3BBB z2`
 
     const rhythmPrompt = `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
@@ -269,8 +269,7 @@ JSON 객체로만 응답:
       break
     }
     if (!rhythmCh) {
-      console.error('[cron-rhythm] all attempts failed validation, using last result')
-      rhythmCh = lastRhythmParsed
+      console.error('[cron-rhythm] all attempts failed validation, skipping rhythm challenge')
     }
 
     if (rhythmCh) {
