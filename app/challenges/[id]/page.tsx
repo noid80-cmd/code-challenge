@@ -7,10 +7,12 @@ import { useParams } from 'next/navigation'
 import type { User } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
 const ChordPlayer = dynamic(() => import('@/app/components/ChordPlayer'), { ssr: false })
+const RhythmViewer = dynamic(() => import('@/app/components/RhythmViewer'), { ssr: false })
 import { localDate } from '@/lib/date'
 
 type Progression = { label: string; chords: string[] | string[][]; style?: string; tempo?: number }
-type Challenge = { id: string; date: string; title: string; description?: string; chords: { progressions: Progression[] } }
+type Pattern = { label: string; abc: string }
+type Challenge = { id: string; date: string; title: string; description?: string; type?: string; chords: { progressions?: Progression[]; patterns?: Pattern[] } }
 type Submission = {
   id: string; video_url: string; caption?: string
   likes_count: number; created_at: string; user_liked?: boolean
@@ -92,7 +94,9 @@ export default function ChallengePage() {
 
   const today = localDate()
   const isToday = challenge.date === today
+  const isRhythm = challenge.type === 'rhythm'
   const progressions = challenge.chords?.progressions ?? []
+  const patterns = challenge.chords?.patterns ?? []
 
   const sorted = [...submissions].sort((a, b) =>
     sortBy === 'popular'
@@ -136,7 +140,9 @@ export default function ChallengePage() {
             </p>
           )}
           <div style={{ overflowX: 'auto' }}>
-            <ChordPlayer progressions={progressions} title={challenge.title} />
+            {isRhythm
+              ? <RhythmViewer patterns={patterns} />
+              : <ChordPlayer progressions={progressions} title={challenge.title} />}
           </div>
           {isToday && user && (
             <div style={{ marginTop: 16 }}>
@@ -192,7 +198,7 @@ export default function ChallengePage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {sorted.map(sub => (
-              <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)} progressions={progressions} />
+              <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)} progressions={isRhythm ? undefined : progressions} patterns={isRhythm ? patterns : undefined} />
             ))}
           </div>
         )}
@@ -201,7 +207,7 @@ export default function ChallengePage() {
   )
 }
 
-function SubmissionCard({ sub, onLike, progressions }: { sub: Submission; onLike: () => void; progressions: Progression[] }) {
+function SubmissionCard({ sub, onLike, progressions, patterns }: { sub: Submission; onLike: () => void; progressions?: Progression[]; patterns?: Pattern[] }) {
   const supabase = createClient()
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
@@ -220,14 +226,16 @@ function SubmissionCard({ sub, onLike, progressions }: { sub: Submission; onLike
       borderRadius: 20, overflow: 'hidden',
       boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
     }}>
-      {progressions.length > 1 && sub.progression_index != null && (
+      {((progressions && progressions.length > 1) || (patterns && patterns.length > 1)) && sub.progression_index != null && (
         <div style={{
           padding: '8px 14px',
           borderBottom: '1px solid rgba(240,236,224,0.06)',
           background: 'rgba(240,236,224,0.04)',
         }}>
           <span style={{ fontSize: 10, fontWeight: 800, color: '#a0988c', letterSpacing: '0.05em' }}>
-            {progressions[sub.progression_index]?.label ?? `진행 ${sub.progression_index + 1}`}
+            {patterns
+              ? patterns[sub.progression_index]?.label ?? `패턴 ${sub.progression_index + 1}`
+              : progressions?.[sub.progression_index]?.label ?? `진행 ${sub.progression_index + 1}`}
           </span>
         </div>
       )}
