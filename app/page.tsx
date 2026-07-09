@@ -62,44 +62,50 @@ export default function LandingPage() {
       </header>
 
       {/* 메인 */}
-      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' }}>
-        <div style={{ textAlign: 'center', marginBottom: 48 }}>
+      <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 20px 60px' }}>
+        <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.15em', color: '#403830', marginBottom: 12, textTransform: 'uppercase' }}>
             {dateStr}
           </p>
           <h1 style={{ fontSize: 36, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.04em', margin: 0, lineHeight: 1.1 }}>
             오늘의 챌린지
           </h1>
-          <p style={{ fontSize: 14, color: '#504840', marginTop: 12, fontWeight: 500 }}>
+          <p style={{ fontSize: 14, color: '#504840', marginTop: 10, fontWeight: 500 }}>
             연주하고 공유하세요
           </p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%', maxWidth: 400 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 400 }}>
           <Link href="/chord" style={{ textDecoration: 'none' }}>
             <div style={{
               background: 'linear-gradient(145deg, #111110, #0e0e0c)',
               border: '1px solid rgba(240,236,224,0.15)',
-              borderRadius: 24, padding: '28px 24px',
+              borderRadius: 24, padding: '24px',
               display: 'flex', alignItems: 'center', gap: 20,
               boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
-              cursor: 'pointer', transition: 'all 0.2s',
+              cursor: 'pointer',
             }}>
               <div style={{
-                width: 56, height: 56, borderRadius: 16, flexShrink: 0,
+                width: 52, height: 52, borderRadius: 14, flexShrink: 0,
                 background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 26, boxShadow: '0 4px 16px rgba(240,236,224,0.3)',
-              }}>🎵</div>
+                boxShadow: '0 4px 16px rgba(240,236,224,0.3)',
+              }}>
+                <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
+                  <line x1="1" y1="3" x2="21" y2="3" stroke="rgba(4,7,0,0.85)" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="1" y1="9" x2="21" y2="9" stroke="rgba(4,7,0,0.85)" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="1" y1="15" x2="14" y2="15" stroke="rgba(4,7,0,0.85)" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em', marginBottom: 4 }}>
+                <div style={{ fontSize: 19, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em', marginBottom: 4 }}>
                   코드챌린지
                 </div>
                 <div style={{ fontSize: 13, color: '#605850', fontWeight: 500 }}>
                   매일 새로운 코드 진행을 초견하세요
                 </div>
               </div>
-              <span style={{ fontSize: 18, color: '#403830' }}>→</span>
+              <span style={{ fontSize: 16, color: '#403830' }}>→</span>
             </div>
           </Link>
 
@@ -107,26 +113,33 @@ export default function LandingPage() {
             <div style={{
               background: 'linear-gradient(145deg, #111110, #0e0e0c)',
               border: '1px solid rgba(240,236,224,0.15)',
-              borderRadius: 24, padding: '28px 24px',
+              borderRadius: 24, padding: '24px',
               display: 'flex', alignItems: 'center', gap: 20,
               boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
-              cursor: 'pointer', transition: 'all 0.2s',
+              cursor: 'pointer',
             }}>
               <div style={{
-                width: 56, height: 56, borderRadius: 16, flexShrink: 0,
+                width: 52, height: 52, borderRadius: 14, flexShrink: 0,
                 background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 26, boxShadow: '0 4px 16px rgba(240,236,224,0.3)',
-              }}>🥁</div>
+                boxShadow: '0 4px 16px rgba(240,236,224,0.3)',
+              }}>
+                <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
+                  <rect x="1" y="6" width="4" height="10" rx="1.5" fill="rgba(4,7,0,0.85)"/>
+                  <rect x="7" y="3" width="4" height="13" rx="1.5" fill="rgba(4,7,0,0.85)"/>
+                  <rect x="13" y="1" width="4" height="15" rx="1.5" fill="rgba(4,7,0,0.85)"/>
+                  <rect x="19" y="4" width="2" height="12" rx="1" fill="rgba(4,7,0,0.85)"/>
+                </svg>
+              </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 20, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em', marginBottom: 4 }}>
+                <div style={{ fontSize: 19, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em', marginBottom: 4 }}>
                   리듬챌린지
                 </div>
                 <div style={{ fontSize: 13, color: '#605850', fontWeight: 500 }}>
                   매일 새로운 리듬 패턴을 연주하세요
                 </div>
               </div>
-              <span style={{ fontSize: 18, color: '#403830' }}>→</span>
+              <span style={{ fontSize: 16, color: '#403830' }}>→</span>
             </div>
           </Link>
         </div>
