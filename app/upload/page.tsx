@@ -329,11 +329,11 @@ export default function UploadPage() {
               const pattern = patterns[selectedProgression]
               if (!pattern) return null
               return (
-                <div style={{ borderRadius: 10, padding: '6px 10px', overflow: 'hidden' }}>
+                <div style={{ background: 'rgba(0,0,0,0.78)', borderRadius: 10, padding: '6px 10px', overflow: 'hidden' }}>
                   {patterns.length > 1 && (
-                    <div style={{ fontSize: 10, fontWeight: 800, color: 'white', textShadow: '0 1px 4px rgba(0,0,0,0.9)', marginBottom: 4 }}>{pattern.label}</div>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}>{pattern.label}</div>
                   )}
-                  <div style={{ maxHeight: 180, overflow: 'hidden', mixBlendMode: 'multiply' }}>
+                  <div style={{ maxHeight: 180, overflow: 'hidden', filter: 'invert(1) brightness(10)' }}>
                     <RhythmViewer patterns={[pattern]} />
                   </div>
                 </div>
