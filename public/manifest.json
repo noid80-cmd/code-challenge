@@ -1,8 +1,8 @@
 {
-  "name": "코드 챌린지",
-  "short_name": "코드챌린지",
-  "description": "매일 코드초견 챌린지 — 연주하고 공유하세요",
-  "start_url": "/chord",
+  "name": "초견챌린지",
+  "short_name": "초견챌린지",
+  "description": "매일 초견 챌린지 — 연주하고 공유하세요",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#080808",
   "theme_color": "#0a0a08",

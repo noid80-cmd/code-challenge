@@ -5,8 +5,8 @@ import { SessionSync } from './components/SessionSync'
 import { OAuthHandler } from './components/OAuthHandler'
 
 export const metadata: Metadata = {
-  title: 'PlayDaily',
-  description: '매일 코드·리듬 챌린지 — 연주하고 공유하세요',
+  title: '초견챌린지',
+  description: '매일 초견 챌린지 — 연주하고 공유하세요',
   manifest: '/manifest.json',
   icons: {
     icon: '/icon-192.png',

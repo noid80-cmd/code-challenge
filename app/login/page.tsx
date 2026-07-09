@@ -38,7 +38,7 @@ export default function LoginPage() {
     const rt = localStorage.getItem('sb_rt')
     if (!rt) { setRecovering(false); return }
     // Default to /chord (the PWA home) when there is no ?from= param.
-    const from = new URLSearchParams(window.location.search).get('from') ?? '/chord'
+    const from = new URLSearchParams(window.location.search).get('from') ?? '/'
     const supabase = createClient()
     supabase.auth.refreshSession({ refresh_token: rt }).then(async ({ data }) => {
       if (data.session) {
@@ -75,8 +75,8 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) { setLoading(false); setError('이메일 또는 비밀번호가 올바르지 않아요.'); return }
     await storeRefreshToken(supabase)
-    const from = new URLSearchParams(window.location.search).get('from')
-    window.location.href = from ?? '/'
+    const from = new URLSearchParams(window.location.search).get('from') ?? '/'
+    window.location.href = from
   }
 
   async function handleGoogle() {
@@ -169,7 +169,7 @@ export default function LoginPage() {
             </svg>
           </div>
           <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 8, color: '#f0ece0' }}>
-            {resetMode ? '비밀번호 찾기' : 'PlayDaily'}
+            {resetMode ? '비밀번호 찾기' : '초견챌린지'}
           </h1>
           <p style={{ color: '#807060', fontSize: 14, fontWeight: 500 }}>
             {resetMode ? '가입한 이메일로 재설정 링크를 보내드려요' : '매일 연주하고 공유하세요'}

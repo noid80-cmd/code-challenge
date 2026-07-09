@@ -41,7 +41,7 @@ export default function LandingPage() {
               <line x1="1" y1="8" x2="8"  y2="8" stroke="rgba(4,7,0,0.9)" strokeWidth="1.6" strokeLinecap="round" />
             </svg>
           </div>
-          <span style={{ fontWeight: 900, fontSize: 16, color: '#f0ece0', letterSpacing: '-0.03em' }}>PlayDaily</span>
+          <span style={{ fontWeight: 900, fontSize: 16, color: '#f0ece0', letterSpacing: '-0.03em' }}>초견챌린지</span>
         </div>
         {user === undefined ? null : user ? (
           <Link href="/my-videos" style={{
