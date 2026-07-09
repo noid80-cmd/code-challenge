@@ -11,7 +11,7 @@ type Profile = { name: string; avatar_url: string | null }
 type Submission = {
   id: string; video_url: string; thumbnail_url: string | null
   caption: string | null; likes_count: number; created_at: string
-  challenges: { title: string; date: string } | null
+  challenges: { title: string; date: string }[] | null
 }
 
 function getPublicUrl(path: string) {
@@ -121,9 +121,9 @@ export default function ProfilePage({ params }: { params: Promise<{ user_id: str
                       style={{ width: '100%', display: 'block', background: '#000', maxHeight: 460, objectFit: 'contain' }}
                     />
                     <div style={{ padding: '12px 16px 14px' }}>
-                      {sub.challenges && (
+                      {sub.challenges?.[0] && (
                         <div style={{ fontSize: 11, color: '#504840', fontWeight: 700, marginBottom: 4 }}>
-                          {sub.challenges.date} · {sub.challenges.title}
+                          {sub.challenges[0].date} · {sub.challenges[0].title}
                         </div>
                       )}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
