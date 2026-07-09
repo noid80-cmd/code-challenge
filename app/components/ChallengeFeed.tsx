@@ -83,6 +83,7 @@ type Submission = {
   id: string; challenge_id: string; video_url: string; caption?: string
   likes_count: number; created_at: string; user_liked?: boolean
   progression_index?: number; thumbnail_url?: string | null
+  user_id: string
   profiles: { name: string; avatar_url?: string } | null
 }
 
@@ -290,8 +291,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
                   fontSize: 13, fontWeight: 800, color: '#0a0a08',
                   boxShadow: '0 2px 10px rgba(240,236,224,0.4)', flexShrink: 0,
                 }}>
-                  {profile?.avatar_url
-                    ? <img src={profile.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
+                  {(profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture)
+                    ? <img src={profile?.avatar_url || user.user_metadata?.avatar_url || user.user_metadata?.picture} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
                     : (profile?.name ?? user.email ?? '?').slice(0, 1).toUpperCase()}
                 </div>
               </Link>
@@ -644,7 +645,7 @@ function SubmissionCard({ sub, onLike, progressions, patterns }: { sub: Submissi
         style={{ width: '100%', display: 'block', background: '#000', maxHeight: 460, objectFit: 'contain' }} />
       <div style={{ padding: '14px 16px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Link href={`/profile/${sub.user_id}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
             <div style={{
               width: 36, height: 36, borderRadius: '50%',
               background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
@@ -663,7 +664,7 @@ function SubmissionCard({ sub, onLike, progressions, patterns }: { sub: Submissi
               </div>
               <div style={{ fontSize: 11, color: '#303028', marginTop: 2 }}>{timeAgo(sub.created_at)}</div>
             </div>
-          </div>
+          </Link>
           <button onClick={onLike} style={{
             background: sub.user_liked ? 'rgba(240,236,224,0.12)' : 'rgba(255,255,255,0.02)',
             border: sub.user_liked ? '1px solid rgba(240,236,224,0.4)' : '1px solid rgba(255,255,255,0.06)',
