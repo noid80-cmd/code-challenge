@@ -38,15 +38,21 @@ export default function LoginPage() {
     const rt = localStorage.getItem('sb_rt')
     if (!from || !rt) { setRecovering(false); return }
     const supabase = createClient()
-    supabase.auth.refreshSession({ refresh_token: rt }).then(({ data }) => {
+    supabase.auth.refreshSession({ refresh_token: rt }).then(async ({ data }) => {
       if (data.session) {
         localStorage.setItem('sb_rt', data.session.refresh_token)
+        // Force server-side Set-Cookie so iOS doesn't clear cookies on next app kill
+        try {
+          const res = await fetch('/api/refresh-session', { method: 'POST' })
+          if (res.ok) {
+            const { rt: newRt } = await res.json()
+            if (newRt) localStorage.setItem('sb_rt', newRt)
+          }
+        } catch {}
         // Hard redirect — ensures cookies are committed before next server request
         window.location.href = from
       } else {
         // Do NOT remove sb_rt — failure may be transient (network, Supabase hiccup).
-        // Leave it so future recovery attempts can still try the same token.
-        // If the token is truly expired, the user logs in and a fresh token is stored.
         setRecovering(false)
       }
     })

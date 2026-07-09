@@ -3,11 +3,15 @@
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
-async function afterLogin(supabase: ReturnType<typeof createClient>) {
+async function afterLogin(_supabase: ReturnType<typeof createClient>) {
   try {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session?.refresh_token) {
-      localStorage.setItem('sb_rt', session.refresh_token)
+    // Force a server-side session refresh so cookies are set via Set-Cookie HTTP
+    // headers. iOS PWA kills JavaScript-set (document.cookie) cookies when the app
+    // is terminated; HTTP header cookies survive — this is what keeps users logged in.
+    const res = await fetch('/api/refresh-session', { method: 'POST' })
+    if (res.ok) {
+      const { rt } = await res.json()
+      if (rt) localStorage.setItem('sb_rt', rt)
     }
   } catch {}
 }

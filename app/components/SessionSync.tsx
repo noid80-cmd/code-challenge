@@ -14,10 +14,23 @@ export function SessionSync() {
       }
     })
 
-    // On mount, immediately persist the refresh token if a session exists.
-    // This ensures sb_rt is stored even when onAuthStateChange fires late.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.refresh_token) localStorage.setItem('sb_rt', session.refresh_token)
+    // On mount, persist the refresh token and force a server-side Set-Cookie refresh.
+    // sessionStorage clears when the PWA is killed — so on every new app open we call
+    // /api/refresh-session which converts JavaScript-set cookies into HTTP Set-Cookie
+    // header cookies that iOS persists across app kills.
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session?.refresh_token) return
+      localStorage.setItem('sb_rt', session.refresh_token)
+      if (!sessionStorage.getItem('_sr')) {
+        sessionStorage.setItem('_sr', '1')
+        try {
+          const res = await fetch('/api/refresh-session', { method: 'POST' })
+          if (res.ok) {
+            const { rt } = await res.json()
+            if (rt) localStorage.setItem('sb_rt', rt)
+          }
+        } catch {}
+      }
     })
 
     // iOS PWA clears cookies when the app backgrounds. On return, the middleware
