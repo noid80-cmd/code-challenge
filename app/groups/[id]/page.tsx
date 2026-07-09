@@ -81,7 +81,7 @@ export default function GroupPage() {
   const load = useCallback(async () => {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { window.location.href = '/login'; return }
+    if (!user) { window.location.href = '/login?from=' + encodeURIComponent(window.location.pathname); return }
     setUserId(user.id)
 
     const { data: g } = await supabase.from('groups').select('*').eq('id', groupId).single()

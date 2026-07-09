@@ -22,7 +22,7 @@ export default function GroupsPage() {
   async function load() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { window.location.href = '/login'; return }
+    if (!user) { window.location.href = '/login?from=/groups'; return }
     setUserId(user.id)
     const { data } = await supabase.from('group_members').select('groups(id, name, description, invite_code, owner_id)').eq('user_id', user.id)
     setGroups((data ?? []).map(m => m.groups as unknown as Group).filter(Boolean))
@@ -48,7 +48,7 @@ export default function GroupsPage() {
     if (!joinCode.trim()) return
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { window.location.href = '/login'; return }
+    if (!user) { window.location.href = '/login?from=/groups'; return }
     const { data: group } = await supabase.from('groups').select('id').eq('invite_code', joinCode.trim().toUpperCase()).single()
     if (!group) { setError('초대 코드를 찾을 수 없어요'); return }
     const { error: err } = await supabase.from('group_members').insert({ group_id: group.id, user_id: user.id })

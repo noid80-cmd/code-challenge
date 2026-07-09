@@ -48,7 +48,7 @@ export default function UploadPage() {
     async function load() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
+      if (!user) { router.push('/login?from=' + encodeURIComponent(window.location.pathname + window.location.search)); return }
       const { date: today } = challengeDate()
       const typeParam = new URLSearchParams(window.location.search).get('type') ?? 'chord'
       const { data } = await supabase.from('challenges').select('*')
@@ -230,7 +230,7 @@ export default function UploadPage() {
     setError(''); setUploading(true)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/login'); return }
+    if (!user) { router.push('/login?from=/upload'); return }
     const ts = Date.now()
     const ext = file.name.split('.').pop() || 'webm'
     const path = `${user.id}/${ts}.${ext}`

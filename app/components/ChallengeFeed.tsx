@@ -177,7 +177,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
   useEffect(() => { load() }, [load])
 
   async function toggleLike(submissionId: string, liked: boolean) {
-    if (!user) { window.location.href = '/login'; return }
+    if (!user) { window.location.href = '/login?from=' + encodeURIComponent(window.location.pathname); return }
     const supabase = createClient()
     if (liked) {
       await supabase.from('likes').delete().eq('submission_id', submissionId).eq('user_id', user.id)

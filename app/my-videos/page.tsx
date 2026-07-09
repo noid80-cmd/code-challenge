@@ -103,7 +103,7 @@ export default function MyVideosPage() {
     async function load() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { window.location.href = '/login'; return }
+      if (!user) { window.location.href = '/login?from=/my-videos'; return }
       setUserId(user.id)
       const { data: prof } = await supabase.from('profiles').select('name, avatar_url').eq('id', user.id).single()
       setProfile(prof)
