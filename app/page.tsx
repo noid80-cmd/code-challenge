@@ -7,10 +7,17 @@ import type { User } from '@supabase/supabase-js'
 
 export default function LandingPage() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user))
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      setUser(user)
+      if (user) {
+        const { data: prof } = await supabase.from('profiles').select('avatar_url').eq('id', user.id).single()
+        setAvatarUrl(prof?.avatar_url ?? user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null)
+      }
+    })
   }, [])
 
   const today = new Date()
@@ -50,8 +57,8 @@ export default function LandingPage() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 13, fontWeight: 800, color: '#0a0a08', flexShrink: 0,
           }}>
-            {(user.user_metadata?.avatar_url || user.user_metadata?.picture)
-              ? <img src={user.user_metadata.avatar_url || user.user_metadata.picture} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {avatarUrl
+              ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               : (user.email ?? '?').slice(0, 1).toUpperCase()}
           </Link>
         ) : (
