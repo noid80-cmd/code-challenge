@@ -153,7 +153,7 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
 
   useEffect(() => {
     if (!containerRef.current) return
-    const containerWidth = containerRef.current.clientWidth
+    const containerWidth = containerRef.current.clientWidth - 4
 
     import('abcjs').then(ABCJS => {
       processedChunks.forEach((pattern, pi) => {
@@ -194,7 +194,7 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
               {pattern.label}
             </div>
           )}
-          <div style={{ background: 'rgba(240,236,224,0.04)', borderRadius: 12, overflow: 'hidden' }}>
+          <div style={{ background: 'rgba(240,236,224,0.04)', borderRadius: 12 }}>
             {pattern.chunks.map((_, ci) => (
               <div key={ci} id={`rv-${uid}-${pi}-${ci}`} />
             ))}
