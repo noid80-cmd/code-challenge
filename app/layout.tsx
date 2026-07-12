@@ -30,9 +30,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <OAuthHandler />
         {children}
         <a href="https://www.khmusic.co.kr" target="_blank" rel="noopener noreferrer"
-          style={{ position: 'fixed', bottom: 10, left: '50%', transform: 'translateX(-50%)',
-            fontSize: 13, color: 'rgba(255,255,255,0.45)', letterSpacing: '0.05em',
-            textDecoration: 'underline', textUnderlineOffset: 3, zIndex: 9999, whiteSpace: 'nowrap' }}>
+          style={{ position: 'fixed', bottom: 0, left: 0, right: 0, textAlign: 'center',
+            padding: '8px 0 10px', background: 'rgba(7,7,13,0.85)', backdropFilter: 'blur(8px)',
+            fontSize: 11, fontWeight: 600, color: 'rgba(99,102,241,0.7)', letterSpacing: '0.15em',
+            textDecoration: 'none', zIndex: 9999, whiteSpace: 'nowrap' }}>
           by KHMUSIC
         </a>
       </body>
