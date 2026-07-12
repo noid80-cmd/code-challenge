@@ -33,6 +33,9 @@ const BAR_PATTERNS: Record<string, string> = {
   Z: 'B/ z/ B B B/ z/ (3BzB z2',
 }
 
+// Bars that contain (3BzB — triplet with rest (syncopated feel)
+const SYNCO_TRIPLET_BARS = new Set(['D', 'I', 'Q', 'U', 'Z'])
+
 function assemblePatternsABC(
   aiPatterns: Array<{ label: string; bars: string[] }>
 ): Array<{ label: string; abc: string }> | null {
@@ -50,6 +53,16 @@ function assemblePatternsABC(
         return null
       }
       barTexts.push(barText)
+    }
+    // If the label suggests syncopation/off-beat theme, ensure at least 2 bars
+    // use (3BzB (note-rest-note triplet) — prevents all-straight-triplet inconsistency
+    const isSyncoLabel = /싱코|당김음|엇박|오프비트/i.test(String(p.label))
+    if (isSyncoLabel) {
+      const syncoCount = p.bars.filter(id => SYNCO_TRIPLET_BARS.has(String(id).toUpperCase())).length
+      if (syncoCount < 2) {
+        console.error(`[rhythm] synco pattern has only ${syncoCount} (3BzB bars — retrying`)
+        return null
+      }
     }
     const abc =
       'X:1\nM:4/4\nL:1/8\nQ:1/4=100\nK:perc\nV:1 clef=none stafflines=1 stem=up\n|' +
@@ -108,6 +121,7 @@ Z: B/ z/ B B B/ z/ (3BzB z2
 - 같은 ID 최대 2번 반복 가능
 - label은 악보에 나타나는 리듬 특성으로 지어야 함 (예: "당김음 중심", "16분음표 집중", "3연음 위주", "점음표 패턴", "엇박 강조")
 - label에 스윙·셔플·그루브·펑크 등 장르/주법 이름 사용 금지
+- 싱코페이션·당김음·엇박 테마 패턴은 (3BzB 포함 bar(D·I·Q·U·Z) 최소 2개 이상 포함
 
 JSON 객체로만 응답:
 {
