@@ -72,13 +72,17 @@ function assemblePatternsABC(
   return result.length >= 2 ? result : null
 }
 
-function buildPrompt(level: string) {
+function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
     ? '각 패턴에 P~Z 중 최소 4개 포함 (나머지는 A~O)'
     : '각 패턴에 P~Z 중 2~3개 포함 (나머지는 A~O)'
 
-  return `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
+  const recentBlock = recentTitles.length > 0
+    ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
+    : ''
+
+  return `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.${recentBlock}
 
 난이도: ${levelLabel}
 
@@ -162,6 +166,20 @@ export async function POST() {
   }
   const level = Math.random() < 0.7 ? 'intermediate' : 'advanced'
 
+  // Fetch recent rhythm challenge titles to avoid duplicates
+  let recentTitles: string[] = []
+  try {
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/challenges?date=gte.${sevenDaysAgo}&select=title,chords`,
+      { headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '' } }
+    )
+    const rows: Array<{ title: string; chords: { patterns?: unknown[] } }> = await res.json()
+    recentTitles = rows
+      .filter(r => Array.isArray(r.chords?.patterns))
+      .map(r => r.title)
+  } catch { /* non-critical */ }
+
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -171,7 +189,7 @@ export async function POST() {
         model: 'claude-sonnet-4-6',
         max_tokens: 1024,
         system: 'You are a JSON generator. Output only a valid JSON object. No explanations, no reasoning text, no markdown. Start your response directly with { and end with }.',
-        messages: [{ role: 'user', content: buildPrompt(level) }],
+        messages: [{ role: 'user', content: buildPrompt(level, recentTitles) }],
       })
       const text = message.content[0].type === 'text' ? message.content[0].text : ''
       const jsonStr = extractJsonObject(text)
@@ -182,8 +200,14 @@ export async function POST() {
       const assembled = assemblePatternsABC(parsed.patterns ?? [])
       if (!assembled) { console.error(`[generate-rhythm] attempt ${attempt}: assembly failed`); continue }
 
+      const newTitle = String(parsed.title || '드럼 초견 챌린지')
+      if (recentTitles.includes(newTitle)) {
+        console.error(`[generate-rhythm] attempt ${attempt}: duplicate title "${newTitle}" — retrying`)
+        continue
+      }
+
       challenge = {
-        title: String(parsed.title || '드럼 초견 챌린지'),
+        title: newTitle,
         description: String(parsed.description || ''),
         level,
         patterns: assembled,
