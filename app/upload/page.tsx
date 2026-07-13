@@ -333,7 +333,7 @@ export default function UploadPage() {
                   {patterns.length > 1 && (
                     <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}>{pattern.label}</div>
                   )}
-                  <div style={{ maxHeight: 180, overflow: 'hidden', filter: 'invert(1) brightness(10)' }}>
+                  <div style={{ filter: 'invert(1) brightness(10)' }}>
                     <RhythmViewer patterns={[pattern]} hideLabel />
                   </div>
                 </div>
