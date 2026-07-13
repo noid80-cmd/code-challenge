@@ -334,7 +334,7 @@ export default function UploadPage() {
                     <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}>{pattern.label}</div>
                   )}
                   <div style={{ maxHeight: 180, overflow: 'hidden', filter: 'invert(1) brightness(10)' }}>
-                    <RhythmViewer patterns={[pattern]} />
+                    <RhythmViewer patterns={[pattern]} hideLabel />
                   </div>
                 </div>
               )
@@ -485,7 +485,11 @@ export default function UploadPage() {
             <div style={{ fontSize: 15, fontWeight: 900, color: '#f0ece0', marginBottom: 16, letterSpacing: '-0.02em' }}>{challenge.title}</div>
             <div style={{ overflowX: 'auto' }}>
               {challenge.type === 'rhythm'
-                ? <RhythmViewer patterns={challenge.chords?.patterns ?? []} />
+                ? <RhythmViewer
+                    patterns={challenge.chords?.patterns ?? []}
+                    activeTab={selectedProgression}
+                    onTabChange={setSelectedProgression}
+                  />
                 : <ChordPlayer progressions={challenge.chords?.progressions ?? []} title={challenge.title} />
               }
             </div>

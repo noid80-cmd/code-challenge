@@ -137,11 +137,27 @@ function splitIntoChunks(abc: string, chunkSize: number): string[] {
   return chunks
 }
 
-export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
+export default function RhythmViewer({
+  patterns,
+  activeTab: controlledTab,
+  onTabChange,
+  hideLabel = false,
+}: {
+  patterns: Pattern[]
+  activeTab?: number
+  onTabChange?: (i: number) => void
+  hideLabel?: boolean
+}) {
   const containerRef = useRef<HTMLDivElement>(null)
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
-  const [activeTab, setActiveTab] = useState(0)
+  const [internalTab, setInternalTab] = useState(0)
+  const activeTab = controlledTab ?? internalTab
   const hasMultiple = patterns.length > 1
+
+  function handleTabChange(i: number) {
+    setInternalTab(i)
+    onTabChange?.(i)
+  }
 
   // Split each pattern into 2-bar chunks so every row is a separate tune.
   // This guarantees stretchlast applies to every row (each chunk is its only line).
@@ -195,7 +211,7 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
           {processedChunks.map((p, pi) => {
             const shortLabel = p.label.replace(/^패턴\s*\d+\s*[-–—]?\s*/i, '') || `패턴 ${pi + 1}`
             return (
-              <button key={pi} onClick={() => setActiveTab(pi)} style={{
+              <button key={pi} onClick={() => handleTabChange(pi)} style={{
                 flex: 1, padding: '7px 10px', borderRadius: 10, border: 'none', cursor: 'pointer',
                 background: activeTab === pi ? 'rgba(240,236,224,0.15)' : 'rgba(240,236,224,0.04)',
                 outline: activeTab === pi ? '1px solid rgba(240,236,224,0.3)' : '1px solid rgba(240,236,224,0.08)',
@@ -213,7 +229,7 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
         const pi = hasMultiple ? activeTab : idx
         return (
           <div key={pi}>
-            {!hasMultiple && pattern.label && (
+            {!hasMultiple && !hideLabel && pattern.label && (
               <div style={{ fontSize: 12, fontWeight: 700, color: '#a0988c', marginBottom: 8, letterSpacing: '0.05em' }}>
                 {pattern.label}
               </div>
