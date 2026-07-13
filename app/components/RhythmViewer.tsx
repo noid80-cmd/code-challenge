@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useId, useMemo, useRef } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 type Pattern = { label: string; abc: string }
 
@@ -140,6 +140,8 @@ function splitIntoChunks(abc: string, chunkSize: number): string[] {
 export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
+  const [activeTab, setActiveTab] = useState(0)
+  const hasMultiple = patterns.length > 1
 
   // Split each pattern into 2-bar chunks so every row is a separate tune.
   // This guarantees stretchlast applies to every row (each chunk is its only line).
@@ -154,10 +156,11 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
   useEffect(() => {
     if (!containerRef.current) return
     const containerWidth = containerRef.current.clientWidth - 4
+    const piList = hasMultiple ? [activeTab] : processedChunks.map((_, i) => i)
 
     import('abcjs').then(ABCJS => {
-      processedChunks.forEach((pattern, pi) => {
-        pattern.chunks.forEach((abc, ci) => {
+      piList.forEach(pi => {
+        processedChunks[pi]?.chunks.forEach((abc, ci) => {
           const el = document.getElementById(`rv-${uid}-${pi}-${ci}`)
           if (!el) return
           ABCJS.renderAbc(`rv-${uid}-${pi}-${ci}`, abc, {
@@ -183,24 +186,46 @@ export default function RhythmViewer({ patterns }: { patterns: Pattern[] }) {
         })
       })
     })
-  }, [processedChunks, uid])
+  }, [processedChunks, uid, activeTab, hasMultiple])
 
   return (
-    <div ref={containerRef} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {processedChunks.map((pattern, pi) => (
-        <div key={pi}>
-          {pattern.label && (
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#a0988c', marginBottom: 8, letterSpacing: '0.05em' }}>
-              {pattern.label}
-            </div>
-          )}
-          <div style={{ background: 'rgba(240,236,224,0.04)', borderRadius: 12 }}>
-            {pattern.chunks.map((_, ci) => (
-              <div key={ci} id={`rv-${uid}-${pi}-${ci}`} />
-            ))}
-          </div>
+    <div ref={containerRef}>
+      {hasMultiple && (
+        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+          {processedChunks.map((p, pi) => {
+            const shortLabel = p.label.replace(/^패턴\s*\d+\s*[-–—]?\s*/i, '') || `패턴 ${pi + 1}`
+            return (
+              <button key={pi} onClick={() => setActiveTab(pi)} style={{
+                flex: 1, padding: '7px 10px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                background: activeTab === pi ? 'rgba(240,236,224,0.15)' : 'rgba(240,236,224,0.04)',
+                outline: activeTab === pi ? '1px solid rgba(240,236,224,0.3)' : '1px solid rgba(240,236,224,0.08)',
+                color: activeTab === pi ? '#f0ece0' : '#605850',
+                fontSize: 11, fontWeight: 700, letterSpacing: '0.03em',
+                transition: 'all 0.15s', textAlign: 'center',
+              }}>
+                {shortLabel}
+              </button>
+            )
+          })}
         </div>
-      ))}
+      )}
+      {(hasMultiple ? [processedChunks[activeTab]] : processedChunks).map((pattern, idx) => {
+        const pi = hasMultiple ? activeTab : idx
+        return (
+          <div key={pi}>
+            {!hasMultiple && pattern.label && (
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#a0988c', marginBottom: 8, letterSpacing: '0.05em' }}>
+                {pattern.label}
+              </div>
+            )}
+            <div style={{ background: 'rgba(240,236,224,0.04)', borderRadius: 12 }}>
+              {pattern.chunks.map((_, ci) => (
+                <div key={ci} id={`rv-${uid}-${pi}-${ci}`} />
+              ))}
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
