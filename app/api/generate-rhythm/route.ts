@@ -33,10 +33,7 @@ const BAR_PATTERNS: Record<string, string> = {
   X: 'B B/ z/ B/ z/ B z B z2',
   Y: 'z/ B/ B B B/ z/ (3BBB z2',
   Z: 'B/ z/ B B B/ z/ (3BzB z2',
-  // 쿼터/반음표 중심 패턴 (무거운 비트)
-  '1': 'B2 B2 B2 B2',
-  '2': 'B2 z2 B2 z2',
-  '3': 'z2 B2 z2 B2',
+  // 쿼터+8분음표 혼합 패턴 (무거운 비트)
   '4': 'B2 BB z2 BB',
   '5': 'BB B2 BB z2',
   // 점4분음표(B3) 패턴
@@ -108,8 +105,8 @@ function assemblePatternsABC(
 function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
-    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21) 중 최소 4개 포함 (나머지는 A~O, 1~9, 13~19, 22~24)'
-    : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21) 중 2~3개 포함 (나머지는 A~O, 1~9, 13~19, 22~24)'
+    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21) 중 최소 4개 포함 (나머지는 A~O, 4~9, 13~19, 22~24)'
+    : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~24)'
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -152,10 +149,7 @@ X: B B/ z/ B/ z/ B z B z2
 Y: z/ B/ B B B/ z/ (3BBB z2
 Z: B/ z/ B B B/ z/ (3BzB z2
 
-[쿼터/반음표 중심 패턴 1~5 — 무거운 비트감]
-1: B2 B2 B2 B2
-2: B2 z2 B2 z2
-3: z2 B2 z2 B2
+[쿼터+8분음표 혼합 패턴 4~5 — 무거운 비트감]
 4: B2 BB z2 BB
 5: BB B2 BB z2
 
