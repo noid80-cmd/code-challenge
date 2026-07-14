@@ -61,10 +61,34 @@ const BAR_PATTERNS: Record<string, string> = {
   '22': 'B2 z2 (3BBB (3BzB',
   '23': 'z4 (3BBB (3BzB',
   '24': '(3B2B2B2 (3BBB z2',
+  // 3연음 쉼표 위치 변형 — (3zBB=쉼표 선두, (3BBz=쉼표 후미
+  '25': '(3zBB (3BBz B2 z2',
+  '26': 'z2 (3zBB (3BBz B2',
+  '27': '(3zBB (3BzB (3BBz z2',
+  '28': 'B2 (3zBB (3BzB z2',
+  '29': '(3BBz z2 (3zBB B2',
+  // 2박 3연음(쿼터 트리플렛) 쉼표 변형
+  '30': '(3B2z2B2 BB z2',
+  '31': '(3z2B2B2 BB z2',
+  '32': '(3B2B2z2 BB z2',
+  '33': 'z2 (3B2z2B2 BB',
+  '34': 'z2 (3z2B2B2 BB',
+  '35': '(3z2B2z2 BB BB',
+  // 붓점 쉼표 패턴 — B>z=붓점+16분쉼표, z>B=붓점쉼표+16분음
+  '36': 'B>z B>z B>z B>z',
+  '37': 'z>B z>B z>B z>B',
+  '38': 'B>z z>B B>z z>B',
+  '39': 'B>z B>z (3BBB z2',
+  '40': 'z>B z>B (3BzB z2',
+  // 16분음표 그룹 내부 쉼표 위치 변형
+  '41': 'z/B/B/B/ z/B/B/B/ B2 z2',
+  '42': 'B/B/z/B/ B/B/z/B/ B2 z2',
+  '43': 'B/B/B/z/ B2 B/B/B/z/ z2',
+  '44': 'z/B/z/B/ z2 (3BBB B2',
 }
 
 // Bars that contain (3BzB — triplet with rest (syncopated feel)
-const SYNCO_TRIPLET_BARS = new Set(['D', 'I', 'Q', 'U', 'Z', '14', '16', '22', '23'])
+const SYNCO_TRIPLET_BARS = new Set(['D', 'I', 'Q', 'U', 'Z', '14', '16', '22', '23', '27', '28', '40'])
 
 function assemblePatternsABC(
   aiPatterns: Array<{ label: string; bars: string[] }>
@@ -105,8 +129,8 @@ function assemblePatternsABC(
 function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
-    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21) 중 최소 4개 포함 (나머지는 A~O, 4~9, 13~19, 22~24)'
-    : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~24)'
+    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 4개 포함 (나머지는 A~O, 4~9, 13~19, 22~35)'
+    : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35)'
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -184,13 +208,41 @@ Z: B/ z/ B B B/ z/ (3BzB z2
 23: z4 (3BBB (3BzB
 24: (3B2B2B2 (3BBB z2
 
+[3연음 쉼표 위치 변형 25~29 — (3zBB=쉼표선두, (3BBz=쉼표후미]
+25: (3zBB (3BBz B2 z2
+26: z2 (3zBB (3BBz B2
+27: (3zBB (3BzB (3BBz z2
+28: B2 (3zBB (3BzB z2
+29: (3BBz z2 (3zBB B2
+
+[2박 3연음 쉼표 변형 30~35 — 쿼터 트리플렛 안에 쉼표]
+30: (3B2z2B2 BB z2
+31: (3z2B2B2 BB z2
+32: (3B2B2z2 BB z2
+33: z2 (3B2z2B2 BB
+34: z2 (3z2B2B2 BB
+35: (3z2B2z2 BB BB
+
+[복잡: 붓점 쉼표 패턴 36~40 — B>z=붓점+16분쉼표, z>B=붓점쉼표+16분음]
+36: B>z B>z B>z B>z
+37: z>B z>B z>B z>B
+38: B>z z>B B>z z>B
+39: B>z B>z (3BBB z2
+40: z>B z>B (3BzB z2
+
+[복잡: 16분음표 그룹 내 쉼표 위치 변형 41~44]
+41: z/B/B/B/ z/B/B/B/ B2 z2
+42: B/B/z/B/ B/B/z/B/ B2 z2
+43: B/B/B/z/ B2 B/B/B/z/ z2
+44: z/B/z/B/ z2 (3BBB B2
+
 규칙:
 - ${levelRule}
-- 두 패턴이 서로 다른 리듬 특성을 갖도록 조합 (예: 한 패턴은 쿼터 중심, 다른 패턴은 3연음 중심)
+- 두 패턴이 서로 다른 리듬 특성을 갖도록 조합 (예: 한 패턴은 붓점 쉼표, 다른 패턴은 16분음표 내부 쉼표)
 - 같은 ID 최대 2번 반복 가능
-- label은 악보에 나타나는 리듬 특성으로 지어야 함 (예: "당김음 중심", "16분음표 집중", "3연음 위주", "점음표 패턴", "엇박 강조", "쿼터 비트", "부점 연속")
+- label은 악보에 나타나는 리듬 특성으로 지어야 함 (예: "당김음 중심", "16분음표 집중", "3연음 쉼표", "붓점 쉼표", "엇박 강조", "2박 트리플렛")
 - label에 스윙·셔플·그루브·펑크 등 장르/주법 이름 사용 금지
-- 싱코페이션·당김음·엇박 테마 패턴은 (3BzB 포함 bar(D·I·Q·U·Z·14·16·22·23) 최소 2개 이상 포함
+- 싱코페이션·당김음·엇박 테마 패턴은 (3BzB 포함 bar(D·I·Q·U·Z·14·16·22·23·27·28·40) 최소 2개 이상 포함
 
 JSON 객체로만 응답:
 {
@@ -198,8 +250,8 @@ JSON 객체로만 응답:
   "description": "간단한 설명 (1-2문장)",
   "level": "${level}",
   "patterns": [
-    {"label": "쿼터 비트", "bars": ["1", "2", "4", "5", "A", "B", "3", "13"]},
-    {"label": "3연음 집중", "bars": ["J", "K", "13", "15", "24", "N", "L", "16"]}
+    {"label": "붓점 쉼표", "bars": ["36", "38", "39", "F", "37", "40", "G", "17"]},
+    {"label": "3연음 쉼표 변형", "bars": ["25", "27", "28", "J", "29", "26", "30", "33"]}
   ]
 }`
 }
