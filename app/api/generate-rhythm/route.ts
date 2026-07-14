@@ -5,6 +5,7 @@ export const maxDuration = 120
 
 // All bars pre-verified: each = exactly 8 eighth-note units (4/4, L:1/8)
 const BAR_PATTERNS: Record<string, string> = {
+  // 기본 8분음표 패턴
   A: 'BB z2 BB z2',
   B: 'z2 BB z2 BB',
   C: 'B B/ B/ z B (3BBB z2',
@@ -20,6 +21,7 @@ const BAR_PATTERNS: Record<string, string> = {
   M: 'z4 B B/ B/ z B',
   N: 'z4 (3BBB z2',
   O: 'B/B/B/B/ z B (3BBB z2',
+  // 16분쉼표(z/) 포함 패턴
   P: 'B B/ z/ z B (3BBB z2',
   Q: 'B/ z/ B z B (3BzB z2',
   R: 'z/ B/ B z B (3BBB z2',
@@ -31,10 +33,41 @@ const BAR_PATTERNS: Record<string, string> = {
   X: 'B B/ z/ B/ z/ B z B z2',
   Y: 'z/ B/ B B B/ z/ (3BBB z2',
   Z: 'B/ z/ B B B/ z/ (3BzB z2',
+  // 쿼터/반음표 중심 패턴 (무거운 비트)
+  '1': 'B2 B2 B2 B2',
+  '2': 'B2 z2 B2 z2',
+  '3': 'z2 B2 z2 B2',
+  '4': 'B2 BB z2 BB',
+  '5': 'BB B2 BB z2',
+  // 점4분음표(B3) 패턴
+  '6': 'B3 B B3 B',
+  '7': 'z3 B B3 B',
+  '8': 'B3 B BB B2',
+  '9': 'z3 B BB B2',
+  // 16분음표 연속(B/B/B/B/) 패턴
+  '10': 'B/B/B/B/ B/B/B/B/ B2 B2',
+  '11': 'B2 B/B/B/B/ B/B/B/B/ z2',
+  '12': 'B/B/B/B/ z2 B/B/B/B/ B2',
+  // 이중 3연음 패턴
+  '13': '(3BBB (3BBB B2 z2',
+  '14': '(3BBB (3BzB B2 z2',
+  '15': 'z2 (3BBB (3BBB B2',
+  '16': 'B2 (3BzB (3BBB z2',
+  // 부점8분음표 연속 패턴
+  '17': 'B>B B>B B>B z2',
+  '18': 'z2 B>B B>B B>B',
+  '19': 'B<B B<B B<B z2',
+  // 16분쉼표 응용 패턴
+  '20': 'B/ z/ B2 B/ z/ B2 z2',
+  '21': 'z2 B/ z/ B2 B/ z/ B2',
+  // 혼합 3연음 패턴
+  '22': 'B2 z2 (3BBB (3BzB',
+  '23': 'z4 (3BBB (3BzB',
+  '24': '(3B2B2B2 (3BBB z2',
 }
 
 // Bars that contain (3BzB — triplet with rest (syncopated feel)
-const SYNCO_TRIPLET_BARS = new Set(['D', 'I', 'Q', 'U', 'Z'])
+const SYNCO_TRIPLET_BARS = new Set(['D', 'I', 'Q', 'U', 'Z', '14', '16', '22', '23'])
 
 function assemblePatternsABC(
   aiPatterns: Array<{ label: string; bars: string[] }>
@@ -75,8 +108,8 @@ function assemblePatternsABC(
 function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
-    ? '각 패턴에 P~Z 중 최소 4개 포함 (나머지는 A~O)'
-    : '각 패턴에 P~Z 중 2~3개 포함 (나머지는 A~O)'
+    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21) 중 최소 4개 포함 (나머지는 A~O, 1~9, 13~19, 22~24)'
+    : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21) 중 2~3개 포함 (나머지는 A~O, 1~9, 13~19, 22~24)'
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -89,7 +122,7 @@ function buildPrompt(level: string, recentTitles: string[] = []) {
 아래 마디 패턴 라이브러리에서 각 패턴에 대해 정확히 8개 마디 ID를 선택하세요.
 각 패턴은 정확히 4박자입니다.
 
-[심플 패턴 A~O]
+[기본 8분음표 패턴 A~O]
 A: BB z2 BB z2
 B: z2 BB z2 BB
 C: B B/ B/ z B (3BBB z2
@@ -106,7 +139,7 @@ M: z4 B B/ B/ z B
 N: z4 (3BBB z2
 O: B/B/B/B/ z B (3BBB z2
 
-[16분쉼표(z/) 포함 패턴 P~Z]
+[복잡: 16분쉼표(z/) 포함 패턴 P~Z]
 P: B B/ z/ z B (3BBB z2
 Q: B/ z/ B z B (3BzB z2
 R: z/ B/ B z B (3BBB z2
@@ -119,13 +152,51 @@ X: B B/ z/ B/ z/ B z B z2
 Y: z/ B/ B B B/ z/ (3BBB z2
 Z: B/ z/ B B B/ z/ (3BzB z2
 
+[쿼터/반음표 중심 패턴 1~5 — 무거운 비트감]
+1: B2 B2 B2 B2
+2: B2 z2 B2 z2
+3: z2 B2 z2 B2
+4: B2 BB z2 BB
+5: BB B2 BB z2
+
+[점4분음표(B3) 패턴 6~9]
+6: B3 B B3 B
+7: z3 B B3 B
+8: B3 B BB B2
+9: z3 B BB B2
+
+[복잡: 16분음표 연속(B/B/B/B/) 패턴 10~12]
+10: B/B/B/B/ B/B/B/B/ B2 B2
+11: B2 B/B/B/B/ B/B/B/B/ z2
+12: B/B/B/B/ z2 B/B/B/B/ B2
+
+[이중 3연음 패턴 13~16]
+13: (3BBB (3BBB B2 z2
+14: (3BBB (3BzB B2 z2
+15: z2 (3BBB (3BBB B2
+16: B2 (3BzB (3BBB z2
+
+[부점8분음표 연속 패턴 17~19]
+17: B>B B>B B>B z2
+18: z2 B>B B>B B>B
+19: B<B B<B B<B z2
+
+[복잡: 16분쉼표 응용 패턴 20~21]
+20: B/ z/ B2 B/ z/ B2 z2
+21: z2 B/ z/ B2 B/ z/ B2
+
+[혼합 3연음 패턴 22~24]
+22: B2 z2 (3BBB (3BzB
+23: z4 (3BBB (3BzB
+24: (3B2B2B2 (3BBB z2
+
 규칙:
 - ${levelRule}
-- 두 패턴이 서로 다른 리듬 특성을 갖도록 조합
+- 두 패턴이 서로 다른 리듬 특성을 갖도록 조합 (예: 한 패턴은 쿼터 중심, 다른 패턴은 3연음 중심)
 - 같은 ID 최대 2번 반복 가능
-- label은 악보에 나타나는 리듬 특성으로 지어야 함 (예: "당김음 중심", "16분음표 집중", "3연음 위주", "점음표 패턴", "엇박 강조")
+- label은 악보에 나타나는 리듬 특성으로 지어야 함 (예: "당김음 중심", "16분음표 집중", "3연음 위주", "점음표 패턴", "엇박 강조", "쿼터 비트", "부점 연속")
 - label에 스윙·셔플·그루브·펑크 등 장르/주법 이름 사용 금지
-- 싱코페이션·당김음·엇박 테마 패턴은 (3BzB 포함 bar(D·I·Q·U·Z) 최소 2개 이상 포함
+- 싱코페이션·당김음·엇박 테마 패턴은 (3BzB 포함 bar(D·I·Q·U·Z·14·16·22·23) 최소 2개 이상 포함
 
 JSON 객체로만 응답:
 {
@@ -133,8 +204,8 @@ JSON 객체로만 응답:
   "description": "간단한 설명 (1-2문장)",
   "level": "${level}",
   "patterns": [
-    {"label": "당김음 중심", "bars": ["C", "A", "G", "D", "R", "E", "J", "P"]},
-    {"label": "16분음표 집중", "bars": ["B", "H", "C", "Q", "A", "D", "M", "E"]}
+    {"label": "쿼터 비트", "bars": ["1", "2", "4", "5", "A", "B", "3", "13"]},
+    {"label": "3연음 집중", "bars": ["J", "K", "13", "15", "24", "N", "L", "16"]}
   ]
 }`
 }
