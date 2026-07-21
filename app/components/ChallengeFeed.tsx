@@ -9,6 +9,7 @@ import { localDate, challengeDate } from '@/lib/date'
 
 const ChordPlayer = dynamic(() => import('./ChordPlayer'), { ssr: false })
 const RhythmViewer = dynamic(() => import('./RhythmViewer'), { ssr: false })
+const MelodyPlayer = dynamic(() => import('./MelodyPlayer'), { ssr: false })
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
 
@@ -76,7 +77,7 @@ function PushBanner({ user }: { user: User }) {
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type Challenge = {
   id: string; date: string; title: string; description?: string; level: string
-  type: 'chord' | 'rhythm'
+  type: 'chord' | 'rhythm' | 'melody'
   chords: { progressions?: Progression[]; patterns?: { label: string; abc: string }[] }
 }
 type Submission = {
@@ -114,7 +115,7 @@ function calcStreak(dates: string[]) {
   return streak
 }
 
-export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
+export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'melody' }) {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [extraChallenges, setExtraChallenges] = useState<Challenge[]>([])
@@ -202,8 +203,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
   const today = new Date()
   const dateStr = `${today.getFullYear()}.${String(today.getMonth() + 1).padStart(2, '0')}.${String(today.getDate()).padStart(2, '0')}`
   const isAdmin = user?.email === 'noid80@hanmail.net'
-  const typeLabel = type === 'chord' ? '코드챌린지' : '리듬챌린지'
-  const typeEmoji = type === 'chord' ? '🎵' : '🥁'
+  const typeLabel = type === 'chord' ? '코드챌린지' : type === 'rhythm' ? '리듬챌린지' : '멜로디챌린지'
+  const typeEmoji = type === 'chord' ? '🎵' : type === 'rhythm' ? '🥁' : '🎼'
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0a0a08', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
@@ -239,7 +240,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
 
         {/* 타입 스위처 */}
         <div style={{ display: 'flex', background: 'rgba(240,236,224,0.06)', borderRadius: 10, padding: 3, gap: 2 }}>
-          {(['chord', 'rhythm'] as const).map(t => (
+          {(['chord', 'rhythm', 'melody'] as const).map(t => (
             <Link key={t} href={`/${t}`} style={{
               width: 36, height: 28, borderRadius: 8,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -248,7 +249,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
               outline: type === t ? '1px solid rgba(240,236,224,0.2)' : 'none',
               transition: 'all 0.15s',
             }}>
-              {t === 'chord' ? '🎵' : '🥁'}
+              {t === 'chord' ? '🎵' : t === 'rhythm' ? '🥁' : '🎼'}
             </Link>
           ))}
         </div>
@@ -365,6 +366,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
                   )}
                   {type === 'rhythm'
                     ? <RhythmViewer patterns={challenge.chords?.patterns ?? []} />
+                    : type === 'melody'
+                    ? <MelodyPlayer patterns={challenge.chords?.patterns ?? []} />
                     : <ChordPlayer progressions={challenge.chords?.progressions ?? []} title={challenge.title} />
                   }
                   <div style={{ marginTop: 16 }}>
@@ -398,7 +401,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
               borderRadius: 22, padding: '48px 20px', textAlign: 'center',
             }}>
               <p style={{ color: '#605850', fontSize: 15, fontWeight: 700, marginBottom: 5 }}>오늘의 챌린지를 준비 중이에요</p>
-              <p style={{ color: '#303028', fontSize: 13 }}>매일 낮 12시에 새로운 {type === 'rhythm' ? '리듬 패턴' : '코드 진행'}이 올라와요</p>
+              <p style={{ color: '#303028', fontSize: 13 }}>매일 낮 12시에 새로운 {type === 'rhythm' ? '리듬 패턴' : type === 'melody' ? '멜로디 프레이즈' : '코드 진행'}이 올라와요</p>
               {isAdmin && (
                 <Link href="/admin" style={{
                   display: 'inline-block', marginTop: 22, padding: '9px 20px', borderRadius: 10,
@@ -432,7 +435,10 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
               {ec.description && ec.description !== ec.title && (
                 <p style={{ fontSize: 13, color: '#605850', lineHeight: 1.7, marginBottom: 18 }}>{ec.description}</p>
               )}
-              <RhythmViewer patterns={ec.chords?.patterns ?? []} />
+              {type === 'melody'
+                ? <MelodyPlayer patterns={ec.chords?.patterns ?? []} />
+                : <RhythmViewer patterns={ec.chords?.patterns ?? []} />
+              }
               <div style={{ marginTop: 16 }}>
                 <Link href={`/upload?type=${type}&challenge=${ec.id}`} style={{
                   display: 'block', padding: '14px', borderRadius: 13,
@@ -549,7 +555,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
             </div>
           )}
 
-          {type === 'rhythm' && (
+          {(type === 'rhythm' || type === 'melody') && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <button onClick={() => setSortBy('newest')} style={{
@@ -581,7 +587,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' }) {
                 .map(sub => (
                   <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)}
                     progressions={type === 'chord' ? challenge?.chords?.progressions : undefined}
-                    patterns={type === 'rhythm' ? challenge?.chords?.patterns : undefined} />
+                    patterns={type === 'rhythm' || type === 'melody' ? challenge?.chords?.patterns : undefined} />
                 ))}
             </div>
           )}

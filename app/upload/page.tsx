@@ -10,6 +10,7 @@ import { normalizeMeasures } from '@/lib/chords'
 import { challengeDate } from '@/lib/date'
 
 const RhythmViewer = dynamic(() => import('@/app/components/RhythmViewer'), { ssr: false })
+const MelodyPlayer = dynamic(() => import('@/app/components/MelodyPlayer'), { ssr: false })
 
 type Progression = { label: string; chords: string[]; style?: string; tempo?: number }
 type Challenge = {
@@ -322,19 +323,20 @@ export default function UploadPage() {
           <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(240,236,224,0.4)', letterSpacing: '0.12em', marginBottom: 10 }}>
             {challenge?.title}
           </div>
-          {challenge?.type === 'rhythm' ? (
-            // 리듬 챌린지: 악보 오버레이 (반투명 — 결과 영상엔 미포함)
+          {challenge?.type === 'rhythm' || challenge?.type === 'melody' ? (
+            // 리듬/멜로디 챌린지: 악보 오버레이 (반투명 — 결과 영상엔 미포함)
             (() => {
               const patterns = challenge?.chords?.patterns ?? []
               const pattern = patterns[selectedProgression]
               if (!pattern) return null
+              const Viewer = challenge?.type === 'melody' ? MelodyPlayer : RhythmViewer
               return (
                 <div style={{ background: 'rgba(0,0,0,0.78)', borderRadius: 10, padding: '6px 10px', overflow: 'hidden' }}>
                   {patterns.length > 1 && (
                     <div style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.7)', marginBottom: 4 }}>{pattern.label}</div>
                   )}
                   <div style={{ filter: 'invert(1) brightness(10)' }}>
-                    <RhythmViewer patterns={[pattern]} hideLabel />
+                    <Viewer patterns={[pattern]} hideLabel />
                   </div>
                 </div>
               )
@@ -490,6 +492,12 @@ export default function UploadPage() {
                     activeTab={selectedProgression}
                     onTabChange={setSelectedProgression}
                   />
+                : challenge.type === 'melody'
+                ? <MelodyPlayer
+                    patterns={challenge.chords?.patterns ?? []}
+                    activeTab={selectedProgression}
+                    onTabChange={setSelectedProgression}
+                  />
                 : <ChordPlayer progressions={challenge.chords?.progressions ?? []} title={challenge.title} />
               }
             </div>
@@ -500,11 +508,11 @@ export default function UploadPage() {
           </div>
         )}
 
-        {/* 패턴 선택 (리듬) */}
-        {challenge && challenge.type === 'rhythm' && (challenge.chords?.patterns?.length ?? 0) > 1 && (
+        {/* 패턴 선택 (리듬/멜로디) */}
+        {challenge && (challenge.type === 'rhythm' || challenge.type === 'melody') && (challenge.chords?.patterns?.length ?? 0) > 1 && (
           <div style={{ marginBottom: 8 }}>
             <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', marginBottom: 8, color: '#a0988c' }}>
-              어느 패턴을 연주할까요?
+              {challenge.type === 'melody' ? '어느 프레이즈를 연주할까요?' : '어느 패턴을 연주할까요?'}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
               {(challenge.chords.patterns ?? []).map((pattern, i) => (

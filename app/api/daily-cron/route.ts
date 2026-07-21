@@ -381,18 +381,176 @@ JSON 객체로만 응답:
     }
   }
 
+  // ── 멜로디챌린지 (계이름 시창, C장조 고정) ────────────────
+  const MELODY_BAR_PATTERNS: Record<string, string> = {
+    A: 'C2 D2 E2 F2', B: 'F2 E2 D2 C2', C: 'G2 A2 B2 c2', D: 'c2 B2 A2 G2',
+    E: 'CDEFGABc', F: 'cBAGFEDC',
+    G: 'C2 E2 G2 c2', H: 'c2 G2 E2 C2',
+    I: 'C4 E4', J: 'E4 C4', K: 'G4 C4', L: 'C4 D4',
+    M: 'CDEF E2 D2', N: 'G2 A2 G2 F2', O: 'E2 D2 E2 F2',
+    P: 'C2 E2 D2 F2', Q: 'G2 E2 F2 D2',
+    R: 'CDED C2 D2', S: 'GFEF G2 F2',
+    T: 'C2 G2 c2 G2',
+  }
+
+  function assembleMelodyABC(
+    aiPatterns: Array<{ label: string; bars: string[] }>
+  ): Array<{ label: string; abc: string }> | null {
+    const result: Array<{ label: string; abc: string }> = []
+    for (const p of aiPatterns) {
+      if (!Array.isArray(p.bars) || p.bars.length !== 8) {
+        console.error(`[cron-melody] bars.length=${p.bars?.length ?? 'missing'}`)
+        return null
+      }
+      const barTexts: string[] = []
+      for (const id of p.bars) {
+        const barText = MELODY_BAR_PATTERNS[String(id).toUpperCase()]
+        if (!barText) {
+          console.error(`[cron-melody] unknown pattern ID: "${id}"`)
+          return null
+        }
+        barTexts.push(barText)
+      }
+      const abc =
+        'X:1\nM:4/4\nL:1/8\nQ:1/4=100\nK:C\nV:1 clef=treble\n|' +
+        barTexts.join('|') + '|]'
+      result.push({ label: String(p.label || `프레이즈 ${result.length + 1}`), abc })
+    }
+    return result.length >= 2 ? result : null
+  }
+
+  const { data: existingMelody } = await supabase
+    .from('challenges').select('id, title').eq('date', today).eq('type', 'melody').maybeSingle()
+
+  let melodyTitle: string | null = existingMelody?.title ?? null
+
+  if (!existingMelody) {
+    const melodyLevel = Math.random() < 0.7 ? 'intermediate' : 'advanced'
+
+    const melodyLevelRule = melodyLevel === 'advanced'
+      ? '각 프레이즈에 도약 패턴(G,H,I,J,K,L,P,Q,T) 중 최소 4개 포함 (나머지는 순차 진행 위주 패턴)'
+      : '각 프레이즈에 도약 패턴(G,H,I,J,K,L,P,Q,T) 중 1~2개 포함 (나머지는 순차 진행 위주 패턴)'
+
+    const melodyPrompt = `계이름 시창(멜로디 초견) 챌린지를 생성하세요. 서로 다른 멜로디 특징을 가진 프레이즈 2개를 포함합니다.
+
+난이도: ${melodyLevel === 'advanced' ? '고급' : '중급'}
+조성: C장조 고정
+
+아래 마디 패턴 라이브러리에서 각 프레이즈에 대해 정확히 8개 마디 ID를 선택하세요.
+각 마디는 정확히 4박자입니다.
+
+[순차 진행 A~D — 4분음표]
+A: C2 D2 E2 F2
+B: F2 E2 D2 C2
+C: G2 A2 B2 c2
+D: c2 B2 A2 G2
+
+[한 옥타브 스케일 E~F — 8분음표]
+E: CDEFGABc
+F: cBAGFEDC
+
+[3도 도약 아르페지오 G~H]
+G: C2 E2 G2 c2
+H: c2 G2 E2 C2
+
+[긴 음 도약 I~L — 2분음표]
+I: C4 E4
+J: E4 C4
+K: G4 C4
+L: C4 D4
+
+[상행 후 되돌아오기 M~O]
+M: CDEF E2 D2
+N: G2 A2 G2 F2
+O: E2 D2 E2 F2
+
+[도약+스텝 혼합 P~Q]
+P: C2 E2 D2 F2
+Q: G2 E2 F2 D2
+
+[제자리 왕복 R~S]
+R: CDED C2 D2
+S: GFEF G2 F2
+
+[반복 도약 T]
+T: C2 G2 c2 G2
+
+규칙:
+- ${melodyLevelRule}
+- 두 프레이즈가 서로 다른 멜로디 특성을 갖도록 조합
+- 같은 ID 최대 2번 반복 가능
+
+JSON 객체로만 응답:
+{
+  "title": "챌린지 제목",
+  "description": "간단한 설명 (1-2문장)",
+  "level": "${melodyLevel}",
+  "patterns": [
+    {"label": "순차 상행", "bars": ["A", "C", "E", "M", "B", "D", "F", "O"]},
+    {"label": "3도 도약", "bars": ["G", "H", "I", "P", "T", "J", "Q", "K"]}
+  ]
+}`
+
+    const MELODY_FALLBACK = {
+      title: '계이름 시창 챌린지',
+      description: '순차 진행과 3도 도약을 포함한 중급 챌린지입니다.',
+      level: 'intermediate',
+      patterns: assembleMelodyABC([
+        { label: '순차 상행', bars: ['A', 'C', 'E', 'M', 'B', 'D', 'F', 'O'] },
+        { label: '3도 도약', bars: ['G', 'H', 'I', 'P', 'T', 'J', 'Q', 'K'] },
+      ])!,
+    }
+
+    let melodyCh: { title: string; description: string; level: string; patterns: unknown[] } | null = null
+    for (let attempt = 1; attempt <= 10; attempt++) {
+      const melodyMsg = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1024,
+        system: 'You are a JSON generator. Output only a valid JSON object. No explanations, no reasoning text, no markdown. Start your response directly with { and end with }.',
+        messages: [{ role: 'user', content: melodyPrompt }],
+      })
+      const melodyText = melodyMsg.content[0].type === 'text' ? melodyMsg.content[0].text : ''
+      const melodyJsonStr = extractJsonObject(melodyText)
+      if (!melodyJsonStr) { console.error(`[cron-melody] attempt ${attempt}: no JSON`); continue }
+      let parsed
+      try { parsed = JSON.parse(melodyJsonStr) } catch { continue }
+      const assembled = assembleMelodyABC(parsed.patterns ?? [])
+      if (!assembled) { console.error(`[cron-melody] attempt ${attempt}: assembly failed`); continue }
+      melodyCh = { ...parsed, patterns: assembled }
+      console.log(`[cron-melody] success attempt=${attempt} level=${melodyLevel}`)
+      break
+    }
+    if (!melodyCh) {
+      console.error('[cron-melody] all 10 attempts failed — using fallback')
+      melodyCh = MELODY_FALLBACK
+    }
+
+    if (melodyCh) {
+      await supabase.from('challenges').insert({
+        date: today,
+        type: 'melody',
+        level: melodyCh.level,
+        title: melodyCh.title,
+        description: melodyCh.description,
+        chords: { patterns: melodyCh.patterns },
+      })
+      melodyTitle = melodyCh.title
+    }
+  }
+
   // ── 푸시 알림 ──────────────────────────────────────────
   const { data: subs } = await supabase
     .from('push_subscriptions').select('subscription, endpoint')
 
   if (!subs || subs.length === 0) {
-    return NextResponse.json({ chordTitle, rhythmTitle, sent: 0 })
+    return NextResponse.json({ chordTitle, rhythmTitle, melodyTitle, sent: 0 })
   }
 
   const notifTitle = 'PlayDaily — 오늘의 챌린지'
   const notifBody = [
     chordTitle ? `🎵 ${chordTitle}` : null,
     rhythmTitle ? `🥁 ${rhythmTitle}` : null,
+    melodyTitle ? `🎼 ${melodyTitle}` : null,
   ].filter(Boolean).join('\n') || '새로운 챌린지가 올라왔어요!'
 
   const deadEndpoints: string[] = []
@@ -415,5 +573,5 @@ JSON 객체로만 응답:
   }
 
   const sent = results.filter(r => r.status === 'fulfilled').length
-  return NextResponse.json({ chordTitle, rhythmTitle, sent, total: subs.length })
+  return NextResponse.json({ chordTitle, rhythmTitle, melodyTitle, sent, total: subs.length })
 }

@@ -11,6 +11,7 @@ type Progression = { label: string; chords: string[][]; style?: string; tempo?: 
 type DraftChallenge = { title: string; description: string; progressions: Progression[]; level: string }
 type ExistingChallenge = { id: string; date: string; title: string; level: string; type?: string }
 type RhythmDraft = { title: string; description: string; level: string; patterns: { label: string; abc: string }[] }
+type MelodyDraft = { title: string; description: string; level: string; patterns: { label: string; abc: string }[] }
 type Member = { id: string; name: string; avatar_url: string | null; created_at: string; submissionCount: number; lastSubmission: string | null }
 
 const LEVEL_LABELS: Record<string, string> = { beginner: '초급', intermediate: '중급', advanced: '고급' }
@@ -70,9 +71,11 @@ export default function AdminPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [membersLoaded, setMembersLoaded] = useState(false)
-  const [challengeTypeForNew, setChallengeTypeForNew] = useState<'chord' | 'rhythm'>('chord')
+  const [challengeTypeForNew, setChallengeTypeForNew] = useState<'chord' | 'rhythm' | 'melody'>('chord')
   const [rhythmDraft, setRhythmDraft] = useState<RhythmDraft | null>(null)
   const [generatingRhythm, setGeneratingRhythm] = useState(false)
+  const [melodyDraft, setMelodyDraft] = useState<MelodyDraft | null>(null)
+  const [generatingMelody, setGeneratingMelody] = useState(false)
 
   const loadChallenges = useCallback(async () => {
     const supabase = createClient()
@@ -132,6 +135,50 @@ export default function AdminPage() {
       setError(error.message)
     } else {
       setSuccess(`${selectedDate} 리듬 챌린지 저장됐어요!`)
+      await loadChallenges()
+    }
+    setSaving(false)
+  }
+
+  async function generateMelody() {
+    setGeneratingMelody(true); setError(''); setMelodyDraft(null)
+    try {
+      const res = await fetch('/api/generate-melody', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || '생성 실패')
+      const ch = data.challenge
+      setMelodyDraft({
+        title: ch.title ?? '',
+        description: ch.description ?? '',
+        level: ch.level ?? 'intermediate',
+        patterns: ch.patterns ?? [],
+      })
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : '생성 실패')
+    }
+    setGeneratingMelody(false)
+  }
+
+  async function saveMelodyChallenge() {
+    if (!melodyDraft || melodyDraft.patterns.length === 0) {
+      setError('생성된 챌린지가 없어요.'); return
+    }
+    const draftToSave = { ...melodyDraft }
+    setMelodyDraft(null)
+    setSaving(true); setError(''); setSuccess('')
+    const supabase = createClient()
+    const { error } = await supabase.from('challenges').insert({
+      date: selectedDate,
+      type: 'melody',
+      title: draftToSave.title.trim(),
+      description: draftToSave.description.trim() || null,
+      chords: { patterns: draftToSave.patterns },
+      level: draftToSave.level,
+    })
+    if (error) {
+      setError(error.message)
+    } else {
+      setSuccess(`${selectedDate} 멜로디 챌린지 저장됐어요!`)
       await loadChallenges()
     }
     setSaving(false)
@@ -407,14 +454,14 @@ export default function AdminPage() {
         {/* 챌린지 타입 선택 */}
         {!editingId && (
           <div style={{ display: 'flex', gap: 6, marginBottom: 16, background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
-            {(['chord', 'rhythm'] as const).map(t => (
-              <button key={t} onClick={() => { setChallengeTypeForNew(t); setDraft(null); setRhythmDraft(null); setError(''); setSuccess('') }} style={{
+            {(['chord', 'rhythm', 'melody'] as const).map(t => (
+              <button key={t} onClick={() => { setChallengeTypeForNew(t); setDraft(null); setRhythmDraft(null); setMelodyDraft(null); setError(''); setSuccess('') }} style={{
                 flex: 1, padding: '9px', borderRadius: 9, border: 'none', cursor: 'pointer',
                 background: challengeTypeForNew === t ? 'rgba(99,102,241,0.2)' : 'transparent',
                 color: challengeTypeForNew === t ? '#a5b4fc' : '#555570',
                 fontSize: 13, fontWeight: 800,
               }}>
-                {t === 'chord' ? '🎵 코드챌린지' : '🥁 리듬챌린지'}
+                {t === 'chord' ? '🎵 코드챌린지' : t === 'rhythm' ? '🥁 리듬챌린지' : '🎼 멜로디챌린지'}
               </button>
             ))}
           </div>
@@ -452,6 +499,44 @@ export default function AdminPage() {
                 <button onClick={saveRhythmChallenge} disabled={saving}
                   style={{ width: '100%', padding: '13px', borderRadius: 13, border: 'none', marginTop: 16, background: saving ? '#1a1a2e' : 'linear-gradient(135deg, #059669, #10b981)', color: saving ? '#444466' : '#fff', fontSize: 15, fontWeight: 700, cursor: saving ? 'default' : 'pointer' }}>
                   {saving ? '저장 중...' : '✓ 리듬 챌린지 저장하기'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {challengeTypeForNew === 'melody' && !editingId && (
+          <div>
+            <button onClick={generateMelody} disabled={generatingMelody}
+              style={{ width: '100%', padding: '14px', borderRadius: 14, border: 'none', background: generatingMelody ? '#1a1a2e' : 'linear-gradient(135deg, #4f46e5, #6366f1)', color: generatingMelody ? '#444466' : '#fff', fontSize: 16, fontWeight: 700, cursor: generatingMelody ? 'default' : 'pointer', marginBottom: 16 }}>
+              {generatingMelody ? '생성 중...' : 'AI로 멜로디 프레이즈 생성'}
+            </button>
+            {error && <p style={{ color: '#f87171', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>{error}</p>}
+            {success && <p style={{ color: '#34d399', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>{success}</p>}
+            {melodyDraft && (
+              <div style={{ background: '#0e0e1a', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>제목</label>
+                  <input value={melodyDraft.title} onChange={e => setMelodyDraft({ ...melodyDraft, title: e.target.value })}
+                    style={inputStyle} />
+                </div>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>설명 (선택)</label>
+                  <textarea value={melodyDraft.description} onChange={e => setMelodyDraft({ ...melodyDraft, description: e.target.value })}
+                    rows={2} style={{ ...inputStyle, resize: 'none' }} />
+                </div>
+                {melodyDraft.patterns.map((p, pi) => (
+                  <div key={pi} style={{ marginBottom: 8, padding: 10, background: 'rgba(99,102,241,0.07)', borderRadius: 10 }}>
+                    <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 700, marginBottom: 6 }}>
+                      {p.label || `프레이즈 ${pi + 1}`}
+                    </div>
+                    <textarea value={p.abc} onChange={e => setMelodyDraft({ ...melodyDraft, patterns: melodyDraft.patterns.map((pp, k) => k === pi ? { ...pp, abc: e.target.value } : pp) })}
+                      rows={3} style={{ ...inputStyle, resize: 'vertical', fontSize: 11, fontFamily: 'monospace' }} />
+                  </div>
+                ))}
+                <button onClick={saveMelodyChallenge} disabled={saving}
+                  style={{ width: '100%', padding: '13px', borderRadius: 13, border: 'none', marginTop: 16, background: saving ? '#1a1a2e' : 'linear-gradient(135deg, #059669, #10b981)', color: saving ? '#444466' : '#fff', fontSize: 15, fontWeight: 700, cursor: saving ? 'default' : 'pointer' }}>
+                  {saving ? '저장 중...' : '✓ 멜로디 챌린지 저장하기'}
                 </button>
               </div>
             )}
@@ -607,8 +692,8 @@ export default function AdminPage() {
                       <span style={{ color: LEVEL_COLORS[ch.level || 'intermediate'], fontSize: 10 }}>
                         {LEVEL_LABELS[ch.level || 'intermediate']}
                       </span>
-                      <span style={{ fontSize: 10, color: ch.type === 'rhythm' ? '#a78bfa' : '#60a5fa' }}>
-                        {ch.type === 'rhythm' ? '🥁' : '🎵'}
+                      <span style={{ fontSize: 10, color: ch.type === 'rhythm' ? '#a78bfa' : ch.type === 'melody' ? '#34d399' : '#60a5fa' }}>
+                        {ch.type === 'rhythm' ? '🥁' : ch.type === 'melody' ? '🎼' : '🎵'}
                       </span>
                     </div>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#ccccee', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ch.title}</div>

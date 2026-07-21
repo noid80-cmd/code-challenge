@@ -8,6 +8,7 @@ import type { User } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
 const ChordPlayer = dynamic(() => import('@/app/components/ChordPlayer'), { ssr: false })
 const RhythmViewer = dynamic(() => import('@/app/components/RhythmViewer'), { ssr: false })
+const MelodyPlayer = dynamic(() => import('@/app/components/MelodyPlayer'), { ssr: false })
 import { localDate } from '@/lib/date'
 
 type Progression = { label: string; chords: string[] | string[][]; style?: string; tempo?: number }
@@ -95,6 +96,7 @@ export default function ChallengePage() {
   const today = localDate()
   const isToday = challenge.date === today
   const isRhythm = challenge.type === 'rhythm'
+  const isMelody = challenge.type === 'melody'
   const progressions = challenge.chords?.progressions ?? []
   const patterns = challenge.chords?.patterns ?? []
 
@@ -142,6 +144,8 @@ export default function ChallengePage() {
           <div style={{ overflowX: 'auto' }}>
             {isRhythm
               ? <RhythmViewer patterns={patterns} />
+              : isMelody
+              ? <MelodyPlayer patterns={patterns} />
               : <ChordPlayer progressions={progressions} title={challenge.title} />}
           </div>
           {isToday && user && (
@@ -198,7 +202,7 @@ export default function ChallengePage() {
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {sorted.map(sub => (
-              <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)} progressions={isRhythm ? undefined : progressions} patterns={isRhythm ? patterns : undefined} />
+              <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)} progressions={isRhythm || isMelody ? undefined : progressions} patterns={isRhythm || isMelody ? patterns : undefined} />
             ))}
           </div>
         )}
