@@ -151,6 +151,41 @@ export default function LandingPage() {
               <span style={{ fontSize: 16, color: '#403830' }}>→</span>
             </div>
           </Link>
+
+          <Link href="/melody" style={{ textDecoration: 'none' }}>
+            <div style={{
+              background: 'linear-gradient(145deg, #111110, #0e0e0c)',
+              border: '1px solid rgba(240,236,224,0.15)',
+              borderRadius: 24, padding: '24px',
+              display: 'flex', alignItems: 'center', gap: 20,
+              boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+              cursor: 'pointer',
+            }}>
+              <div style={{
+                width: 52, height: 52, borderRadius: 14, flexShrink: 0,
+                background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 16px rgba(240,236,224,0.3)',
+              }}>
+                <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
+                  <circle cx="5" cy="14" r="3.2" fill="rgba(4,7,0,0.85)"/>
+                  <circle cx="16" cy="11" r="3.2" fill="rgba(4,7,0,0.85)"/>
+                  <line x1="8" y1="14" x2="8" y2="2" stroke="rgba(4,7,0,0.85)" strokeWidth="1.8" strokeLinecap="round"/>
+                  <line x1="19" y1="11" x2="19" y2="2" stroke="rgba(4,7,0,0.85)" strokeWidth="1.8" strokeLinecap="round"/>
+                  <line x1="8" y1="2" x2="19" y2="2" stroke="rgba(4,7,0,0.85)" strokeWidth="2.4" strokeLinecap="round"/>
+                </svg>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 19, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em', marginBottom: 4 }}>
+                  멜로디챌린지
+                </div>
+                <div style={{ fontSize: 13, color: '#605850', fontWeight: 500 }}>
+                  매일 새로운 멜로디를 계이름으로 초견하세요
+                </div>
+              </div>
+              <span style={{ fontSize: 16, color: '#403830' }}>→</span>
+            </div>
+          </Link>
         </div>
       </main>
 
