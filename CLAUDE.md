@@ -3,7 +3,7 @@
 # 코드 챌린지
 
 ## 배포 & 저장소
-- **URL**: code.vercel.app
+- **URL**: https://code-challenge-smoky-seven.vercel.app
 - **GitHub**: noid80-cmd/code-challenge
 - **플랫폼**: Vercel
 - **commit/push는 허락 없이 바로 진행**
