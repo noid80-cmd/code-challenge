@@ -239,19 +239,51 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
         </Link>
 
         {/* 타입 스위처 */}
-        <div style={{ display: 'flex', background: 'rgba(240,236,224,0.06)', borderRadius: 10, padding: 3, gap: 2 }}>
-          {(['chord', 'rhythm', 'melody'] as const).map(t => (
-            <Link key={t} href={`/${t}`} style={{
-              width: 36, height: 28, borderRadius: 8,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: type === t ? 'rgba(240,236,224,0.13)' : 'transparent',
-              fontSize: 15, textDecoration: 'none',
-              outline: type === t ? '1px solid rgba(240,236,224,0.2)' : 'none',
-              transition: 'all 0.15s',
-            }}>
-              {t === 'chord' ? '🎵' : t === 'rhythm' ? '🥁' : '🎼'}
-            </Link>
-          ))}
+        <div style={{ position: 'relative', display: 'flex', background: 'rgba(240,236,224,0.06)', borderRadius: 11, padding: 3 }}>
+          <div style={{
+            position: 'absolute', top: 3, left: 3, width: 36, height: 28, borderRadius: 8,
+            background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+            boxShadow: '0 2px 8px rgba(240,236,224,0.25)',
+            transform: `translateX(${(['chord', 'rhythm', 'melody'] as const).indexOf(type) * 36}px)`,
+            transition: 'transform 0.25s cubic-bezier(0.34, 1.2, 0.64, 1)',
+          }} />
+          {(['chord', 'rhythm', 'melody'] as const).map(t => {
+            const active = type === t
+            const iconColor = active ? 'rgba(4,7,0,0.85)' : 'rgba(240,236,224,0.4)'
+            return (
+              <Link key={t} href={`/${t}`} style={{
+                position: 'relative', zIndex: 1,
+                width: 36, height: 28,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                textDecoration: 'none',
+              }}>
+                {t === 'chord' && (
+                  <svg width="16" height="13" viewBox="0 0 22 18" fill="none">
+                    <line x1="1" y1="3" x2="21" y2="3" stroke={iconColor} strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="1" y1="9" x2="21" y2="9" stroke={iconColor} strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="1" y1="15" x2="14" y2="15" stroke={iconColor} strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                )}
+                {t === 'rhythm' && (
+                  <svg width="16" height="13" viewBox="0 0 22 18" fill="none">
+                    <rect x="1" y="6" width="4" height="10" rx="1.5" fill={iconColor}/>
+                    <rect x="7" y="3" width="4" height="13" rx="1.5" fill={iconColor}/>
+                    <rect x="13" y="1" width="4" height="15" rx="1.5" fill={iconColor}/>
+                    <rect x="19" y="4" width="2" height="12" rx="1" fill={iconColor}/>
+                  </svg>
+                )}
+                {t === 'melody' && (
+                  <svg width="16" height="13" viewBox="0 0 22 18" fill="none">
+                    <circle cx="5" cy="14" r="3.2" fill={iconColor}/>
+                    <circle cx="16" cy="11" r="3.2" fill={iconColor}/>
+                    <line x1="8" y1="14" x2="8" y2="2" stroke={iconColor} strokeWidth="1.8" strokeLinecap="round"/>
+                    <line x1="19" y1="11" x2="19" y2="2" stroke={iconColor} strokeWidth="1.8" strokeLinecap="round"/>
+                    <line x1="8" y1="2" x2="19" y2="2" stroke={iconColor} strokeWidth="2.4" strokeLinecap="round"/>
+                  </svg>
+                )}
+              </Link>
+            )
+          })}
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
