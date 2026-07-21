@@ -43,7 +43,7 @@ export default function OnboardingPage() {
       background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)',
       display: 'flex', flexDirection: 'column',
     }}>
-      <header style={{ padding: '20px 20px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header style={{ padding: '20px 20px 0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <div style={{ display: 'flex', gap: 6 }}>
           {Array.from({ length: STEPS }).map((_, i) => (
             <div key={i} style={{
@@ -53,12 +53,6 @@ export default function OnboardingPage() {
             }} />
           ))}
         </div>
-        <button onClick={finish} style={{
-          background: 'none', border: 'none', cursor: 'pointer',
-          color: '#c8c4b0', fontSize: 13, fontWeight: 700,
-        }}>
-          건너뛰기
-        </button>
       </header>
 
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '24px', maxWidth: 420, margin: '0 auto', width: '100%' }}>
