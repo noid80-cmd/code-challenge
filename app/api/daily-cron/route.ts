@@ -391,6 +391,8 @@ JSON 객체로만 응답:
     P: 'CD ED C2 D2', Q: 'GF EF G2 F2',
     R: 'EF GF E2 D2', S: 'DC DE C4',
     T: 'FE FG E4',
+    U: 'C2 ^C2 D2 E2', V: 'E2 _E2 D2 C2', W: 'F2 ^F2 G2 A2',
+    X: 'C>D E>F G2 F2', Y: '(3CDE F2 G2 F2', Z: 'C/D/E/F/ G2 F2 E2',
   }
 
   function assembleMelodyABC(
@@ -428,8 +430,8 @@ JSON 객체로만 응답:
     const melodyLevel = Math.random() < 0.7 ? 'intermediate' : 'advanced'
 
     const melodyLevelRule = melodyLevel === 'advanced'
-      ? '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 최소 4개 포함 (나머지는 이웃음 진행 위주 패턴)'
-      : '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 1~2개 포함 (나머지는 이웃음 진행 위주 패턴)'
+      ? '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 최소 4개, 반음 패턴(U,V,W) 중 최소 1~2개, 리듬 심화 패턴(X,Y,Z) 중 최소 2개 포함 (나머지는 이웃음 진행 위주 패턴)'
+      : '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 최소 2개, 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(X,Y,Z) 중 최소 1개 포함 (나머지는 이웃음 진행 위주 패턴)'
 
     const melodyPrompt = `계이름 시창(멜로디 초견) 챌린지를 생성하세요. 서로 다른 멜로디 특징을 가진 프레이즈 2개를 포함합니다.
 
@@ -469,6 +471,16 @@ R: EF GF E2 D2
 S: DC DE C4
 T: FE FG E4
 
+[반음(임시표) U~W — 크로매틱 경과음/이웃음]
+U: C2 ^C2 D2 E2 (도-도#-레-미)
+V: E2 _E2 D2 C2 (미-미♭-레-도)
+W: F2 ^F2 G2 A2 (파-파#-솔-라)
+
+[리듬 심화 X~Z — 붓점·셋잇단음표·16분음표]
+X: C>D E>F G2 F2 (붓점 리듬)
+Y: (3CDE F2 G2 F2 (셋잇단음표)
+Z: C/D/E/F/ G2 F2 E2 (16분음표 런)
+
 규칙:
 - ${melodyLevelRule}
 - 두 프레이즈가 서로 다른 멜로디 특성을 갖도록 조합
@@ -481,18 +493,18 @@ JSON 객체로만 응답:
   "description": "간단한 설명 (1-2문장)",
   "level": "${melodyLevel}",
   "patterns": [
-    {"label": "이웃음 진행", "bars": ["A", "C", "I", "B", "D", "L", "N", "O"]},
-    {"label": "아르페지오·턴 피겨", "bars": ["G", "H", "P", "T", "F", "Q", "R", "K"]}
+    {"label": "이웃음 진행·반음 경과음", "bars": ["A", "E", "U", "B", "G", "X", "I", "N"]},
+    {"label": "아르페지오·리듬 심화", "bars": ["C", "F", "V", "D", "H", "Y", "J", "O"]}
   ]
 }`
 
     const MELODY_FALLBACK = {
       title: '계이름 시창 챌린지',
-      description: '이웃음 진행과 아르페지오를 포함한 중급 챌린지입니다.',
+      description: '반음 경과음과 붓점 리듬을 포함한 중급 챌린지입니다.',
       level: 'intermediate',
       patterns: assembleMelodyABC([
-        { label: '이웃음 진행', bars: ['A', 'C', 'I', 'B', 'D', 'L', 'N', 'O'] },
-        { label: '아르페지오·턴 피겨', bars: ['G', 'H', 'P', 'T', 'F', 'Q', 'R', 'K'] },
+        { label: '이웃음 진행·반음 경과음', bars: ['A', 'E', 'U', 'B', 'G', 'X', 'I', 'N'] },
+        { label: '아르페지오·리듬 심화', bars: ['C', 'F', 'V', 'D', 'H', 'Y', 'J', 'O'] },
       ])!,
     }
 

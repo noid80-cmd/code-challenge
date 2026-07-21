@@ -34,6 +34,14 @@ const BAR_PATTERNS: Record<string, string> = {
   R: 'EF GF E2 D2',
   S: 'DC DE C4',
   T: 'FE FG E4',
+  // 반음(임시표) — 순간적인 크로매틱 경과음/이웃음
+  U: 'C2 ^C2 D2 E2',
+  V: 'E2 _E2 D2 C2',
+  W: 'F2 ^F2 G2 A2',
+  // 리듬 심화 — 붓점, 셋잇단음표, 16분음표
+  X: 'C>D E>F G2 F2',
+  Y: '(3CDE F2 G2 F2',
+  Z: 'C/D/E/F/ G2 F2 E2',
 }
 
 function assemblePatternsABC(
@@ -65,8 +73,8 @@ function assemblePatternsABC(
 function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
-    ? '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 최소 4개 포함 (나머지는 이웃음 진행 위주 패턴)'
-    : '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 1~2개 포함 (나머지는 이웃음 진행 위주 패턴)'
+    ? '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 최소 4개, 반음 패턴(U,V,W) 중 최소 1~2개, 리듬 심화 패턴(X,Y,Z) 중 최소 2개 포함 (나머지는 이웃음 진행 위주 패턴)'
+    : '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 최소 2개, 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(X,Y,Z) 중 최소 1개 포함 (나머지는 이웃음 진행 위주 패턴)'
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -110,12 +118,22 @@ R: EF GF E2 D2
 S: DC DE C4
 T: FE FG E4
 
+[반음(임시표) U~W — 크로매틱 경과음/이웃음]
+U: C2 ^C2 D2 E2 (도-도#-레-미, 상행 경과음)
+V: E2 _E2 D2 C2 (미-미♭-레-도, 하행 경과음)
+W: F2 ^F2 G2 A2 (파-파#-솔-라, 상행 경과음)
+
+[리듬 심화 X~Z — 붓점·셋잇단음표·16분음표]
+X: C>D E>F G2 F2 (붓점 리듬)
+Y: (3CDE F2 G2 F2 (셋잇단음표)
+Z: C/D/E/F/ G2 F2 E2 (16분음표 런)
+
 규칙:
 - ${levelRule}
 - 두 프레이즈가 서로 다른 멜로디 특성을 갖도록 조합 (예: 한 프레이즈는 이웃음 진행 중심, 다른 프레이즈는 도약/꾸밈 중심)
 - 같은 ID 최대 2번 반복 가능
 - 같은 마디를 3개 이상 연속으로 이어붙여 단조로운 음계처럼 들리지 않게 할 것
-- label은 악보에 나타나는 멜로디 특성으로 지어야 함 (예: "이웃음 진행", "아르페지오", "턴 피겨")
+- label은 악보에 나타나는 멜로디 특성으로 지어야 함 (예: "이웃음 진행", "아르페지오", "턴 피겨", "반음 경과음", "붓점·셋잇단음표")
 - label에 장르/주법 이름 사용 금지
 
 JSON 객체로만 응답:
@@ -124,8 +142,8 @@ JSON 객체로만 응답:
   "description": "간단한 설명 (1-2문장)",
   "level": "${level}",
   "patterns": [
-    {"label": "이웃음 진행", "bars": ["A", "C", "I", "B", "D", "L", "N", "O"]},
-    {"label": "아르페지오·턴 피겨", "bars": ["G", "H", "P", "T", "F", "Q", "R", "K"]}
+    {"label": "이웃음 진행·반음 경과음", "bars": ["A", "E", "U", "B", "G", "X", "I", "N"]},
+    {"label": "아르페지오·리듬 심화", "bars": ["C", "F", "V", "D", "H", "Y", "J", "O"]}
   ]
 }`
 }
