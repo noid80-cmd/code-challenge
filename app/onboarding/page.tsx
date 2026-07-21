@@ -55,7 +55,7 @@ export default function OnboardingPage() {
         </div>
         <button onClick={finish} style={{
           background: 'none', border: 'none', cursor: 'pointer',
-          color: '#a0988c', fontSize: 13, fontWeight: 700,
+          color: '#c8c4b0', fontSize: 13, fontWeight: 700,
         }}>
           건너뛰기
         </button>
@@ -80,7 +80,7 @@ export default function OnboardingPage() {
             <h1 style={{ fontSize: 26, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.03em', marginBottom: 14, lineHeight: 1.3 }}>
               매일 새로 배달되는<br />코드·리듬·멜로디 초견
             </h1>
-            <p style={{ fontSize: 14, color: '#a0988c', lineHeight: 1.8, wordBreak: 'keep-all' }}>
+            <p style={{ fontSize: 14, color: '#c8c4b0', lineHeight: 1.8, wordBreak: 'keep-all' }}>
               매일 낮 12시, AI가 만든 새로운 챌린지가 올라와요.<br />
               세 가지 초견을 매일 조금씩 연습해보세요.
             </p>
@@ -114,7 +114,7 @@ export default function OnboardingPage() {
                   </div>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 800, color: '#e0dcd0', marginBottom: 3 }}>{item.title}</div>
-                    <div style={{ fontSize: 13, color: '#a0988c', lineHeight: 1.6, wordBreak: 'keep-all' }}>{item.desc}</div>
+                    <div style={{ fontSize: 13, color: '#c8c4b0', lineHeight: 1.6, wordBreak: 'keep-all' }}>{item.desc}</div>
                   </div>
                 </div>
               ))}
@@ -127,7 +127,7 @@ export default function OnboardingPage() {
             <h1 style={{ fontSize: 24, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.03em', marginBottom: 10 }}>
               준비됐어요!
             </h1>
-            <p style={{ fontSize: 14, color: '#a0988c', lineHeight: 1.8, marginBottom: 28, wordBreak: 'keep-all' }}>
+            <p style={{ fontSize: 14, color: '#c8c4b0', lineHeight: 1.8, marginBottom: 28, wordBreak: 'keep-all' }}>
               오늘의 챌린지로 첫 연습을 시작해보세요
             </p>
             <AcademyCard />
