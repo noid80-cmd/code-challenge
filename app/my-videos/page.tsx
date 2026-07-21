@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { localDate } from '@/lib/date'
+import AcademyCard from '@/app/components/AcademyCard'
 
 type Submission = {
   id: string; video_url: string; caption: string | null
@@ -305,6 +306,12 @@ export default function MyVideosPage() {
               </div>
             </div>
           ))
+        )}
+
+        {!loading && (
+          <div style={{ marginTop: 32 }}>
+            <AcademyCard compact />
+          </div>
         )}
       </main>
     </div>

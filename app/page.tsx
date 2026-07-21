@@ -14,7 +14,8 @@ export default function LandingPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       setUser(user)
       if (user) {
-        const { data: prof } = await supabase.from('profiles').select('avatar_url').eq('id', user.id).single()
+        const { data: prof } = await supabase.from('profiles').select('avatar_url, onboarded_at').eq('id', user.id).single()
+        if (!prof?.onboarded_at) { window.location.href = '/onboarding'; return }
         setAvatarUrl(prof?.avatar_url ?? user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null)
       }
     })
