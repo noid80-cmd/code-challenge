@@ -3,6 +3,28 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 type Pattern = { label: string; abc: string }
 
+// Shifts every written pitch down one octave and switches the clef to bass —
+// for bass players reading the same solfège melody in a comfortable register.
+// Only touches bar-content lines (starting with '|'); header lines (K:, M:, etc.)
+// are left alone except the V: line's clef.
+function toBassClef(abc: string): string {
+  const text = abc.replace(/\\n/g, '\n')
+  return text.split('\n').map(line => {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('V:') && trimmed.includes('clef=treble')) {
+      return line.replace('clef=treble', 'clef=bass')
+    }
+    if (trimmed.startsWith('|')) {
+      return line.replace(/([\^_=]?)([A-Ga-g])([,']*)/g, (_m, acc: string, letter: string, marks: string) => {
+        if (letter === letter.toUpperCase()) return acc + letter + marks + ','
+        if (marks.includes("'")) return acc + letter + marks.replace("'", '')
+        return acc + letter.toUpperCase() + marks
+      })
+    }
+    return line
+  }).join('\n')
+}
+
 function splitIntoChunks(abc: string, chunkSize: number): string[] {
   const text = abc.replace(/\\n/g, '\n')
   const lines = text.split('\n')
@@ -57,6 +79,7 @@ export default function MelodyPlayer({
   const containerRef = useRef<HTMLDivElement>(null)
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
   const [internalTab, setInternalTab] = useState(0)
+  const [bassClef, setBassClef] = useState(false)
   const activeTab = controlledTab ?? internalTab
   const hasMultiple = patterns.length > 1
 
@@ -70,9 +93,9 @@ export default function MelodyPlayer({
   const processedChunks = useMemo(
     () => patterns.map(p => ({
       label: p.label,
-      chunks: splitIntoChunks(p.abc, 2),
+      chunks: splitIntoChunks(bassClef ? toBassClef(p.abc) : p.abc, 2),
     })),
-    [patterns]
+    [patterns, bassClef]
   )
 
   useEffect(() => {
@@ -112,6 +135,19 @@ export default function MelodyPlayer({
 
   return (
     <div ref={containerRef}>
+      {!hideLabel && (
+        <button onClick={() => setBassClef(v => !v)} style={{
+          display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10,
+          padding: '5px 10px', borderRadius: 20, cursor: 'pointer',
+          background: bassClef ? 'rgba(240,236,224,0.15)' : 'rgba(240,236,224,0.04)',
+          border: bassClef ? '1px solid rgba(240,236,224,0.3)' : '1px solid rgba(240,236,224,0.08)',
+          color: bassClef ? '#f0ece0' : '#605850',
+          fontSize: 11, fontWeight: 700,
+        }}>
+          <span style={{ fontSize: 13 }}>𝄢</span>
+          베이스용 (낮은음자리표, 1옥타브 낮춤)
+        </button>
+      )}
       {hasMultiple && (
         <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
           {processedChunks.map((p, pi) => {

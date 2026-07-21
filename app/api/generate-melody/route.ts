@@ -73,8 +73,8 @@ function assemblePatternsABC(
 function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
-    ? '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 최소 4개, 반음 패턴(U,V,W) 중 최소 1~2개, 리듬 심화 패턴(X,Y,Z) 중 최소 2개 포함 (나머지는 이웃음 진행 위주 패턴)'
-    : '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 최소 2개, 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(X,Y,Z) 중 최소 1개 포함 (나머지는 이웃음 진행 위주 패턴)'
+    ? '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 최소 5개, 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(X,Y,Z) 중 최소 2개 포함 (총 8마디 중 대부분을 심화 패턴으로 채움)'
+    : '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 최소 3개, 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(X,Y,Z) 중 최소 1개 포함 (나머지는 이웃음 진행 위주 패턴)'
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -142,8 +142,8 @@ JSON 객체로만 응답:
   "description": "간단한 설명 (1-2문장)",
   "level": "${level}",
   "patterns": [
-    {"label": "이웃음 진행·반음 경과음", "bars": ["A", "E", "U", "B", "G", "X", "I", "N"]},
-    {"label": "아르페지오·리듬 심화", "bars": ["C", "F", "V", "D", "H", "Y", "J", "O"]}
+    {"label": "이웃음 진행·반음 경과음", "bars": ["A", "E", "F", "U", "G", "X", "B", "I"]},
+    {"label": "아르페지오·리듬 심화", "bars": ["C", "H", "P", "V", "Q", "Y", "D", "J"]}
   ]
 }`
 }
