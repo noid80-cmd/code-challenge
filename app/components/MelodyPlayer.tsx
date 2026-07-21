@@ -137,14 +137,15 @@ export default function MelodyPlayer({
     <div ref={containerRef}>
       {!hideLabel && (
         <button onClick={() => setBassClef(v => !v)} style={{
-          display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10,
-          padding: '5px 10px', borderRadius: 20, cursor: 'pointer',
-          background: bassClef ? 'rgba(240,236,224,0.15)' : 'rgba(240,236,224,0.04)',
-          border: bassClef ? '1px solid rgba(240,236,224,0.3)' : '1px solid rgba(240,236,224,0.08)',
-          color: bassClef ? '#f0ece0' : '#605850',
-          fontSize: 11, fontWeight: 700,
+          display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12,
+          padding: '8px 14px', borderRadius: 20, cursor: 'pointer',
+          background: bassClef ? 'linear-gradient(135deg, #f8f4ec, #c8c4b0)' : 'rgba(240,236,224,0.1)',
+          border: bassClef ? 'none' : '1.5px solid rgba(240,236,224,0.4)',
+          boxShadow: bassClef ? '0 4px 14px rgba(240,236,224,0.3)' : 'none',
+          color: bassClef ? '#0a0a08' : '#e0dcd0',
+          fontSize: 12, fontWeight: 800,
         }}>
-          <span style={{ fontSize: 13 }}>𝄢</span>
+          <span style={{ fontSize: 15 }}>𝄢</span>
           베이스용 (낮은음자리표, 1옥타브 낮춤)
         </button>
       )}
