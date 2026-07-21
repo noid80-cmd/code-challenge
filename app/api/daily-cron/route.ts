@@ -383,14 +383,14 @@ JSON 객체로만 응답:
 
   // ── 멜로디챌린지 (계이름 시창, C장조 고정) ────────────────
   const MELODY_BAR_PATTERNS: Record<string, string> = {
-    A: 'C2 D2 E2 F2', B: 'F2 E2 D2 C2', C: 'G2 A2 B2 c2', D: 'c2 B2 A2 G2',
-    E: 'CDEFGABc', F: 'cBAGFEDC',
+    A: 'C2 D2 E2 D2', B: 'E2 D2 C2 D2', C: 'G2 A2 G2 F2', D: 'E2 F2 G2 F2',
+    E: 'C2 E2 D2 C2', F: 'G2 E2 F2 D2',
     G: 'C2 E2 G2 c2', H: 'c2 G2 E2 C2',
-    I: 'C4 E4', J: 'E4 C4', K: 'G4 C4', L: 'C4 D4',
-    M: 'CDEF E2 D2', N: 'G2 A2 G2 F2', O: 'E2 D2 E2 F2',
-    P: 'C2 E2 D2 F2', Q: 'G2 E2 F2 D2',
-    R: 'CDED C2 D2', S: 'GFEF G2 F2',
-    T: 'C2 G2 c2 G2',
+    I: 'C4 D2 E2', J: 'E4 D2 C2', K: 'G4 F2 E2', L: 'C2 D2 E4',
+    M: 'G2 F2 E4', N: 'G2 B2 c2 G2', O: 'G4 E2 C2',
+    P: 'CD ED C2 D2', Q: 'GF EF G2 F2',
+    R: 'EF GF E2 D2', S: 'DC DE C4',
+    T: 'FE FG E4',
   }
 
   function assembleMelodyABC(
@@ -428,8 +428,8 @@ JSON 객체로만 응답:
     const melodyLevel = Math.random() < 0.7 ? 'intermediate' : 'advanced'
 
     const melodyLevelRule = melodyLevel === 'advanced'
-      ? '각 프레이즈에 도약 패턴(G,H,I,J,K,L,P,Q,T) 중 최소 4개 포함 (나머지는 순차 진행 위주 패턴)'
-      : '각 프레이즈에 도약 패턴(G,H,I,J,K,L,P,Q,T) 중 1~2개 포함 (나머지는 순차 진행 위주 패턴)'
+      ? '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 최소 4개 포함 (나머지는 이웃음 진행 위주 패턴)'
+      : '각 프레이즈에 도약/꾸밈 패턴(E,F,G,H,P,Q,R,S,T) 중 1~2개 포함 (나머지는 이웃음 진행 위주 패턴)'
 
     const melodyPrompt = `계이름 시창(멜로디 초견) 챌린지를 생성하세요. 서로 다른 멜로디 특징을 가진 프레이즈 2개를 포함합니다.
 
@@ -439,46 +439,41 @@ JSON 객체로만 응답:
 아래 마디 패턴 라이브러리에서 각 프레이즈에 대해 정확히 8개 마디 ID를 선택하세요.
 각 마디는 정확히 4박자입니다.
 
-[순차 진행 A~D — 4분음표]
-A: C2 D2 E2 F2
-B: F2 E2 D2 C2
-C: G2 A2 B2 c2
-D: c2 B2 A2 G2
+[이웃음 중심 진행 A~D — 4분음표, 방향 전환 포함]
+A: C2 D2 E2 D2
+B: E2 D2 C2 D2
+C: G2 A2 G2 F2
+D: E2 F2 G2 F2
 
-[한 옥타브 스케일 E~F — 8분음표]
-E: CDEFGABc
-F: cBAGFEDC
+[스킵+스텝 혼합 E~F]
+E: C2 E2 D2 C2
+F: G2 E2 F2 D2
 
-[3도 도약 아르페지오 G~H]
+[아르페지오 G~H]
 G: C2 E2 G2 c2
 H: c2 G2 E2 C2
 
-[긴 음 도약 I~L — 2분음표]
-I: C4 E4
-J: E4 C4
-K: G4 C4
-L: C4 D4
+[긴 음 + 스텝 조합 I~O — 2분음표]
+I: C4 D2 E2
+J: E4 D2 C2
+K: G4 F2 E2
+L: C2 D2 E4
+M: G2 F2 E4
+N: G2 B2 c2 G2
+O: G4 E2 C2
 
-[상행 후 되돌아오기 M~O]
-M: CDEF E2 D2
-N: G2 A2 G2 F2
-O: E2 D2 E2 F2
-
-[도약+스텝 혼합 P~Q]
-P: C2 E2 D2 F2
-Q: G2 E2 F2 D2
-
-[제자리 왕복 R~S]
-R: CDED C2 D2
-S: GFEF G2 F2
-
-[반복 도약 T]
-T: C2 G2 c2 G2
+[꾸밈/턴 피겨 P~T — 8분음표, 박자 단위로 묶임]
+P: CD ED C2 D2
+Q: GF EF G2 F2
+R: EF GF E2 D2
+S: DC DE C4
+T: FE FG E4
 
 규칙:
 - ${melodyLevelRule}
 - 두 프레이즈가 서로 다른 멜로디 특성을 갖도록 조합
 - 같은 ID 최대 2번 반복 가능
+- 같은 마디를 3개 이상 연속으로 이어붙여 단조로운 음계처럼 들리지 않게 할 것
 
 JSON 객체로만 응답:
 {
@@ -486,18 +481,18 @@ JSON 객체로만 응답:
   "description": "간단한 설명 (1-2문장)",
   "level": "${melodyLevel}",
   "patterns": [
-    {"label": "순차 상행", "bars": ["A", "C", "E", "M", "B", "D", "F", "O"]},
-    {"label": "3도 도약", "bars": ["G", "H", "I", "P", "T", "J", "Q", "K"]}
+    {"label": "이웃음 진행", "bars": ["A", "C", "I", "B", "D", "L", "N", "O"]},
+    {"label": "아르페지오·턴 피겨", "bars": ["G", "H", "P", "T", "F", "Q", "R", "K"]}
   ]
 }`
 
     const MELODY_FALLBACK = {
       title: '계이름 시창 챌린지',
-      description: '순차 진행과 3도 도약을 포함한 중급 챌린지입니다.',
+      description: '이웃음 진행과 아르페지오를 포함한 중급 챌린지입니다.',
       level: 'intermediate',
       patterns: assembleMelodyABC([
-        { label: '순차 상행', bars: ['A', 'C', 'E', 'M', 'B', 'D', 'F', 'O'] },
-        { label: '3도 도약', bars: ['G', 'H', 'I', 'P', 'T', 'J', 'Q', 'K'] },
+        { label: '이웃음 진행', bars: ['A', 'C', 'I', 'B', 'D', 'L', 'N', 'O'] },
+        { label: '아르페지오·턴 피겨', bars: ['G', 'H', 'P', 'T', 'F', 'Q', 'R', 'K'] },
       ])!,
     }
 
