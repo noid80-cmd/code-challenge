@@ -50,15 +50,15 @@ function CalendarView({ submittedDates }: { submittedDates: Set<string> }) {
     <div>
       {/* 월 네비게이션 */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-        <button onClick={prevMonth} style={{ background: 'none', border: 'none', color: '#605850', fontSize: 20, cursor: 'pointer', padding: '4px 8px' }}>‹</button>
+        <button onClick={prevMonth} style={{ background: 'none', border: 'none', color: '#a0988c', fontSize: 20, cursor: 'pointer', padding: '4px 8px' }}>‹</button>
         <span style={{ fontSize: 14, fontWeight: 800, color: '#f0ece0' }}>{year}년 {month + 1}월</span>
-        <button onClick={nextMonth} style={{ background: 'none', border: 'none', color: '#605850', fontSize: 20, cursor: 'pointer', padding: '4px 8px' }}>›</button>
+        <button onClick={nextMonth} style={{ background: 'none', border: 'none', color: '#a0988c', fontSize: 20, cursor: 'pointer', padding: '4px 8px' }}>›</button>
       </div>
 
       {/* 요일 헤더 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 6 }}>
         {DAY_LABELS.map(d => (
-          <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#303028', padding: '4px 0' }}>{d}</div>
+          <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#807060', padding: '4px 0' }}>{d}</div>
         ))}
       </div>
 
@@ -76,7 +76,7 @@ function CalendarView({ submittedDates }: { submittedDates: Set<string> }) {
               background: submitted ? 'rgba(240,236,224,0.15)' : 'transparent',
               border: isToday ? '1.5px solid rgba(240,236,224,0.4)' : 'none',
             }}>
-              <span style={{ fontSize: 12, fontWeight: submitted ? 800 : 500, color: submitted ? '#f0ece0' : '#303028' }}>
+              <span style={{ fontSize: 12, fontWeight: submitted ? 800 : 500, color: submitted ? '#f0ece0' : '#807060' }}>
                 {day}
               </span>
               {submitted && (
@@ -174,7 +174,7 @@ export default function MyVideosPage() {
         padding: '0 20px', height: 54,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/" style={{ color: '#605850', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+        <Link href="/" style={{ color: '#a0988c', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
           <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
           피드
         </Link>
@@ -221,7 +221,7 @@ export default function MyVideosPage() {
                 <div style={{ fontSize: 17, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em' }}>
                   {profile?.name ?? ''}
                 </div>
-                <div style={{ fontSize: 12, color: '#484640', marginTop: 3 }}>사진을 탭하면 변경할 수 있어요</div>
+                <div style={{ fontSize: 12, color: '#807060', marginTop: 3 }}>사진을 탭하면 변경할 수 있어요</div>
               </div>
             </div>
 
@@ -236,23 +236,23 @@ export default function MyVideosPage() {
                 borderRadius: 18, padding: '18px',
                 boxShadow: streak > 0 ? '0 8px 32px rgba(240,236,224,0.1)' : 'none',
               }}>
-                <div style={{ fontSize: 10, color: streak > 0 ? '#a0988c' : '#605850', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>연속 참여</div>
-                <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.04em', color: streak > 0 ? '#f8f4ec' : '#484640' }}>
+                <div style={{ fontSize: 10, color: '#a0988c', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>연속 참여</div>
+                <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.04em', color: streak > 0 ? '#f8f4ec' : '#807060' }}>
                   {streak}
                 </div>
-                <div style={{ fontSize: 11, color: streak > 0 ? '#605850' : '#484640', marginTop: 5 }}>일 연속</div>
+                <div style={{ fontSize: 11, color: streak > 0 ? '#a0988c' : '#807060', marginTop: 5 }}>일 연속</div>
               </div>
 
               <div style={{ flex: 1, background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: '18px' }}>
-                <div style={{ fontSize: 10, color: '#605850', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>총 참여</div>
+                <div style={{ fontSize: 10, color: '#a0988c', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>총 참여</div>
                 <div style={{ fontSize: 36, fontWeight: 900, color: '#e0dcd0', lineHeight: 1, letterSpacing: '-0.04em' }}>{submissions.length}</div>
-                <div style={{ fontSize: 11, color: '#484640', marginTop: 5 }}>회 업로드</div>
+                <div style={{ fontSize: 11, color: '#807060', marginTop: 5 }}>회 업로드</div>
               </div>
 
               <div style={{ flex: 1, background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: '18px' }}>
-                <div style={{ fontSize: 10, color: '#605850', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>받은 좋아요</div>
+                <div style={{ fontSize: 10, color: '#a0988c', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>받은 좋아요</div>
                 <div style={{ fontSize: 36, fontWeight: 900, color: '#f0ece0', lineHeight: 1, letterSpacing: '-0.04em' }}>{totalLikes}</div>
-                <div style={{ fontSize: 11, color: '#484640', marginTop: 5 }}>개</div>
+                <div style={{ fontSize: 11, color: '#807060', marginTop: 5 }}>개</div>
               </div>
             </div>
 
@@ -282,7 +282,7 @@ export default function MyVideosPage() {
           <div style={{ textAlign: 'center', padding: 60, color: '#1a1a18', fontSize: 14 }}>불러오는 중</div>
         ) : submissions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '52px 0' }}>
-            <p style={{ color: '#303028', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>아직 업로드한 영상이 없어요</p>
+            <p style={{ color: '#807060', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>아직 업로드한 영상이 없어요</p>
             <Link href="/upload" style={{
               display: 'inline-block', marginTop: 16, padding: '11px 24px', borderRadius: 12,
               background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
@@ -393,7 +393,7 @@ function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
           <button type="button" onClick={() => setExpanded(false)} style={{
             width: '100%', padding: '9px', background: 'rgba(240,236,224,0.05)',
             border: 'none', borderTop: '1px solid rgba(240,236,224,0.08)',
-            color: '#484640', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            color: '#807060', fontSize: 12, fontWeight: 700, cursor: 'pointer',
           }}>접기 ▲</button>
         </>
       ) : (
@@ -434,15 +434,15 @@ function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
               </div>
             )}
             {sub.challenges?.title && (
-              <div style={{ fontSize: 11, color: sub.caption ? '#484640' : '#e0dcd0', fontWeight: sub.caption ? 600 : 800, lineHeight: 1.3, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+              <div style={{ fontSize: 11, color: sub.caption ? '#807060' : '#e0dcd0', fontWeight: sub.caption ? 600 : 800, lineHeight: 1.3, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                 {sub.challenges.title}
               </div>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 11, color: '#303028' }}>{date.getMonth() + 1}/{date.getDate()}</span>
+              <span style={{ fontSize: 11, color: '#807060' }}>{date.getMonth() + 1}/{date.getDate()}</span>
               <button type="button" onClick={e => { e.stopPropagation(); handleToggle() }} disabled={toggling} style={{
                 background: 'none', border: 'none', cursor: toggling ? 'default' : 'pointer',
-                fontSize: 13, padding: 0, color: sub.is_private ? '#a0988c' : '#303028',
+                fontSize: 13, padding: 0, color: sub.is_private ? '#a0988c' : '#807060',
               }}>
                 {toggling ? '...' : sub.is_private ? '🔒' : '🔓'}
               </button>
