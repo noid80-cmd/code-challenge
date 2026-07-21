@@ -230,10 +230,9 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxShadow: '0 4px 12px rgba(240,236,224,0.4)',
           }}>
-            <svg width="13" height="10" viewBox="0 0 13 10" fill="none">
-              <line x1="1" y1="2" x2="12" y2="2" stroke="rgba(4,7,0,0.9)" strokeWidth="1.6" strokeLinecap="round" />
-              <line x1="1" y1="5" x2="12" y2="5" stroke="rgba(4,7,0,0.9)" strokeWidth="1.6" strokeLinecap="round" />
-              <line x1="1" y1="8" x2="8"  y2="8" stroke="rgba(4,7,0,0.9)" strokeWidth="1.6" strokeLinecap="round" />
+            <svg width="14" height="13" viewBox="0 0 14 13" fill="none">
+              <path d="M1.5 6L7 1.5L12.5 6" stroke="rgba(4,7,0,0.9)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M3 5V11.5H11V5" stroke="rgba(4,7,0,0.9)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
         </Link>
