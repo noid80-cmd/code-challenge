@@ -117,7 +117,7 @@ export default function SignupPage() {
             회원가입
           </h1>
           <p style={{ color: '#807060', fontSize: 14, fontWeight: 500 }}>
-            매일 새로운 코드 진행을 연주하고 공유하세요
+            매일 새로 배달되는 코드·리듬·멜로디 초견
           </p>
         </div>
 

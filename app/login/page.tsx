@@ -172,7 +172,7 @@ export default function LoginPage() {
             {resetMode ? '비밀번호 찾기' : '초견챌린지'}
           </h1>
           <p style={{ color: '#807060', fontSize: 14, fontWeight: 500 }}>
-            {resetMode ? '가입한 이메일로 재설정 링크를 보내드려요' : '매일 연주하고 공유하세요'}
+            {resetMode ? '가입한 이메일로 재설정 링크를 보내드려요' : '매일 새로 배달되는 초견'}
           </p>
         </div>
 

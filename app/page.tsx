@@ -80,7 +80,7 @@ export default function LandingPage() {
             오늘의 챌린지
           </h1>
           <p style={{ fontSize: 14, color: '#504840', marginTop: 10, fontWeight: 500 }}>
-            연주하고 공유하세요
+            매일 새로 배달되는 초견
           </p>
         </div>
 

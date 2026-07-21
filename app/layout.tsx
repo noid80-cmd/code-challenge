@@ -6,7 +6,7 @@ import { OAuthHandler } from './components/OAuthHandler'
 
 export const metadata: Metadata = {
   title: '초견챌린지',
-  description: '매일 초견 챌린지 — 연주하고 공유하세요',
+  description: '매일 초견 챌린지 — 매일 새로 배달되는 코드·리듬·멜로디 초견',
   manifest: '/manifest.json',
   icons: {
     icon: '/icon-192.png',
