@@ -23,9 +23,9 @@ export default function AcademyCard({ compact = false }: { compact?: boolean }) 
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: compact ? 14 : 16, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.01em', marginBottom: 3 }}>
-          KH Music이 만든 앱이에요
+          KHMUSIC이 만든 앱이에요
         </div>
-        <div style={{ fontSize: compact ? 12 : 13, color: '#605850', lineHeight: 1.5 }}>
+        <div style={{ fontSize: compact ? 12 : 13, color: '#a0988c', lineHeight: 1.6, wordBreak: 'keep-all' }}>
           입시 코드·리듬·멜로디 초견 전문 학원의 노하우를 담았어요
         </div>
       </div>
