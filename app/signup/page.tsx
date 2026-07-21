@@ -70,13 +70,13 @@ export default function SignupPage() {
   if (done) return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)',
+      background: 'linear-gradient(160deg, #16130e 0%, #191510 55%, #120f0b 100%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', textAlign: 'center',
     }}>
       <div>
         <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
         <h2 style={{ fontSize: 22, fontWeight: 900, color: '#f0ece0', marginBottom: 8 }}>가입 완료!</h2>
-        <p style={{ color: '#807060', fontSize: 14, marginBottom: 24, lineHeight: 1.7 }}>
+        <p style={{ color: '#c8c4b0', fontSize: 14, marginBottom: 24, lineHeight: 1.7 }}>
           이메일 인증 링크를 보냈어요.<br />확인 후 로그인해주세요.
         </p>
         <Link href="/login" style={{ color: '#f0ece0', fontWeight: 700, fontSize: 15 }}>로그인하기 →</Link>
@@ -87,14 +87,14 @@ export default function SignupPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)',
+      background: 'linear-gradient(160deg, #16130e 0%, #191510 55%, #120f0b 100%)',
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px',
     }}>
       <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', overflow: 'hidden' }}>
         <div style={{
           position: 'absolute', top: '-20%', left: '50%', transform: 'translateX(-50%)',
           width: 600, height: 600, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(240,236,224,0.07) 0%, transparent 70%)',
+          background: 'radial-gradient(circle, rgba(240,236,224,0.14) 0%, transparent 70%)',
         }} />
       </div>
 
@@ -116,7 +116,7 @@ export default function SignupPage() {
           <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 8, color: '#f0ece0' }}>
             회원가입
           </h1>
-          <p style={{ color: '#807060', fontSize: 14, fontWeight: 500 }}>
+          <p style={{ color: '#c8c4b0', fontSize: 14, fontWeight: 500 }}>
             매일 새로 배달되는 코드·리듬·멜로디 초견
           </p>
         </div>
@@ -125,7 +125,7 @@ export default function SignupPage() {
           width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           padding: '13px', borderRadius: 13,
           background: 'rgba(8,12,0,0.7)', border: '1px solid rgba(240,236,224,0.18)',
-          color: '#a0988c', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 16,
+          color: '#c8c4b0', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 16,
         }}>
           <GoogleIcon />
           Google로 가입하기
@@ -133,7 +133,7 @@ export default function SignupPage() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <div style={{ flex: 1, height: 1, background: 'rgba(240,236,224,0.1)' }} />
-          <span style={{ color: '#807060', fontSize: 12, fontWeight: 600 }}>또는</span>
+          <span style={{ color: '#c8c4b0', fontSize: 12, fontWeight: 600 }}>또는</span>
           <div style={{ flex: 1, height: 1, background: 'rgba(240,236,224,0.1)' }} />
         </div>
 
@@ -156,7 +156,7 @@ export default function SignupPage() {
           </button>
         </form>
 
-        <p style={{ textAlign: 'center', color: '#807060', fontSize: 14, marginTop: 20 }}>
+        <p style={{ textAlign: 'center', color: '#c8c4b0', fontSize: 14, marginTop: 20 }}>
           이미 계정이 있으신가요?{' '}
           <Link href="/login" style={{ fontWeight: 800, color: '#f0ece0' }}>로그인</Link>
         </p>
