@@ -16,7 +16,7 @@ type ChallengeItem = {
 export default function ChallengesPage() {
   const [challenges, setChallenges] = useState<ChallengeItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'chord' | 'rhythm'>('chord')
+  const [tab, setTab] = useState<'chord' | 'rhythm' | 'melody'>('chord')
 
   useEffect(() => {
     async function load() {
@@ -82,7 +82,7 @@ export default function ChallengesPage() {
         background: 'rgba(8,8,8,0.7)',
         position: 'sticky', top: 54, zIndex: 40,
       }}>
-        {(['chord', 'rhythm'] as const).map(t => (
+        {(['chord', 'rhythm', 'melody'] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -95,7 +95,7 @@ export default function ChallengesPage() {
               transition: 'color 0.15s, border-color 0.15s',
             }}
           >
-            {t === 'chord' ? '코드 초견' : '리듬 초견'}
+            {t === 'chord' ? '코드 초견' : t === 'rhythm' ? '리듬 초견' : '멜로디 초견'}
           </button>
         ))}
       </div>
