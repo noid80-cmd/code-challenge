@@ -428,7 +428,7 @@ JSON 객체로만 응답:
     }
     const neighborCap = level === 'advanced' ? 1 : 2
     const need = level === 'advanced'
-      ? { leap: 3, bigLeap: 2, chromatic: 1, rhythm: 4, syncopation: 2, rest: 1 }
+      ? { leap: 3, bigLeap: 2, chromatic: 1, rhythm: 3, syncopation: 1, rest: 1 }
       : { leap: 3, bigLeap: 1, chromatic: 1, rhythm: 3, syncopation: 1, rest: 1 }
 
     if (countMelodyCategory(bars, MELODY_CATEGORY.neighbor) > neighborCap) return `neighbor count exceeds cap ${neighborCap}`
@@ -476,7 +476,7 @@ JSON 객체로만 응답:
     const melodyLevel = Math.random() < 0.7 ? 'intermediate' : 'advanced'
 
     const melodyLevelRule = melodyLevel === 'advanced'
-      ? '각 프레이즈에 도약 패턴(도약 카테고리 전체) 중 최소 3개(이 중 4도 이상 큰 도약 중 최소 2개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 중 최소 4개, 당김음 패턴(당김음 카테고리 전체) 중 최소 2개, 쉼표 패턴(쉼표 카테고리 전체) 중 최소 1개 포함. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 1개로 제한'
+      ? '각 프레이즈에 도약 패턴(도약 카테고리 전체) 중 최소 3개(이 중 4도 이상 큰 도약 중 최소 2개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 중 최소 3개, 당김음 패턴(당김음 카테고리 전체) 중 최소 1개, 쉼표 패턴(쉼표 카테고리 전체) 중 최소 1개 포함. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 1개로 제한'
       : '각 프레이즈에 도약 패턴(도약 카테고리 전체) 중 최소 3개(이 중 4도 이상 큰 도약 중 최소 1개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 중 최소 3개, 당김음 패턴(당김음 카테고리 전체) 중 최소 1개, 쉼표 패턴(쉼표 카테고리 전체) 중 최소 1개 포함. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 2개로 제한'
 
     const melodyPrompt = `계이름 시창(멜로디 초견) 챌린지를 생성하세요. 서로 다른 멜로디 특징을 가진 프레이즈 2개를 포함합니다.

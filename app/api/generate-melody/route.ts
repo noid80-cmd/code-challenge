@@ -103,7 +103,7 @@ function validateBars(bars: string[], level: string): string | null {
   }
   const neighborCap = level === 'advanced' ? 1 : 2
   const need = level === 'advanced'
-    ? { leap: 3, bigLeap: 2, chromatic: 1, rhythm: 4, syncopation: 2, rest: 1 }
+    ? { leap: 3, bigLeap: 2, chromatic: 1, rhythm: 3, syncopation: 1, rest: 1 }
     : { leap: 3, bigLeap: 1, chromatic: 1, rhythm: 3, syncopation: 1, rest: 1 }
 
   if (countCategory(bars, CATEGORY.neighbor) > neighborCap) return `neighbor count exceeds cap ${neighborCap}`
@@ -145,7 +145,7 @@ function assemblePatternsABC(
 function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
-    ? '각 프레이즈에 도약 패턴(도약 카테고리 전체) 중 최소 3개(이 중 4도 이상 큰 도약 중 최소 2개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 중 최소 4개, 당김음 패턴(당김음 카테고리 전체) 중 최소 2개, 쉼표 패턴(쉼표 카테고리 전체) 중 최소 1개 포함. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 1개로 제한'
+    ? '각 프레이즈에 도약 패턴(도약 카테고리 전체) 중 최소 3개(이 중 4도 이상 큰 도약 중 최소 2개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 중 최소 3개, 당김음 패턴(당김음 카테고리 전체) 중 최소 1개, 쉼표 패턴(쉼표 카테고리 전체) 중 최소 1개 포함. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 1개로 제한'
     : '각 프레이즈에 도약 패턴(도약 카테고리 전체) 중 최소 3개(이 중 4도 이상 큰 도약 중 최소 1개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 중 최소 3개, 당김음 패턴(당김음 카테고리 전체) 중 최소 1개, 쉼표 패턴(쉼표 카테고리 전체) 중 최소 1개 포함. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 2개로 제한'
 
   const recentBlock = recentTitles.length > 0
@@ -302,7 +302,7 @@ export async function POST() {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
     let challenge = null
-    for (let attempt = 1; attempt <= 5; attempt++) {
+    for (let attempt = 1; attempt <= 10; attempt++) {
       const message = await client.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 1024,
