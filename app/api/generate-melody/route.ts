@@ -97,6 +97,43 @@ const CATEGORY = {
   rest: ['5', '6', '7', '10', '15', '17', '19', '20'],
 } as const
 
+// 매일 같은 5개 카테고리를 전부 채우게 하면(도약+반음+리듬+당김음+쉼표) 매번
+// "같은 레시피"로 만든 것처럼 비슷하게 들림. 오늘은 어떤 카테고리에 집중할지
+// 매번 랜덤으로 골라서, 날마다 확실히 다른 색깔이 나오게 함.
+type RecipeNeed = { leap: number; bigLeap: number; chromatic: number; rhythm: number; syncopation: number; rest: number }
+const RECIPES: { name: string; need: (level: string) => RecipeNeed; neighborCap: (level: string) => number; ruleText: string }[] = [
+  {
+    name: '도약·리듬 집중',
+    need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 0, rhythm: level === 'advanced' ? 7 : 6, syncopation: 1, rest: 0 }),
+    neighborCap: () => 2,
+    ruleText: '오늘은 도약과 리듬 심화 위주로 몰아서 만드세요. 반음(U,V,W)이나 쉼표 패턴은 아예 안 써도 됩니다.',
+  },
+  {
+    name: '반음·당김음 집중',
+    need: level => ({ leap: 1, bigLeap: 1, chromatic: level === 'advanced' ? 4 : 3, rhythm: 3, syncopation: level === 'advanced' ? 5 : 4, rest: 1 }),
+    neighborCap: () => 3,
+    ruleText: '오늘은 반음(크로매틱)과 당김음 위주로 몰아서 만드세요. 큰 도약은 최소한만 넣으세요.',
+  },
+  {
+    name: '쉼표·리듬 집중',
+    need: level => ({ leap: 2, bigLeap: 1, chromatic: 0, rhythm: level === 'advanced' ? 8 : 7, syncopation: 1, rest: level === 'advanced' ? 5 : 4 }),
+    neighborCap: () => 3,
+    ruleText: '오늘은 쉼표와 리듬 심화 위주로 몰아서 만드세요. 반음(U,V,W)은 안 써도 됩니다.',
+  },
+  {
+    name: '균형',
+    need: level => level === 'advanced'
+      ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 5, syncopation: 2, rest: 2 }
+      : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 5, syncopation: 2, rest: 2 },
+    neighborCap: level => level === 'advanced' ? 2 : 4,
+    ruleText: '오늘은 도약·반음·리듬·당김음·쉼표를 골고루 섞어서 만드세요.',
+  },
+]
+
+function pickRecipe() {
+  return RECIPES[Math.floor(Math.random() * RECIPES.length)]
+}
+
 // 26은 반드시 바로 다음에 27이 와야 하고, 27은 반드시 26 바로 다음에만 올 수 있음
 function validatePairing(bars: string[]): string | null {
   for (let i = 0; i < bars.length; i++) {
@@ -131,11 +168,9 @@ function validatePhraseShape(bars: string[]): string | null {
 // 갖도록 유도하면서, 두 프레이즈 각각에 모든 카테고리를 강제하면
 // (예: 도약 중심 프레이즈에도 반음을 억지로 넣어야 함) 모순이 생겨
 // AI가 계속 실패하게 됨.
-function validateCombined(allBars: string[], level: string): string | null {
-  const neighborCap = level === 'advanced' ? 2 : 4
-  const need = level === 'advanced'
-    ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 5, syncopation: 2, rest: 2 }
-    : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 5, syncopation: 2, rest: 2 }
+function validateCombined(allBars: string[], level: string, recipe: typeof RECIPES[number]): string | null {
+  const neighborCap = recipe.neighborCap(level)
+  const need = recipe.need(level)
 
   if (countCategory(allBars, CATEGORY.neighbor) > neighborCap) return `neighbor count exceeds cap ${neighborCap}`
   if (countCategory(allBars, CATEGORY.leap) < need.leap) return `leap count < ${need.leap}`
@@ -173,11 +208,11 @@ function assemblePatternsABC(
   return result.length >= 2 ? result : null
 }
 
-function buildPrompt(level: string, recentTitles: string[] = []) {
+function buildPrompt(level: string, recentTitles: string[] = [], recipe: typeof RECIPES[number]) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
-  const levelRule = level === 'advanced'
-    ? '두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 5개(이 중 4도 이상 큰 도약 최소 3개 포함), 반음 패턴(U,V,W) 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 최소 5개, 당김음 패턴(당김음 카테고리 전체) 최소 2개, 쉼표 패턴(쉼표 카테고리 전체) 최소 2개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨 (예: 도약 중심 프레이즈 + 반음·당김음 중심 프레이즈). 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 2개로 제한'
-    : '두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 4개(이 중 4도 이상 큰 도약 최소 2개 포함), 반음 패턴(U,V,W) 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 최소 5개, 당김음 패턴(당김음 카테고리 전체) 최소 2개, 쉼표 패턴(쉼표 카테고리 전체) 최소 2개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨 (예: 도약 중심 프레이즈 + 반음·당김음 중심 프레이즈). 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 4개로 제한'
+  const need = recipe.need(level)
+  const neighborCap = recipe.neighborCap(level)
+  const levelRule = `${recipe.ruleText} 두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 ${need.leap}개(이 중 4도 이상 큰 도약 최소 ${need.bigLeap}개 포함), 반음 패턴(U,V,W) 최소 ${need.chromatic}개, 리듬 심화 패턴(리듬 카테고리 전체) 최소 ${need.rhythm}개, 당김음 패턴(당김음 카테고리 전체) 최소 ${need.syncopation}개, 쉼표 패턴(쉼표 카테고리 전체) 최소 ${need.rest}개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 ${neighborCap}개로 제한`
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -293,8 +328,10 @@ Z: C/D/E/F/ G2 F2 E2 (16분음표 상행 런)
 - 23, 24, 25(2:1:1 리듬)와 26+27(마디를 넘는 붙임줄)은 리듬 심화 카테고리에 속하는 선택지이니 적당히 섞어 쓸 것 (매번 강제로 넣을 필요는 없음)
 - label은 악보에 나타나는 멜로디 특성으로 지어야 함 (예: "큰 도약", "아르페지오", "턴 피겨", "반음 경과음", "붓점·셋잇단음표", "당김음", "마디를 넘는 붙임줄")
 - label에 장르/주법 이름 사용 금지
-- 카테고리별 최소 개수를 채우고 나면 마디가 정확히 8개로 꽉 차므로, 4분음표만 있는 이웃음/아르페지오 마디로 여백을 채우지 말고 위 최소 조건을 그대로 지킬 것
+- 첫 줄의 오늘의 집중 카테고리 지시를 최우선으로 따를 것 — 최소 개수가 0인 카테고리는 억지로 채우지 말고, 최소 개수가 큰 카테고리 위주로 마디를 고를 것
+- 마디가 정확히 8개로 꽉 차므로, 4분음표만 있는 이웃음/아르페지오 마디로 여백을 채우지 말고 위 최소 조건을 그대로 지킬 것
 
+아래 JSON 예시는 형식만 참고하고, 실제 bars 구성은 위 최소 개수 조건에 맞춰 새로 고를 것:
 JSON 객체로만 응답:
 {
   "title": "챌린지 제목",
@@ -333,6 +370,8 @@ export async function POST() {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY가 없어요.' }, { status: 500 })
   }
   const level = Math.random() < 0.7 ? 'intermediate' : 'advanced'
+  const recipe = pickRecipe()
+  console.log(`[generate-melody] recipe=${recipe.name} level=${level}`)
 
   // Fetch recent melody challenge titles to avoid duplicates
   let recentTitles: string[] = []
@@ -355,7 +394,7 @@ export async function POST() {
         model: 'claude-sonnet-4-6',
         max_tokens: 1024,
         system: 'You are a JSON generator. Output only a valid JSON object. No explanations, no reasoning text, no markdown. Start your response directly with { and end with }.',
-        messages: [{ role: 'user', content: buildPrompt(level, recentTitles) }],
+        messages: [{ role: 'user', content: buildPrompt(level, recentTitles, recipe) }],
       })
       const text = message.content[0].type === 'text' ? message.content[0].text : ''
       const jsonStr = extractJsonObject(text)
@@ -372,7 +411,7 @@ export async function POST() {
       }
       if (!ruleBroken) {
         const combined = rawPatterns.flatMap(p => p.bars)
-        ruleBroken = validateCombined(combined, level)
+        ruleBroken = validateCombined(combined, level, recipe)
       }
       if (ruleBroken) { console.error(`[generate-melody] attempt ${attempt}: rule violation — ${ruleBroken}`); continue }
 
