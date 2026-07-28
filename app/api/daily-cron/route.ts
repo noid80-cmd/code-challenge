@@ -397,6 +397,48 @@ JSON 객체로만 응답:
     '5': 'z C DE D2 C2', '6': 'z2 GF ED C2', '7': 'z4 C/D/E/F/ G2', '10': 'C2 z2 E/F/G/A/ D2',
     '8': 'C2 D E-E2 D2', '9': 'D C-C4 D2', '11': 'z C D2 E2 D2', '14': 'C2 G2 E F-F2',
     '12': 'G2 F2 G/F/E/D/ C2', '13': 'C/D/E/F/ G2 c2 G2',
+    '15': 'z2 (3CDE G2 F2', '16': 'C>D E2 D-D2 C', '17': '(3CDE z2 F2 E2',
+    '18': 'G2 C/D/E/F/ E-E2 D', '19': 'z2 C>D E2 D2', '20': 'C2 G-G2 z F/E/D/C/',
+    '21': 'C2 G-G4 F', '22': 'E2 c2 (3GFE D2',
+  }
+
+  const MELODY_CATEGORY = {
+    neighbor: ['A', 'B', 'C', 'D'],
+    leap: ['E', 'F', 'G', 'H', 'P', 'Q', 'R', 'S', 'T', '1', '2', '3', '4', '18', '20', '21', '22'],
+    bigLeap: ['1', '2', '3', '4', '20', '21', '22'],
+    chromatic: ['U', 'V', 'W'],
+    rhythm: ['X', 'Y', 'Z', '12', '13', '15', '16', '17', '18', '19', '20', '22'],
+    syncopation: ['8', '9', '11', '14', '16', '18', '20', '21'],
+    rest: ['5', '6', '7', '10', '15', '17', '19', '20'],
+  } as const
+
+  function countMelodyCategory(bars: string[], ids: readonly string[]) {
+    return bars.filter(b => (ids as readonly string[]).includes(b)).length
+  }
+
+  function validateMelodyBars(bars: string[], level: string): string | null {
+    if (bars.length !== 8) return `bars.length=${bars.length}`
+    for (const id of bars) {
+      if (!MELODY_BAR_PATTERNS[id]) return `unknown id "${id}"`
+    }
+    const counts: Record<string, number> = {}
+    for (const id of bars) counts[id] = (counts[id] ?? 0) + 1
+    for (const [id, c] of Object.entries(counts)) {
+      if (c > 2) return `id "${id}" repeated ${c} times (max 2)`
+    }
+    const neighborCap = level === 'advanced' ? 1 : 2
+    const need = level === 'advanced'
+      ? { leap: 3, bigLeap: 2, chromatic: 1, rhythm: 4, syncopation: 2, rest: 1 }
+      : { leap: 3, bigLeap: 1, chromatic: 1, rhythm: 3, syncopation: 1, rest: 1 }
+
+    if (countMelodyCategory(bars, MELODY_CATEGORY.neighbor) > neighborCap) return `neighbor count exceeds cap ${neighborCap}`
+    if (countMelodyCategory(bars, MELODY_CATEGORY.leap) < need.leap) return `leap count < ${need.leap}`
+    if (countMelodyCategory(bars, MELODY_CATEGORY.bigLeap) < need.bigLeap) return `bigLeap count < ${need.bigLeap}`
+    if (countMelodyCategory(bars, MELODY_CATEGORY.chromatic) < need.chromatic) return `chromatic count < ${need.chromatic}`
+    if (countMelodyCategory(bars, MELODY_CATEGORY.rhythm) < need.rhythm) return `rhythm count < ${need.rhythm}`
+    if (countMelodyCategory(bars, MELODY_CATEGORY.syncopation) < need.syncopation) return `syncopation count < ${need.syncopation}`
+    if (countMelodyCategory(bars, MELODY_CATEGORY.rest) < need.rest) return `rest count < ${need.rest}`
+    return null
   }
 
   function assembleMelodyABC(
@@ -434,8 +476,8 @@ JSON 객체로만 응답:
     const melodyLevel = Math.random() < 0.7 ? 'intermediate' : 'advanced'
 
     const melodyLevelRule = melodyLevel === 'advanced'
-      ? '각 프레이즈에 도약 패턴(E,F,G,H,P,Q,R,S,T,1,2,3,4) 중 최소 3개(이 중 4도 이상 큰 도약 1~4 중 최소 2개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(X,Y,Z,12,13) 중 최소 2개, 당김음 패턴(8,9,11,14) 중 최소 1개, 쉼표 패턴(5,6,7,10) 중 최소 1개 포함. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 1개로 제한'
-      : '각 프레이즈에 도약 패턴(E,F,G,H,P,Q,R,S,T,1,2,3,4) 중 최소 3개(이 중 4도 이상 큰 도약 1~4 중 최소 1개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(X,Y,Z,12,13) 중 최소 2개, 당김음 패턴(8,9,11,14) 중 최소 1개, 쉼표 패턴(5,6,7,10) 중 최소 1개 포함. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 2개로 제한'
+      ? '각 프레이즈에 도약 패턴(도약 카테고리 전체) 중 최소 3개(이 중 4도 이상 큰 도약 중 최소 2개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 중 최소 4개, 당김음 패턴(당김음 카테고리 전체) 중 최소 2개, 쉼표 패턴(쉼표 카테고리 전체) 중 최소 1개 포함. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 1개로 제한'
+      : '각 프레이즈에 도약 패턴(도약 카테고리 전체) 중 최소 3개(이 중 4도 이상 큰 도약 중 최소 1개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 중 최소 3개, 당김음 패턴(당김음 카테고리 전체) 중 최소 1개, 쉼표 패턴(쉼표 카테고리 전체) 중 최소 1개 포함. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 2개로 제한'
 
     const melodyPrompt = `계이름 시창(멜로디 초견) 챌린지를 생성하세요. 서로 다른 멜로디 특징을 가진 프레이즈 2개를 포함합니다.
 
@@ -505,12 +547,29 @@ Z: C/D/E/F/ G2 F2 E2 (16분음표 상행 런)
 11: z C D2 E2 D2 (쉼표 후 오프비트 진입)
 14: C2 G2 E F-F2 (도약 후 당김음)
 
+[복합 패턴 15~22 — 리듬 심화·당김음·쉼표·도약 중 두 개 이상을 한 마디 안에 겹쳐서
+매일 비슷한 조합처럼 들리지 않게 밀도를 높인 마디. 반드시 여러 개 섞어 쓸 것]
+15: z2 (3CDE G2 F2 (4분쉼표 + 셋잇단음표)
+16: C>D E2 D-D2 C (붓점 + 당김음)
+17: (3CDE z2 F2 E2 (셋잇단음표 + 4분쉼표)
+18: G2 C/D/E/F/ E-E2 D (도약 + 16분음표 런 + 당김음)
+19: z2 C>D E2 D2 (4분쉼표 + 붓점)
+20: C2 G-G2 z F/E/D/C/ (도약 + 당김음 + 쉼표 + 16분음표 런)
+21: C2 G-G4 F (도약 + 긴 당김음)
+22: E2 c2 (3GFE D2 (6도 도약 + 셋잇단음표)
+
+[카테고리 소속 — 복합 패턴은 여러 칸에 동시에 포함됨]
+도약: E,F,G,H,P,Q,R,S,T,1,2,3,4,18,20,21,22 (이 중 4도 이상 큰 도약: 1,2,3,4,20,21,22)
+리듬 심화: X,Y,Z,12,13,15,16,17,18,19,20,22
+당김음: 8,9,11,14,16,18,20,21
+쉼표: 5,6,7,10,15,17,19,20
+
 규칙:
 - ${melodyLevelRule}
 - 두 프레이즈가 서로 다른 멜로디 특성을 갖도록 조합
 - 같은 ID 최대 2번 반복 가능
 - 같은 마디를 3개 이상 연속으로 이어붙여 단조로운 음계처럼 들리지 않게 할 것
-- 당김음 패턴은 8,9,11,14 중 매번 다른 걸 골라 같은 리듬 모양이 반복되지 않게 할 것
+- 당김음 패턴은 8,9,11,14,16,18,20,21 중 매번 다른 걸 골라 같은 리듬 모양이 반복되지 않게 할 것
 - 카테고리별 최소 개수를 채우고 나면 마디가 정확히 8개로 꽉 차므로, 4분음표만 있는 이웃음/아르페지오 마디로 여백을 채우지 말 것
 
 JSON 객체로만 응답:
@@ -519,18 +578,18 @@ JSON 객체로만 응답:
   "description": "간단한 설명 (1-2문장)",
   "level": "${melodyLevel}",
   "patterns": [
-    {"label": "큰 도약·리듬 심화", "bars": ["1", "E", "F", "U", "X", "Z", "8", "5"]},
-    {"label": "아르페지오·당김음", "bars": ["2", "H", "P", "V", "Y", "12", "9", "6"]}
+    {"label": "복합 리듬·당김음", "bars": ["20", "20", "18", "U", "17", "15", "2", "1"]},
+    {"label": "도약·붓점 조합", "bars": ["18", "17", "V", "1", "H", "P", "16", "6"]}
   ]
 }`
 
     const MELODY_FALLBACK = {
       title: '계이름 시창 챌린지',
-      description: '큰 도약과 다양한 쉼표, 당김음을 포함한 중급 챌린지입니다.',
+      description: '복합 리듬과 다양한 쉼표, 당김음을 포함한 중급 챌린지입니다.',
       level: 'intermediate',
       patterns: assembleMelodyABC([
-        { label: '큰 도약·리듬 심화', bars: ['1', 'E', 'F', 'U', 'X', 'Z', '8', '5'] },
-        { label: '아르페지오·당김음', bars: ['2', 'H', 'P', 'V', 'Y', '12', '9', '6'] },
+        { label: '복합 리듬·당김음', bars: ['18', '17', 'V', '1', 'H', 'P', '16', '6'] },
+        { label: '큰 도약·리듬 심화', bars: ['20', '20', 'U', '15', '2', 'E', 'F', '5'] },
       ])!,
     }
 
@@ -547,7 +606,14 @@ JSON 객체로만 응답:
       if (!melodyJsonStr) { console.error(`[cron-melody] attempt ${attempt}: no JSON`); continue }
       let parsed
       try { parsed = JSON.parse(melodyJsonStr) } catch { continue }
-      const assembled = assembleMelodyABC(parsed.patterns ?? [])
+      const rawMelodyPatterns: Array<{ label: string; bars: string[] }> = parsed.patterns ?? []
+      let melodyRuleBroken: string | null = null
+      for (const p of rawMelodyPatterns) {
+        const err = validateMelodyBars((p.bars ?? []).map(String), melodyLevel)
+        if (err) { melodyRuleBroken = err; break }
+      }
+      if (melodyRuleBroken) { console.error(`[cron-melody] attempt ${attempt}: rule violation — ${melodyRuleBroken}`); continue }
+      const assembled = assembleMelodyABC(rawMelodyPatterns)
       if (!assembled) { console.error(`[cron-melody] attempt ${attempt}: assembly failed`); continue }
       melodyCh = { ...parsed, patterns: assembled }
       console.log(`[cron-melody] success attempt=${attempt} level=${melodyLevel}`)

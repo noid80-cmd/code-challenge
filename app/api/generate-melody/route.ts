@@ -63,6 +63,57 @@ const BAR_PATTERNS: Record<string, string> = {
   // 16분음표 추가 패턴
   '12': 'G2 F2 G/F/E/D/ C2',
   '13': 'C/D/E/F/ G2 c2 G2',
+  // 복합 패턴 — 리듬 심화·당김음·쉼표·도약을 한 마디 안에 두 개 이상 겹쳐서
+  // 훨씬 밀도 높은 마디를 만듦 (매일 비슷하게 들리는 문제의 핵심 해결책)
+  '15': 'z2 (3CDE G2 F2',
+  '16': 'C>D E2 D-D2 C',
+  '17': '(3CDE z2 F2 E2',
+  '18': 'G2 C/D/E/F/ E-E2 D',
+  '19': 'z2 C>D E2 D2',
+  '20': 'C2 G-G2 z F/E/D/C/',
+  '21': 'C2 G-G4 F',
+  '22': 'E2 c2 (3GFE D2',
+}
+
+// 카테고리 소속 — 복합 패턴은 여러 카테고리에 동시에 속해서, 8마디 예산 안에서도
+// 더 많은 난이도 요소를 동시에 채울 수 있게 함
+const CATEGORY = {
+  neighbor: ['A', 'B', 'C', 'D'],
+  leap: ['E', 'F', 'G', 'H', 'P', 'Q', 'R', 'S', 'T', '1', '2', '3', '4', '18', '20', '21', '22'],
+  bigLeap: ['1', '2', '3', '4', '20', '21', '22'],
+  chromatic: ['U', 'V', 'W'],
+  rhythm: ['X', 'Y', 'Z', '12', '13', '15', '16', '17', '18', '19', '20', '22'],
+  syncopation: ['8', '9', '11', '14', '16', '18', '20', '21'],
+  rest: ['5', '6', '7', '10', '15', '17', '19', '20'],
+} as const
+
+function countCategory(bars: string[], ids: readonly string[]) {
+  return bars.filter(b => (ids as readonly string[]).includes(b)).length
+}
+
+function validateBars(bars: string[], level: string): string | null {
+  if (bars.length !== 8) return `bars.length=${bars.length}`
+  for (const id of bars) {
+    if (!BAR_PATTERNS[id]) return `unknown id "${id}"`
+  }
+  const counts: Record<string, number> = {}
+  for (const id of bars) counts[id] = (counts[id] ?? 0) + 1
+  for (const [id, c] of Object.entries(counts)) {
+    if (c > 2) return `id "${id}" repeated ${c} times (max 2)`
+  }
+  const neighborCap = level === 'advanced' ? 1 : 2
+  const need = level === 'advanced'
+    ? { leap: 3, bigLeap: 2, chromatic: 1, rhythm: 4, syncopation: 2, rest: 1 }
+    : { leap: 3, bigLeap: 1, chromatic: 1, rhythm: 3, syncopation: 1, rest: 1 }
+
+  if (countCategory(bars, CATEGORY.neighbor) > neighborCap) return `neighbor count exceeds cap ${neighborCap}`
+  if (countCategory(bars, CATEGORY.leap) < need.leap) return `leap count < ${need.leap}`
+  if (countCategory(bars, CATEGORY.bigLeap) < need.bigLeap) return `bigLeap count < ${need.bigLeap}`
+  if (countCategory(bars, CATEGORY.chromatic) < need.chromatic) return `chromatic count < ${need.chromatic}`
+  if (countCategory(bars, CATEGORY.rhythm) < need.rhythm) return `rhythm count < ${need.rhythm}`
+  if (countCategory(bars, CATEGORY.syncopation) < need.syncopation) return `syncopation count < ${need.syncopation}`
+  if (countCategory(bars, CATEGORY.rest) < need.rest) return `rest count < ${need.rest}`
+  return null
 }
 
 function assemblePatternsABC(
@@ -94,8 +145,8 @@ function assemblePatternsABC(
 function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
-    ? '각 프레이즈에 도약 패턴(E,F,G,H,P,Q,R,S,T,1,2,3,4) 중 최소 3개(이 중 4도 이상 큰 도약 1~4 중 최소 2개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(X,Y,Z,12,13) 중 최소 2개, 당김음 패턴(8,9,11,14) 중 최소 1개, 쉼표 패턴(5,6,7,10) 중 최소 1개 포함. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 1개로 제한'
-    : '각 프레이즈에 도약 패턴(E,F,G,H,P,Q,R,S,T,1,2,3,4) 중 최소 3개(이 중 4도 이상 큰 도약 1~4 중 최소 1개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(X,Y,Z,12,13) 중 최소 2개, 당김음 패턴(8,9,11,14) 중 최소 1개, 쉼표 패턴(5,6,7,10) 중 최소 1개 포함. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 2개로 제한'
+    ? '각 프레이즈에 도약 패턴(도약 카테고리 전체) 중 최소 3개(이 중 4도 이상 큰 도약 중 최소 2개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 중 최소 4개, 당김음 패턴(당김음 카테고리 전체) 중 최소 2개, 쉼표 패턴(쉼표 카테고리 전체) 중 최소 1개 포함. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 1개로 제한'
+    : '각 프레이즈에 도약 패턴(도약 카테고리 전체) 중 최소 3개(이 중 4도 이상 큰 도약 중 최소 1개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 중 최소 3개, 당김음 패턴(당김음 카테고리 전체) 중 최소 1개, 쉼표 패턴(쉼표 카테고리 전체) 중 최소 1개 포함. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 2개로 제한'
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -169,6 +220,23 @@ Z: C/D/E/F/ G2 F2 E2 (16분음표 상행 런)
 11: z C D2 E2 D2 (쉼표 후 오프비트로 진입)
 14: C2 G2 E F-F2 (도약 후 당김음: 파가 박자 경계를 붙임줄로 넘어감)
 
+[복합 패턴 15~22 — 리듬 심화·당김음·쉼표·도약 중 두 개 이상을 한 마디 안에 겹쳐서
+매일 비슷한 조합처럼 들리지 않게 밀도를 높인 마디. 반드시 여러 개 섞어 쓸 것]
+15: z2 (3CDE G2 F2 (4분쉼표 + 셋잇단음표)
+16: C>D E2 D-D2 C (붓점 + 당김음)
+17: (3CDE z2 F2 E2 (셋잇단음표 + 4분쉼표)
+18: G2 C/D/E/F/ E-E2 D (도약 + 16분음표 런 + 당김음)
+19: z2 C>D E2 D2 (4분쉼표 + 붓점)
+20: C2 G-G2 z F/E/D/C/ (도약 + 당김음 + 쉼표 + 16분음표 런)
+21: C2 G-G4 F (도약 + 긴 당김음)
+22: E2 c2 (3GFE D2 (6도 도약 + 셋잇단음표)
+
+[카테고리 소속 — 위 마디들이 실제로 어느 카테고리에 속하는지. 복합 패턴은 여러 칸에 동시에 포함됨]
+도약: E,F,G,H,P,Q,R,S,T,1,2,3,4,18,20,21,22 (이 중 4도 이상 큰 도약: 1,2,3,4,20,21,22)
+리듬 심화: X,Y,Z,12,13,15,16,17,18,19,20,22
+당김음: 8,9,11,14,16,18,20,21
+쉼표: 5,6,7,10,15,17,19,20
+
 규칙:
 - ${levelRule}
 - 두 프레이즈가 서로 다른 멜로디 특성을 갖도록 조합 (예: 한 프레이즈는 순차+반음 중심, 다른 프레이즈는 큰 도약+리듬 심화 중심)
@@ -185,8 +253,8 @@ JSON 객체로만 응답:
   "description": "간단한 설명 (1-2문장)",
   "level": "${level}",
   "patterns": [
-    {"label": "큰 도약·리듬 심화", "bars": ["1", "E", "F", "U", "X", "Z", "8", "5"]},
-    {"label": "아르페지오·당김음", "bars": ["2", "H", "P", "V", "Y", "12", "9", "6"]}
+    {"label": "복합 리듬·당김음", "bars": ["20", "20", "18", "U", "17", "15", "2", "1"]},
+    {"label": "도약·붓점 조합", "bars": ["18", "17", "V", "1", "H", "P", "16", "6"]}
   ]
 }`
 }
@@ -247,7 +315,15 @@ export async function POST() {
       let parsed
       try { parsed = JSON.parse(jsonStr) } catch { continue }
 
-      const assembled = assemblePatternsABC(parsed.patterns ?? [])
+      const rawPatterns: Array<{ label: string; bars: string[] }> = parsed.patterns ?? []
+      let ruleBroken: string | null = null
+      for (const p of rawPatterns) {
+        const err = validateBars((p.bars ?? []).map(String), level)
+        if (err) { ruleBroken = err; break }
+      }
+      if (ruleBroken) { console.error(`[generate-melody] attempt ${attempt}: rule violation — ${ruleBroken}`); continue }
+
+      const assembled = assemblePatternsABC(rawPatterns)
       if (!assembled) { console.error(`[generate-melody] attempt ${attempt}: assembly failed`); continue }
 
       const newTitle = String(parsed.title || '계이름 시창 챌린지')
