@@ -91,7 +91,8 @@ function countCategory(bars: string[], ids: readonly string[]) {
   return bars.filter(b => (ids as readonly string[]).includes(b)).length
 }
 
-function validateBars(bars: string[], level: string): string | null {
+// 개별 프레이즈: 모양(8마디, 알려진 ID, 반복 최대 2회)만 검증
+function validatePhraseShape(bars: string[]): string | null {
   if (bars.length !== 8) return `bars.length=${bars.length}`
   for (const id of bars) {
     if (!BAR_PATTERNS[id]) return `unknown id "${id}"`
@@ -101,18 +102,27 @@ function validateBars(bars: string[], level: string): string | null {
   for (const [id, c] of Object.entries(counts)) {
     if (c > 2) return `id "${id}" repeated ${c} times (max 2)`
   }
-  const neighborCap = level === 'advanced' ? 1 : 2
-  const need = level === 'advanced'
-    ? { leap: 3, bigLeap: 2, chromatic: 1, rhythm: 3, syncopation: 1, rest: 1 }
-    : { leap: 3, bigLeap: 1, chromatic: 1, rhythm: 3, syncopation: 1, rest: 1 }
+  return null
+}
 
-  if (countCategory(bars, CATEGORY.neighbor) > neighborCap) return `neighbor count exceeds cap ${neighborCap}`
-  if (countCategory(bars, CATEGORY.leap) < need.leap) return `leap count < ${need.leap}`
-  if (countCategory(bars, CATEGORY.bigLeap) < need.bigLeap) return `bigLeap count < ${need.bigLeap}`
-  if (countCategory(bars, CATEGORY.chromatic) < need.chromatic) return `chromatic count < ${need.chromatic}`
-  if (countCategory(bars, CATEGORY.rhythm) < need.rhythm) return `rhythm count < ${need.rhythm}`
-  if (countCategory(bars, CATEGORY.syncopation) < need.syncopation) return `syncopation count < ${need.syncopation}`
-  if (countCategory(bars, CATEGORY.rest) < need.rest) return `rest count < ${need.rest}`
+// 카테고리 최소 개수는 "두 프레이즈 합산" 기준으로 검증한다.
+// 한 프레이즈는 도약 중심, 다른 프레이즈는 반음 중심처럼 서로 다른 특성을
+// 갖도록 유도하면서, 두 프레이즈 각각에 모든 카테고리를 강제하면
+// (예: 도약 중심 프레이즈에도 반음을 억지로 넣어야 함) 모순이 생겨
+// AI가 계속 실패하게 됨.
+function validateCombined(allBars: string[], level: string): string | null {
+  const neighborCap = level === 'advanced' ? 2 : 4
+  const need = level === 'advanced'
+    ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 5, syncopation: 2, rest: 2 }
+    : { leap: 5, bigLeap: 2, chromatic: 1, rhythm: 5, syncopation: 2, rest: 2 }
+
+  if (countCategory(allBars, CATEGORY.neighbor) > neighborCap) return `neighbor count exceeds cap ${neighborCap}`
+  if (countCategory(allBars, CATEGORY.leap) < need.leap) return `leap count < ${need.leap}`
+  if (countCategory(allBars, CATEGORY.bigLeap) < need.bigLeap) return `bigLeap count < ${need.bigLeap}`
+  if (countCategory(allBars, CATEGORY.chromatic) < need.chromatic) return `chromatic count < ${need.chromatic}`
+  if (countCategory(allBars, CATEGORY.rhythm) < need.rhythm) return `rhythm count < ${need.rhythm}`
+  if (countCategory(allBars, CATEGORY.syncopation) < need.syncopation) return `syncopation count < ${need.syncopation}`
+  if (countCategory(allBars, CATEGORY.rest) < need.rest) return `rest count < ${need.rest}`
   return null
 }
 
@@ -145,8 +155,8 @@ function assemblePatternsABC(
 function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
-    ? '각 프레이즈에 도약 패턴(도약 카테고리 전체) 중 최소 3개(이 중 4도 이상 큰 도약 중 최소 2개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 중 최소 3개, 당김음 패턴(당김음 카테고리 전체) 중 최소 1개, 쉼표 패턴(쉼표 카테고리 전체) 중 최소 1개 포함. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 1개로 제한'
-    : '각 프레이즈에 도약 패턴(도약 카테고리 전체) 중 최소 3개(이 중 4도 이상 큰 도약 중 최소 1개 포함), 반음 패턴(U,V,W) 중 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 중 최소 3개, 당김음 패턴(당김음 카테고리 전체) 중 최소 1개, 쉼표 패턴(쉼표 카테고리 전체) 중 최소 1개 포함. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 프레이즈당 최대 2개로 제한'
+    ? '두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 5개(이 중 4도 이상 큰 도약 최소 3개 포함), 반음 패턴(U,V,W) 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 최소 5개, 당김음 패턴(당김음 카테고리 전체) 최소 2개, 쉼표 패턴(쉼표 카테고리 전체) 최소 2개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨 (예: 도약 중심 프레이즈 + 반음·당김음 중심 프레이즈). 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 2개로 제한'
+    : '두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 5개(이 중 4도 이상 큰 도약 최소 2개 포함), 반음 패턴(U,V,W) 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 최소 5개, 당김음 패턴(당김음 카테고리 전체) 최소 2개, 쉼표 패턴(쉼표 카테고리 전체) 최소 2개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨 (예: 도약 중심 프레이즈 + 반음·당김음 중심 프레이즈). 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 4개로 제한'
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -239,7 +249,7 @@ Z: C/D/E/F/ G2 F2 E2 (16분음표 상행 런)
 
 규칙:
 - ${levelRule}
-- 두 프레이즈가 서로 다른 멜로디 특성을 갖도록 조합 (예: 한 프레이즈는 순차+반음 중심, 다른 프레이즈는 큰 도약+리듬 심화 중심)
+- 두 프레이즈가 서로 다른 멜로디 특성을 갖도록 조합 (예: 한 프레이즈는 반음+당김음 중심, 다른 프레이즈는 큰 도약+리듬 심화 중심 — 카테고리 최소 개수는 두 프레이즈 합산 기준이므로 이렇게 나눠 담아도 됨)
 - 같은 ID 최대 2번 반복 가능
 - 같은 마디를 3개 이상 연속으로 이어붙여 단조로운 음계처럼 들리지 않게 할 것
 - 당김음 패턴은 8,9,11,14 중 매번 다른 걸 골라 같은 리듬 모양이 반복되지 않게 할 것
@@ -315,11 +325,16 @@ export async function POST() {
       let parsed
       try { parsed = JSON.parse(jsonStr) } catch { continue }
 
-      const rawPatterns: Array<{ label: string; bars: string[] }> = parsed.patterns ?? []
+      const rawPatterns: Array<{ label: string; bars: string[] }> = (parsed.patterns ?? [])
+        .map((p: { label: string; bars: string[] }) => ({ label: p.label, bars: (p.bars ?? []).map(String) }))
       let ruleBroken: string | null = null
       for (const p of rawPatterns) {
-        const err = validateBars((p.bars ?? []).map(String), level)
+        const err = validatePhraseShape(p.bars)
         if (err) { ruleBroken = err; break }
+      }
+      if (!ruleBroken) {
+        const combined = rawPatterns.flatMap(p => p.bars)
+        ruleBroken = validateCombined(combined, level)
       }
       if (ruleBroken) { console.error(`[generate-melody] attempt ${attempt}: rule violation — ${ruleBroken}`); continue }
 
