@@ -73,6 +73,14 @@ const BAR_PATTERNS: Record<string, string> = {
   '20': 'C2 G-G2 z F/E/D/C/',
   '21': 'C2 G-G4 F',
   '22': 'E2 c2 (3GFE D2',
+  // 2:1:1 리듬(8분+16분+16분) — 한 박 안에서 8분음표의 위치를 앞/중간/뒤로 바꾼 3종
+  '23': 'C D/E/ F2 D2 C2',
+  '24': 'C/DE/ G2 F2 D2',
+  '25': 'C/D/E G2 E2 C2',
+  // 마디를 넘어가는 붙임줄 — 반드시 26 바로 다음에 27이 와야 하는 짝 패턴
+  // (26의 마지막 음이 27의 첫 음으로 그대로 이어짐)
+  '26': 'C2 D2 E2 G2-',
+  '27': 'G4 F2 E2',
 }
 
 // 카테고리 소속 — 복합 패턴은 여러 카테고리에 동시에 속해서, 8마디 예산 안에서도
@@ -82,10 +90,19 @@ const CATEGORY = {
   leap: ['E', 'F', 'G', 'H', 'P', 'Q', 'R', 'S', 'T', '1', '2', '3', '4', '18', '20', '21', '22'],
   bigLeap: ['1', '2', '3', '4', '20', '21', '22'],
   chromatic: ['U', 'V', 'W'],
-  rhythm: ['X', 'Y', 'Z', '12', '13', '15', '16', '17', '18', '19', '20', '22'],
-  syncopation: ['8', '9', '11', '14', '16', '18', '20', '21'],
+  rhythm: ['X', 'Y', 'Z', '12', '13', '15', '16', '17', '18', '19', '20', '22', '23', '24', '25', '26', '27'],
+  syncopation: ['8', '9', '11', '14', '16', '18', '20', '21', '26', '27'],
   rest: ['5', '6', '7', '10', '15', '17', '19', '20'],
 } as const
+
+// 26은 반드시 바로 다음에 27이 와야 하고, 27은 반드시 26 바로 다음에만 올 수 있음
+function validatePairing(bars: string[]): string | null {
+  for (let i = 0; i < bars.length; i++) {
+    if (bars[i] === '26' && bars[i + 1] !== '27') return `"26" must be immediately followed by "27" (at index ${i})`
+    if (bars[i] === '27' && bars[i - 1] !== '26') return `"27" must be immediately preceded by "26" (at index ${i})`
+  }
+  return null
+}
 
 function countCategory(bars: string[], ids: readonly string[]) {
   return bars.filter(b => (ids as readonly string[]).includes(b)).length
@@ -102,6 +119,8 @@ function validatePhraseShape(bars: string[]): string | null {
   for (const [id, c] of Object.entries(counts)) {
     if (c > 2) return `id "${id}" repeated ${c} times (max 2)`
   }
+  const pairingErr = validatePairing(bars)
+  if (pairingErr) return pairingErr
   return null
 }
 
@@ -114,7 +133,7 @@ function validateCombined(allBars: string[], level: string): string | null {
   const neighborCap = level === 'advanced' ? 2 : 4
   const need = level === 'advanced'
     ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 5, syncopation: 2, rest: 2 }
-    : { leap: 5, bigLeap: 2, chromatic: 1, rhythm: 5, syncopation: 2, rest: 2 }
+    : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 5, syncopation: 2, rest: 2 }
 
   if (countCategory(allBars, CATEGORY.neighbor) > neighborCap) return `neighbor count exceeds cap ${neighborCap}`
   if (countCategory(allBars, CATEGORY.leap) < need.leap) return `leap count < ${need.leap}`
@@ -156,7 +175,7 @@ function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
     ? '두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 5개(이 중 4도 이상 큰 도약 최소 3개 포함), 반음 패턴(U,V,W) 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 최소 5개, 당김음 패턴(당김음 카테고리 전체) 최소 2개, 쉼표 패턴(쉼표 카테고리 전체) 최소 2개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨 (예: 도약 중심 프레이즈 + 반음·당김음 중심 프레이즈). 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 2개로 제한'
-    : '두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 5개(이 중 4도 이상 큰 도약 최소 2개 포함), 반음 패턴(U,V,W) 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 최소 5개, 당김음 패턴(당김음 카테고리 전체) 최소 2개, 쉼표 패턴(쉼표 카테고리 전체) 최소 2개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨 (예: 도약 중심 프레이즈 + 반음·당김음 중심 프레이즈). 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 4개로 제한'
+    : '두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 4개(이 중 4도 이상 큰 도약 최소 2개 포함), 반음 패턴(U,V,W) 최소 1개, 리듬 심화 패턴(리듬 카테고리 전체) 최소 5개, 당김음 패턴(당김음 카테고리 전체) 최소 2개, 쉼표 패턴(쉼표 카테고리 전체) 최소 2개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨 (예: 도약 중심 프레이즈 + 반음·당김음 중심 프레이즈). 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 4개로 제한'
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -241,10 +260,22 @@ Z: C/D/E/F/ G2 F2 E2 (16분음표 상행 런)
 21: C2 G-G4 F (도약 + 긴 당김음)
 22: E2 c2 (3GFE D2 (6도 도약 + 셋잇단음표)
 
+[2:1:1 리듬 23~25 — 한 박(8분음표+16분음표+16분음표, 2:1:1 길이 비율) 안에서
+8분음표의 위치를 앞/중간/뒤로 바꾼 3가지 유형]
+23: C D/E/ F2 D2 C2 (8분음표가 앞: 8분+16분+16분)
+24: C/DE/ G2 F2 D2 (8분음표가 중간: 16분+8분+16분)
+25: C/D/E G2 E2 C2 (8분음표가 뒤: 16분+16분+8분)
+
+[마디를 넘어가는 붙임줄 26~27 — 반드시 짝으로만 사용. 26 바로 다음 마디에
+27이 와야 하고, 27은 26 없이 단독으로 쓸 수 없음. 26의 마지막 음(솔)이
+마디선을 넘어 27의 첫 음(솔)으로 그대로 이어짐]
+26: C2 D2 E2 G2- (반드시 27 바로 앞에 위치, 마지막 솔이 다음 마디로 붙임줄)
+27: G4 F2 E2 (반드시 26 바로 다음에 위치, 붙임줄로 이어받은 솔이 2박 지속)
+
 [카테고리 소속 — 위 마디들이 실제로 어느 카테고리에 속하는지. 복합 패턴은 여러 칸에 동시에 포함됨]
 도약: E,F,G,H,P,Q,R,S,T,1,2,3,4,18,20,21,22 (이 중 4도 이상 큰 도약: 1,2,3,4,20,21,22)
-리듬 심화: X,Y,Z,12,13,15,16,17,18,19,20,22
-당김음: 8,9,11,14,16,18,20,21
+리듬 심화: X,Y,Z,12,13,15,16,17,18,19,20,22,23,24,25,26,27
+당김음: 8,9,11,14,16,18,20,21,26,27
 쉼표: 5,6,7,10,15,17,19,20
 
 규칙:
@@ -253,7 +284,9 @@ Z: C/D/E/F/ G2 F2 E2 (16분음표 상행 런)
 - 같은 ID 최대 2번 반복 가능
 - 같은 마디를 3개 이상 연속으로 이어붙여 단조로운 음계처럼 들리지 않게 할 것
 - 당김음 패턴은 8,9,11,14 중 매번 다른 걸 골라 같은 리듬 모양이 반복되지 않게 할 것
-- label은 악보에 나타나는 멜로디 특성으로 지어야 함 (예: "큰 도약", "아르페지오", "턴 피겨", "반음 경과음", "붓점·셋잇단음표", "당김음")
+- 26을 쓸 때는 반드시 bars 배열에서 26 바로 다음 자리에 27을 넣을 것 (26만 쓰거나 27만 쓰는 것은 금지)
+- 23, 24, 25(2:1:1 리듬)와 26+27(마디를 넘는 붙임줄)은 리듬 심화 카테고리에 속하는 선택지이니 적당히 섞어 쓸 것 (매번 강제로 넣을 필요는 없음)
+- label은 악보에 나타나는 멜로디 특성으로 지어야 함 (예: "큰 도약", "아르페지오", "턴 피겨", "반음 경과음", "붓점·셋잇단음표", "당김음", "마디를 넘는 붙임줄")
 - label에 장르/주법 이름 사용 금지
 - 카테고리별 최소 개수를 채우고 나면 마디가 정확히 8개로 꽉 차므로, 4분음표만 있는 이웃음/아르페지오 마디로 여백을 채우지 말고 위 최소 조건을 그대로 지킬 것
 
