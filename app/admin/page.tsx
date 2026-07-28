@@ -132,7 +132,8 @@ export default function AdminPage() {
       level: draftToSave.level,
     })
     if (error) {
-      setError(error.message)
+      setError(error.message.includes('duplicate') || error.message.includes('unique')
+        ? `${selectedDate} 리듬 챌린지가 이미 있어요. 기존 걸 삭제하거나 수정해주세요.` : error.message)
     } else {
       setSuccess(`${selectedDate} 리듬 챌린지 저장됐어요!`)
       await loadChallenges()
@@ -176,7 +177,8 @@ export default function AdminPage() {
       level: draftToSave.level,
     })
     if (error) {
-      setError(error.message)
+      setError(error.message.includes('duplicate') || error.message.includes('unique')
+        ? `${selectedDate} 멜로디 챌린지가 이미 있어요. 기존 걸 삭제하거나 수정해주세요.` : error.message)
     } else {
       setSuccess(`${selectedDate} 멜로디 챌린지 저장됐어요!`)
       await loadChallenges()
