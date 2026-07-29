@@ -422,23 +422,29 @@ JSON 객체로만 응답:
   } as const
 
   type MelodyRecipeNeed = { leap: number; bigLeap: number; chromatic: number; rhythm: number; syncopation: number; rest: number }
-  const MELODY_RECIPES: { name: string; need: (level: string) => MelodyRecipeNeed; neighborCap: (level: string) => number; ruleText: string }[] = [
+  // chromaticCap: 반음은 대부분의 날에 1~2개가 적당하다는 피드백이 있었지만,
+  // "반음 위주" 레시피는 규칙 텍스트 자체가 반음을 강조하므로 획일적으로 2로
+  // 묶으면 실시간 검증 통과율이 0%에 가깝게 떨어짐(실측). 레시피별로 다르게 둠.
+  const MELODY_RECIPES: { name: string; need: (level: string) => MelodyRecipeNeed; neighborCap: (level: string) => number; chromaticCap: (level: string) => number; ruleText: string }[] = [
     {
       name: '도약·리듬 집중',
       need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 1, rhythm: level === 'advanced' ? 7 : 6, syncopation: 1, rest: 0 }),
       neighborCap: () => 2,
+      chromaticCap: () => 2,
       ruleText: '오늘은 도약과 리듬 심화 위주로 몰아서 만드세요. 쉼표 패턴은 아예 안 써도 되지만, 반음은 최소 1개는 넣으세요.',
     },
     {
       name: '반음·당김음 집중',
-      need: level => ({ leap: 1, bigLeap: 1, chromatic: level === 'advanced' ? 4 : 3, rhythm: 2, syncopation: level === 'advanced' ? 5 : 4, rest: 0 }),
+      need: level => ({ leap: 1, bigLeap: 1, chromatic: 2, rhythm: 2, syncopation: level === 'advanced' ? 5 : 4, rest: 0 }),
       neighborCap: () => 3,
-      ruleText: '오늘은 반음(크로매틱)과 당김음 위주로 몰아서 만드세요. 큰 도약은 최소한만 넣으세요.',
+      chromaticCap: () => 3,
+      ruleText: '오늘은 당김음 위주로 몰아서 만드세요. 반음(크로매틱)도 다른 날보다 조금 더 쓰되, 과하게 넣지 말고 딱 필요한 개수만 쓰세요.',
     },
     {
       name: '쉼표·리듬 집중',
       need: level => ({ leap: 2, bigLeap: 1, chromatic: 1, rhythm: level === 'advanced' ? 8 : 7, syncopation: 1, rest: level === 'advanced' ? 5 : 4 }),
       neighborCap: () => 3,
+      chromaticCap: () => 2,
       ruleText: '오늘은 쉼표와 리듬 심화 위주로 몰아서 만드세요. 반음은 최소 1개는 넣으세요.',
     },
     {
@@ -447,7 +453,8 @@ JSON 객체로만 응답:
         ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 5, syncopation: 2, rest: 1 }
         : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 5, syncopation: 2, rest: 1 },
       neighborCap: level => level === 'advanced' ? 2 : 4,
-      ruleText: '오늘은 도약·반음·리듬·당김음·쉼표를 골고루 섞어서 만드세요.',
+      chromaticCap: () => 3,
+      ruleText: '오늘은 도약·반음·리듬·당김음·쉼표를 골고루 섞어서 만드세요. 단, 반음은 넣더라도 최소한으로만 곁들이세요.',
     },
   ]
 
@@ -484,11 +491,15 @@ JSON 객체로만 응답:
 
   // 카테고리 최소 개수는 "두 프레이즈 합산" 기준으로 검증 (프레이즈별로 전부
   // 강제하면 도약 중심/반음 중심처럼 대조적인 프레이즈 설계와 모순됨)
+  // (레시피별 반음 상한은 MELODY_RECIPES[].chromaticCap 참고)
+
   function validateMelodyCombined(allBars: string[], level: string, recipe: typeof MELODY_RECIPES[number]): string | null {
     const neighborCap = recipe.neighborCap(level)
+    const chromaticCap = recipe.chromaticCap(level)
     const need = recipe.need(level)
 
     if (countMelodyCategory(allBars, MELODY_CATEGORY.neighbor) > neighborCap) return `neighbor count exceeds cap ${neighborCap}`
+    if (countMelodyCategory(allBars, MELODY_CATEGORY.chromatic) > chromaticCap) return `chromatic count exceeds cap ${chromaticCap}`
     if (countMelodyCategory(allBars, MELODY_CATEGORY.leap) < need.leap) return `leap count < ${need.leap}`
     if (countMelodyCategory(allBars, MELODY_CATEGORY.bigLeap) < need.bigLeap) return `bigLeap count < ${need.bigLeap}`
     if (countMelodyCategory(allBars, MELODY_CATEGORY.chromatic) < need.chromatic) return `chromatic count < ${need.chromatic}`
@@ -539,7 +550,8 @@ JSON 객체로만 응답:
 
     const melodyNeed = melodyRecipe.need(melodyLevel)
     const melodyNeighborCap = melodyRecipe.neighborCap(melodyLevel)
-    const melodyLevelRule = `${melodyRecipe.ruleText} 두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 ${melodyNeed.leap}개(이 중 4도 이상 큰 도약 최소 ${melodyNeed.bigLeap}개 포함), 반음 패턴(U,V,W) 최소 ${melodyNeed.chromatic}개, 리듬 심화 패턴(리듬 카테고리 전체) 최소 ${melodyNeed.rhythm}개, 당김음 패턴(당김음 카테고리 전체) 최소 ${melodyNeed.syncopation}개, 쉼표 패턴(쉼표 카테고리 전체) 최소 ${melodyNeed.rest}개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 ${melodyNeighborCap}개로 제한`
+    const melodyChromaticCap = melodyRecipe.chromaticCap(melodyLevel)
+    const melodyLevelRule = `${melodyRecipe.ruleText} 두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 ${melodyNeed.leap}개(이 중 4도 이상 큰 도약 최소 ${melodyNeed.bigLeap}개 포함), 반음 패턴(U,V,W,30~34) 최소 ${melodyNeed.chromatic}개~최대 ${melodyChromaticCap}개(반드시 ${melodyChromaticCap}개를 넘기지 말 것), 리듬 심화 패턴(리듬 카테고리 전체) 최소 ${melodyNeed.rhythm}개, 당김음 패턴(당김음 카테고리 전체) 최소 ${melodyNeed.syncopation}개, 쉼표 패턴(쉼표 카테고리 전체) 최소 ${melodyNeed.rest}개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 ${melodyNeighborCap}개로 제한`
 
     const melodyPrompt = `계이름 시창(멜로디 초견) 챌린지를 생성하세요. 서로 다른 멜로디 특징을 가진 프레이즈 2개를 포함합니다.
 
