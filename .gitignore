@@ -36,6 +36,10 @@ yarn-error.log*
 # vercel
 .vercel
 
+# android release signing (절대 커밋 금지 — 유출/유실 시 앱 업데이트 영구 불가)
+/android-signing/
+android/keystore.properties
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
