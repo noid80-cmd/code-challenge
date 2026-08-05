@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { isNativeApp } from '@/lib/capacitor'
 
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 48 48">
@@ -81,8 +82,33 @@ export default function LoginPage() {
 
   async function handleGoogle() {
     setError('')
-    // iOS PWA: cookies get cleared when the app backgrounds during OAuth.
-    // Using implicit flow avoids storing a code_verifier in cookies entirely.
+
+    // Capacitor 네이티브 앱(iOS/Android 공통): Capacitor 기본 동작은 구글
+    // 로그인 같은 외부 도메인 이동을 시스템 브라우저로 통째로 던져버려서
+    // (Kpick에서 실측 확인된 문제) 로그인이 앱과 분리된 사파리/크롬에서
+    // 끝나버리고 앱은 세션을 못 받는다. @capacitor/browser의 인앱
+    // 브라우저(구글이 허용하는 방식)로 열고, 완료되면 커스텀 URL 스킴
+    // (choekyun://auth-callback)으로 앱에 돌아오게 해서 그 code를 기존
+    // /auth/callback 로직(PKCE exchangeCodeForSession)에 그대로 넘긴다.
+    if (isNativeApp()) {
+      const { Browser } = await import('@capacitor/browser')
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: 'choekyun://auth-callback',
+          queryParams: { prompt: 'select_account' },
+          skipBrowserRedirect: true,
+        },
+      })
+      if (error || !data?.url) { setError('Google 로그인 오류: ' + (error?.message ?? '')); return }
+      await Browser.open({ url: data.url })
+      return
+    }
+
+    // iOS PWA(사파리 홈 화면 추가): 앱이 백그라운드로 가는 동안 쿠키가
+    // 날아가는 문제 때문에 implicit flow를 씀. Capacitor 네이티브 앱은 위
+    // 분기에서 이미 처리했으니 여기까지 안 옴.
     const isIOS = (window.navigator as { standalone?: boolean }).standalone !== undefined
     if (isIOS) {
       const { createClient: rawCreate } = await import('@supabase/supabase-js')
