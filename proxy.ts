@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  const publicPaths = ['/login', '/signup', '/auth', '/api', '/intro', '/chord', '/rhythm', '/melody', '/challenges', '/ranking', '/privacy']
+  const publicPaths = ['/login', '/signup', '/auth', '/api', '/intro', '/chord', '/rhythm', '/melody', '/challenges', '/ranking', '/privacy', '/account-deletion']
   const isPublic = pathname === '/' || publicPaths.some(p => pathname.startsWith(p))
 
   // iOS PWA OAuth handoff: allow auth params through without session check.
