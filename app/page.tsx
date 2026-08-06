@@ -85,7 +85,7 @@ export default function LandingPage() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 400 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 640 }}>
           <Link href="/chord" style={{ textDecoration: 'none' }}>
             <div style={{
               background: 'linear-gradient(145deg, #111110, #0e0e0c)',

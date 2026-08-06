@@ -330,7 +330,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
         </div>
       </header>
 
-      <main style={{ maxWidth: 560, margin: '0 auto', padding: '32px 16px 100px' }}>
+      <main style={{ maxWidth: 800, margin: '0 auto', padding: '32px 16px 100px' }}>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#f0ece0' }} />
