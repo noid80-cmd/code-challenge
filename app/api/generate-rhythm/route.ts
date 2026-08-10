@@ -22,17 +22,17 @@ const BAR_PATTERNS: Record<string, string> = {
   N: 'z4 (3BBB z2',
   O: 'B/B/B/B/ z B (3BBB z2',
   // 16분쉼표(z/) 포함 패턴
-  P: 'B B/ z/ z B (3BBB z2',
+  P: 'B z/ B/ z B (3BBB z2',
   Q: 'B/ B/ z z B (3BzB z2',
   R: 'z/ B/ B z B (3BBB z2',
-  S: 'z B/ z/ z B (3BBB z2',
+  S: 'z B/ B/ z B (3BBB z2',
   T: 'B>B B/ B/ z z B z2',
   U: 'B>B z/ B/ B (3BzB z2',
-  V: '(3B2B2B2 B B/ z/ B/ z/ B',
-  W: 'z4 B B/ z/ B/ z/ B',
-  X: 'B B/ z/ B/ z/ B z B z2',
-  Y: 'z/ B/ B B B/ z/ (3BBB z2',
-  Z: 'B/ z/ B B B/ z/ (3BzB z2',
+  V: '(3B2B2B2 B B/B/B/B/ z',
+  W: 'z4 B B/B/B/B/ z',
+  X: 'z/ B/ B B/B/B/B/ z B z2',
+  Y: 'z/ B/ B B z/ B/ (3BBB z2',
+  Z: 'z/ B/ B B z/ B/ (3BzB z2',
   // 쿼터+8분음표 혼합 패턴 (무거운 비트)
   '4': 'B2 BB z2 BB',
   '5': 'BB B2 BB z2',
@@ -55,8 +55,8 @@ const BAR_PATTERNS: Record<string, string> = {
   '18': 'z2 B>B B>B B>B',
   '19': 'B<B B<B B<B z2',
   // 16분쉼표 응용 패턴
-  '20': 'B/ z/ B2 B/ z/ B2 z2',
-  '21': 'z2 B/ z/ B2 B/ z/ B2',
+  '20': 'z/ B/ B2 z/ B/ B2 z2',
+  '21': 'z2 z/ B/ B2 z/ B/ B2',
   // 혼합 3연음 패턴
   '22': 'B2 z2 (3BBB (3BzB',
   '23': 'z4 (3BBB (3BzB',
@@ -74,11 +74,11 @@ const BAR_PATTERNS: Record<string, string> = {
   '33': 'z2 (3B2z2B2 BB',
   '34': 'z2 (3z2B2B2 BB',
   '35': '(3z2B2z2 BB BB',
-  // 붓점 쉼표 패턴 — B>z=붓점+16분쉼표, z>B=붓점쉼표+16분음
-  '36': 'B>z B>z B>z B>z',
+  // 붓점 쉼표 패턴 — z>B=붓점쉼표+16분음, B<B=16분음+붓점
+  '36': 'z>B B<B z>B B<B',
   '37': 'z>B z>B z>B z>B',
-  '38': 'B>z z>B B>z z>B',
-  '39': 'B>z B>z (3BBB z2',
+  '38': 'B<B z>B B<B z>B',
+  '39': 'B<B z>B (3BBB z2',
   '40': 'z>B z>B (3BzB z2',
   // 16분음표 그룹 내부 쉼표 위치 변형
   '41': 'z/B/B/B/ z/B/B/B/ B2 z2',
@@ -161,17 +161,17 @@ N: z4 (3BBB z2
 O: B/B/B/B/ z B (3BBB z2
 
 [복잡: 16분쉼표(z/) 포함 패턴 P~Z]
-P: B B/ z/ z B (3BBB z2
+P: B z/ B/ z B (3BBB z2
 Q: B/ B/ z z B (3BzB z2
 R: z/ B/ B z B (3BBB z2
-S: z B/ z/ z B (3BBB z2
+S: z B/ B/ z B (3BBB z2
 T: B>B B/ B/ z z B z2
 U: B>B z/ B/ B (3BzB z2
-V: (3B2B2B2 B B/ z/ B/ z/ B
-W: z4 B B/ z/ B/ z/ B
-X: B B/ z/ B/ z/ B z B z2
-Y: z/ B/ B B B/ z/ (3BBB z2
-Z: B/ z/ B B B/ z/ (3BzB z2
+V: (3B2B2B2 B B/B/B/B/ z
+W: z4 B B/B/B/B/ z
+X: z/ B/ B B/B/B/B/ z B z2
+Y: z/ B/ B B z/ B/ (3BBB z2
+Z: z/ B/ B B z/ B/ (3BzB z2
 
 [쿼터+8분음표 혼합 패턴 4~5 — 무거운 비트감]
 4: B2 BB z2 BB
@@ -200,8 +200,8 @@ Z: B/ z/ B B B/ z/ (3BzB z2
 19: B<B B<B B<B z2
 
 [복잡: 16분쉼표 응용 패턴 20~21]
-20: B/ z/ B2 B/ z/ B2 z2
-21: z2 B/ z/ B2 B/ z/ B2
+20: z/ B/ B2 z/ B/ B2 z2
+21: z2 z/ B/ B2 z/ B/ B2
 
 [혼합 3연음 패턴 22~24]
 22: B2 z2 (3BBB (3BzB
@@ -223,11 +223,11 @@ Z: B/ z/ B B B/ z/ (3BzB z2
 34: z2 (3z2B2B2 BB
 35: (3z2B2z2 BB BB
 
-[복잡: 붓점 쉼표 패턴 36~40 — B>z=붓점+16분쉼표, z>B=붓점쉼표+16분음]
-36: B>z B>z B>z B>z
+[복잡: 붓점 쉼표 패턴 36~40 — z>B=붓점쉼표+16분음, B<B=16분음+붓점]
+36: z>B B<B z>B B<B
 37: z>B z>B z>B z>B
-38: B>z z>B B>z z>B
-39: B>z B>z (3BBB z2
+38: B<B z>B B<B z>B
+39: B<B z>B (3BBB z2
 40: z>B z>B (3BzB z2
 
 [복잡: 16분음표 그룹 내 쉼표 위치 변형 41~44]
