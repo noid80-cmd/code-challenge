@@ -90,6 +90,83 @@ const BAR_PATTERNS: Record<string, string> = {
 // Bars that contain (3BzB — triplet with rest (syncopated feel)
 const SYNCO_TRIPLET_BARS = new Set(['D', 'I', 'Q', 'U', 'Z', '14', '16', '22', '23', '27', '28', '40'])
 
+// --- 박자 단위 재조립 ---
+// AI가 고른 8개 마디를 그대로 쓰면 특정 위치(예: 2번째 마디)에 같은 마디가
+// 여러 번 연속 생성에 걸쳐 반복되는 문제가 있었음. 각 마디를 박(2단위=1beat)
+// 셀로 쪼갠 뒤 전체를 무작위로 섞어 재조립해서, 같은 8개 ID를 뽑아도 매번
+// 다른 마디 구성이 나오게 한다. 붓점4분3연음/z4처럼 박 경계를 가로지르는
+// 표기는 2beat(4단위)짜리 하나의 셀로 취급해 쪼개지 않는다.
+type BeatCell = { tokens: string; slots: 1 | 2 }
+
+function noteDur(sym: string): number {
+  if (sym.endsWith('/')) return 0.5
+  const m = sym.match(/\d+$/)
+  if (m) return parseInt(m[0], 10)
+  return 1
+}
+
+function tokenDuration(tok: string): number {
+  if (tok.startsWith('(3')) {
+    const inner = tok.slice(2)
+    const notes = inner.match(/[Bz](?:\/|\d+)?/g) ?? []
+    const sum = notes.reduce((s, n) => s + noteDur(n), 0)
+    return sum * (2 / 3)
+  }
+  if (tok.includes('>') || tok.includes('<')) return 2
+  const notes = tok.match(/[Bz](?:\/|\d+)?/g) ?? []
+  return notes.reduce((s, n) => s + noteDur(n), 0)
+}
+
+function splitIntoBeatCells(bar: string): BeatCell[] {
+  const tokens = bar.trim().split(/\s+/)
+  const cells: BeatCell[] = []
+  let cur: string[] = []
+  let curDur = 0
+  for (const tok of tokens) {
+    cur.push(tok)
+    curDur += tokenDuration(tok)
+    if (curDur % 2 === 0) {
+      cells.push({ tokens: cur.join(' '), slots: (curDur / 2) as 1 | 2 })
+      cur = []
+      curDur = 0
+    }
+  }
+  if (cur.length) cells.push({ tokens: cur.join(' '), slots: Math.max(1, Math.round(curDur / 2)) as 1 | 2 })
+  return cells
+}
+
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+// 8개 마디 텍스트를 박 단위로 분해 후 무작위 재조립. 실패(드문 bin-packing
+// 막힘) 시 null을 반환해 호출부가 원래 순서로 폴백하게 한다.
+function shuffleBeatsAcrossBars(barTexts: string[]): string[] | null {
+  const allCells = barTexts.flatMap(splitIntoBeatCells)
+  const numBars = barTexts.length
+  for (let attempt = 0; attempt < 30; attempt++) {
+    const pool = shuffleArray(allCells)
+    const bars: string[][] = Array.from({ length: numBars }, () => [])
+    const remaining: number[] = Array(numBars).fill(4)
+    let ok = true
+    for (const cell of pool) {
+      const idx = remaining.findIndex(r => r >= cell.slots)
+      if (idx === -1) { ok = false; break }
+      bars[idx].push(cell.tokens)
+      remaining[idx] -= cell.slots
+    }
+    if (ok && remaining.every(r => r === 0)) {
+      return bars.map(tokens => tokens.join(' '))
+    }
+  }
+  return null
+}
+
 function assemblePatternsABC(
   aiPatterns: Array<{ label: string; bars: string[] }>
 ): Array<{ label: string; abc: string }> | null {
@@ -118,9 +195,10 @@ function assemblePatternsABC(
         return null
       }
     }
+    const finalBars = shuffleBeatsAcrossBars(barTexts) ?? barTexts
     const abc =
       'X:1\nM:4/4\nL:1/8\nQ:1/4=100\nK:perc\nV:1 clef=none stafflines=1 stem=up\n|' +
-      barTexts.join('|') + '|]'
+      finalBars.join('|') + '|]'
     result.push({ label: String(p.label || `패턴 ${result.length + 1}`), abc })
   }
   return result.length >= 2 ? result : null
