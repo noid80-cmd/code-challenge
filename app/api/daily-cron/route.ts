@@ -43,10 +43,10 @@ const BAR_PATTERNS: Record<string, string> = {
   N: 'z4 (3BBB z2',
   O: 'B/B/B/B/ z B (3BBB z2',
   P: 'B B/ z/ z B (3BBB z2',
-  Q: 'B/ z/ B z B (3BzB z2',
+  Q: 'B/ B/ z z B (3BzB z2',
   R: 'z/ B/ B z B (3BBB z2',
   S: 'z B/ z/ z B (3BBB z2',
-  T: 'B>B B/ z/ B z B z2',
+  T: 'B>B B/ B/ z z B z2',
   U: 'B>B z/ B/ B (3BzB z2',
   V: '(3B2B2B2 B B/ z/ B/ z/ B',
   W: 'z4 B B/ z/ B/ z/ B',
@@ -307,10 +307,10 @@ O: B/B/B/B/ z B (3BBB z2
 
 [16분쉼표(z/) 포함 패턴 P~Z]
 P: B B/ z/ z B (3BBB z2
-Q: B/ z/ B z B (3BzB z2
+Q: B/ B/ z z B (3BzB z2
 R: z/ B/ B z B (3BBB z2
 S: z B/ z/ z B (3BBB z2
-T: B>B B/ z/ B z B z2
+T: B>B B/ B/ z z B z2
 U: B>B z/ B/ B (3BzB z2
 V: (3B2B2B2 B B/ z/ B/ z/ B
 W: z4 B B/ z/ B/ z/ B
