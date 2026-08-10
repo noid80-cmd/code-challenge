@@ -99,6 +99,7 @@ export default function MyVideosPage() {
   const [profile, setProfile] = useState<{ name: string; avatar_url: string | null } | null>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
+  const [deletingAccount, setDeletingAccount] = useState(false)
 
   useEffect(() => {
     async function load() {
@@ -154,6 +155,27 @@ export default function MyVideosPage() {
 
   function handleTogglePrivacy(subId: string, isPrivate: boolean) {
     setSubmissions(prev => prev.map(s => s.id === subId ? { ...s, is_private: isPrivate } : s))
+  }
+
+  async function handleDeleteAccount() {
+    if (!confirm('정말 계정을 삭제할까요? 업로드한 영상, 좋아요, 활동 기록이 모두 삭제되며 되돌릴 수 없습니다.')) return
+    if (!confirm('마지막 확인입니다. 계정을 삭제하시겠습니까?')) return
+    setDeletingAccount(true)
+    try {
+      const res = await fetch('/api/delete-account', { method: 'POST' })
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: '' }))
+        alert('계정 삭제에 실패했습니다. ' + (error ?? ''))
+        setDeletingAccount(false)
+        return
+      }
+      const supabase = createClient()
+      await supabase.auth.signOut()
+      window.location.href = '/'
+    } catch {
+      alert('계정 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.')
+      setDeletingAccount(false)
+    }
   }
 
   const byMonth: Record<string, Submission[]> = {}
@@ -311,6 +333,17 @@ export default function MyVideosPage() {
         {!loading && (
           <div style={{ marginTop: 32 }}>
             <AcademyCard compact />
+          </div>
+        )}
+
+        {!loading && (
+          <div style={{ marginTop: 40, textAlign: 'center' }}>
+            <button onClick={handleDeleteAccount} disabled={deletingAccount} style={{
+              background: 'none', border: 'none', color: '#4a4038', fontSize: 11, fontWeight: 600,
+              cursor: 'pointer', padding: 8, textDecoration: 'underline',
+            }}>
+              {deletingAccount ? '삭제 중...' : '계정 삭제'}
+            </button>
           </div>
         )}
       </main>

@@ -7,9 +7,14 @@ export default function AccountDeletionPage() {
       <section style={{ marginBottom: 40 }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>삭제 요청 방법 / How to Request Deletion</h2>
         <p>
-          초견챌린지 계정 삭제를 원하시면 아래 이메일로 가입하신 계정의 이메일 주소를 포함해 요청해주세요.
+          앱에 로그인한 상태라면 &lsquo;내 성장 기록&rsquo; 페이지 하단의 &lsquo;계정 삭제&rsquo; 버튼으로 즉시 계정을 삭제할 수 있습니다.
           <br />
-          To request deletion of your 초견챌린지 account, please email us at the address below with the email address associated with your account.
+          If you&rsquo;re logged in, you can delete your account instantly using the &lsquo;Delete Account&rsquo; button at the bottom of the &lsquo;My Records&rsquo; page.
+        </p>
+        <p style={{ marginTop: 16 }}>
+          앱을 이용할 수 없는 경우 아래 이메일로 가입하신 계정의 이메일 주소를 포함해 요청해주세요.
+          <br />
+          If you can&rsquo;t access the app, please email us at the address below with the email address associated with your account.
         </p>
         <p style={{ marginTop: 16 }}>
           <a href="mailto:noid80@hanmail.net?subject=계정%20삭제%20요청" style={{ color: '#4f46e5', fontWeight: 700 }}>
