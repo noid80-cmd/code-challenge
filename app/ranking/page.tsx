@@ -18,16 +18,25 @@ export default function RankingPage() {
       const supabase = createClient()
       const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
 
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('submissions')
-        .select('user_id, likes_count, profiles(name, avatar_url)')
+        .select('user_id, likes_count')
         .gte('created_at', weekAgo).is('group_id', null)
+      if (error) console.error('[Ranking] submissions query error:', error)
 
       if (!data) { setLoading(false); return }
 
+      // submissions.user_id는 auth.users를 참조해서 PostgREST가 profiles와의
+      // 관계를 자동으로 못 찾음 (auth 스키마는 API에 노출 안 됨) — 따로 조회해서 합침
+      const userIds = [...new Set(data.map(s => s.user_id))]
+      const { data: profs } = userIds.length
+        ? await supabase.from('profiles').select('id, name, avatar_url').in('id', userIds)
+        : { data: [] as { id: string; name: string; avatar_url: string | null }[] }
+      const profMap = new Map((profs || []).map(p => [p.id, p]))
+
       const byUser: Record<string, RankUser> = {}
       data.forEach(s => {
-        const profile = s.profiles as unknown as { name: string; avatar_url: string | null } | null
+        const profile = profMap.get(s.user_id)
         if (!byUser[s.user_id]) {
           byUser[s.user_id] = {
             user_id: s.user_id, name: profile?.name ?? '익명',

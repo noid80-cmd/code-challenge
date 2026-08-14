@@ -48,10 +48,21 @@ export default function ChallengePage() {
     setChallenge(ch)
 
     if (ch) {
-      const { data: subs } = await supabase
-        .from('submissions').select('*, profiles(name, avatar_url)')
+      const { data: subsRaw, error: subsError } = await supabase
+        .from('submissions').select('*')
         .eq('challenge_id', ch.id).is('group_id', null).eq('is_private', false)
         .order('created_at', { ascending: false })
+      if (subsError) console.error('[ChallengePage] submissions query error:', subsError)
+
+      // submissions.user_id는 auth.users를 참조해서 PostgREST가 profiles와의
+      // 관계를 자동으로 못 찾음 (auth 스키마는 API에 노출 안 됨) — 따로 조회해서 합침
+      let subs: Submission[] | null = subsRaw
+      if (subsRaw && subsRaw.length > 0) {
+        const userIds = [...new Set(subsRaw.map(s => s.user_id))]
+        const { data: profs } = await supabase.from('profiles').select('id, name, avatar_url').in('id', userIds)
+        const profMap = new Map((profs || []).map(p => [p.id, p]))
+        subs = subsRaw.map(s => ({ ...s, profiles: profMap.get(s.user_id) ?? null }))
+      }
 
       if (subs && user) {
         const { data: userLikes } = await supabase.from('likes').select('submission_id').eq('user_id', user.id)
