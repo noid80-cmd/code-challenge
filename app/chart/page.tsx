@@ -33,7 +33,6 @@ export default function ChartPage() {
       <div style={{
         padding: '14px 20px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        borderBottom: '1px solid rgba(240,236,224,0.08)',
       }}>
         <Link href="/upload" style={{ fontSize: 13, fontWeight: 700, color: '#605850', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
           <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>

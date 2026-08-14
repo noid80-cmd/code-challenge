@@ -63,7 +63,6 @@ export default function ChallengesPage() {
       <header style={{
         position: 'sticky', top: 0, zIndex: 50,
         background: 'rgba(8,8,8,0.88)', backdropFilter: 'blur(24px)',
-        borderBottom: '1px solid rgba(240,236,224,0.12)',
         padding: '0 20px', height: 54, paddingTop: 'calc(env(safe-area-inset-top) + 24px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
@@ -78,7 +77,6 @@ export default function ChallengesPage() {
       {/* Tab bar */}
       <div style={{
         display: 'flex', gap: 0,
-        borderBottom: '1px solid rgba(240,236,224,0.08)',
         background: 'rgba(8,8,8,0.7)',
         position: 'sticky', top: 54, zIndex: 40,
       }}>
