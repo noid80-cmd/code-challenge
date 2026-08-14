@@ -280,7 +280,7 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
         </div>
       )}
       <video src={videoUrl} poster={posterUrl} controls playsInline preload="metadata"
-        style={{ width: '100%', display: 'block', background: '#000', maxHeight: 460, objectFit: 'contain' }} />
+        style={{ width: '100%', display: 'block', background: '#000', height: 'auto' }} />
 
       <div style={{ padding: '14px 16px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -327,7 +327,7 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
                   <>
                     <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
                     <div style={{
-                      position: 'absolute', right: 0, top: '110%', zIndex: 11,
+                      position: 'absolute', right: 0, bottom: '110%', zIndex: 11,
                       background: '#161614', border: '1px solid rgba(240,236,224,0.15)',
                       borderRadius: 12, overflow: 'hidden', minWidth: 100,
                       boxShadow: '0 8px 24px rgba(0,0,0,0.5)',

@@ -154,7 +154,7 @@ export default function ProfilePage({ params }: { params: Promise<{ user_id: str
                       src={getPublicUrl(sub.video_url)}
                       poster={sub.thumbnail_url ? getPublicUrl(sub.thumbnail_url) : undefined}
                       controls playsInline preload="metadata"
-                      style={{ width: '100%', display: 'block', background: '#000', maxHeight: 460, objectFit: 'contain' }}
+                      style={{ width: '100%', display: 'block', background: '#000', height: 'auto' }}
                     />
                     <div style={{ padding: '12px 16px 14px' }}>
                       {sub.challenges?.[0] && (

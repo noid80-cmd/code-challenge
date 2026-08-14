@@ -627,7 +627,7 @@ function SubmissionCard({
       boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
     }}>
       <video src={videoUrl} poster={posterUrl} controls playsInline preload="metadata"
-        style={{ width: '100%', display: 'block', background: '#000', maxHeight: 440, objectFit: 'contain' }} />
+        style={{ width: '100%', display: 'block', background: '#000', height: 'auto' }} />
 
       <div style={{ padding: '14px 16px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
