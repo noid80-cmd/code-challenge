@@ -8,6 +8,7 @@ import ChordPlayer from '@/app/components/ChordPlayer'
 import dynamic from 'next/dynamic'
 import { normalizeMeasures } from '@/lib/chords'
 import { challengeDate } from '@/lib/date'
+import { isNativeApp } from '@/lib/capacitor'
 
 const RhythmViewer = dynamic(() => import('@/app/components/RhythmViewer'), { ssr: false })
 const MelodyPlayer = dynamic(() => import('@/app/components/MelodyPlayer'), { ssr: false })
@@ -89,7 +90,11 @@ export default function UploadPage() {
       setFacingMode('environment')
       setRecordMode(true)
     } catch {
-      setError('카메라 접근 권한이 필요해요. 브라우저 설정에서 허용해주세요.')
+      setError(
+        isNativeApp()
+          ? '카메라·마이크 접근 권한이 필요해요. 아이폰 설정 앱 → 초견챌린지 → 카메라/마이크를 켜주세요.'
+          : '카메라 접근 권한이 필요해요. 브라우저 주소창의 자물쇠 아이콘에서 허용해주세요.'
+      )
     }
   }, [])
 
