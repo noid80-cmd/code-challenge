@@ -32,7 +32,7 @@ export default function LandingPage() {
     }}>
       {/* 헤더 */}
       <header style={{
-        padding: '0 20px', height: 54, paddingTop: 'env(safe-area-inset-top)',
+        padding: '0 20px', height: 54, paddingTop: 'calc(env(safe-area-inset-top) + 10px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         borderBottom: '1px solid rgba(240,236,224,0.08)',
       }}>
