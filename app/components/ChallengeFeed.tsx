@@ -154,7 +154,9 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
       if (subs && user) {
         const { data: userLikes } = await supabase.from('likes').select('submission_id').eq('user_id', user.id)
         const likedIds = new Set(userLikes?.map(l => l.submission_id) || [])
-        setSubmissions(subs.map(s => ({ ...s, user_liked: likedIds.has(s.id) })))
+        const { data: blocked } = await supabase.from('blocked_users').select('blocked_id').eq('blocker_id', user.id)
+        const blockedIds = new Set(blocked?.map(b => b.blocked_id) || [])
+        setSubmissions(subs.filter(s => !blockedIds.has(s.user_id)).map(s => ({ ...s, user_liked: likedIds.has(s.id) })))
       } else {
         setSubmissions(subs || [])
       }
@@ -190,6 +192,23 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
       ? { ...s, user_liked: !liked, likes_count: liked ? s.likes_count - 1 : s.likes_count + 1 }
       : s
     ))
+  }
+
+  async function handleReport(submissionId: string) {
+    if (!user) { window.location.href = '/login?from=' + encodeURIComponent(window.location.pathname); return }
+    const reason = prompt('신고 사유를 알려주세요 (선택)')
+    if (reason === null) return
+    const supabase = createClient()
+    await supabase.from('reports').insert({ submission_id: submissionId, reporter_id: user.id, reason: reason || null })
+    alert('신고가 접수됐어요. 확인 후 조치할게요.')
+  }
+
+  async function handleBlock(blockedUserId: string) {
+    if (!user) { window.location.href = '/login?from=' + encodeURIComponent(window.location.pathname); return }
+    if (!confirm('이 사용자를 차단할까요? 이후 이 사용자의 영상이 피드에 보이지 않아요.')) return
+    const supabase = createClient()
+    await supabase.from('blocked_users').insert({ blocker_id: user.id, blocked_id: blockedUserId })
+    setSubmissions(prev => prev.filter(s => s.user_id !== blockedUserId))
   }
 
   async function handleLogout() {
@@ -617,6 +636,9 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                 )
                 .map(sub => (
                   <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)}
+                    currentUserId={user?.id}
+                    onReport={() => handleReport(sub.id)}
+                    onBlock={() => handleBlock(sub.user_id)}
                     progressions={type === 'chord' ? challenge?.chords?.progressions : undefined}
                     patterns={type === 'rhythm' || type === 'melody' ? challenge?.chords?.patterns : undefined} />
                 ))}
@@ -628,8 +650,13 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   )
 }
 
-function SubmissionCard({ sub, onLike, progressions, patterns }: { sub: Submission; onLike: () => void; progressions?: Progression[]; patterns?: { label: string; abc: string }[] }) {
+function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progressions, patterns }: {
+  sub: Submission; onLike: () => void; currentUserId?: string; onReport?: () => void; onBlock?: () => void
+  progressions?: Progression[]; patterns?: { label: string; abc: string }[]
+}) {
   const supabase = createClient()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const isOwn = currentUserId === sub.user_id
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
@@ -693,17 +720,49 @@ function SubmissionCard({ sub, onLike, progressions, patterns }: { sub: Submissi
               <div style={{ fontSize: 11, color: '#303028', marginTop: 2 }}>{timeAgo(sub.created_at)}</div>
             </div>
           </Link>
-          <button onClick={onLike} style={{
-            background: sub.user_liked ? 'rgba(240,236,224,0.12)' : 'rgba(255,255,255,0.02)',
-            border: sub.user_liked ? '1px solid rgba(240,236,224,0.4)' : '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 10, cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 6,
-            color: sub.user_liked ? '#f0ece0' : '#303028',
-            fontSize: 14, fontWeight: 800, padding: '7px 13px', transition: 'all 0.2s',
-          }}>
-            {sub.user_liked ? '♥' : '♡'}
-            <span style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{sub.likes_count}</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button onClick={onLike} style={{
+              background: sub.user_liked ? 'rgba(240,236,224,0.12)' : 'rgba(255,255,255,0.02)',
+              border: sub.user_liked ? '1px solid rgba(240,236,224,0.4)' : '1px solid rgba(255,255,255,0.06)',
+              borderRadius: 10, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 6,
+              color: sub.user_liked ? '#f0ece0' : '#303028',
+              fontSize: 14, fontWeight: 800, padding: '7px 13px', transition: 'all 0.2s',
+            }}>
+              {sub.user_liked ? '♥' : '♡'}
+              <span style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{sub.likes_count}</span>
+            </button>
+            {!isOwn && (onReport || onBlock) && (
+              <div style={{ position: 'relative' }}>
+                <button onClick={() => setMenuOpen(v => !v)} style={{
+                  background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
+                  borderRadius: 10, cursor: 'pointer', color: '#605850',
+                  fontSize: 14, fontWeight: 800, padding: '7px 10px', lineHeight: 1,
+                }}>⋯</button>
+                {menuOpen && (
+                  <>
+                    <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
+                    <div style={{
+                      position: 'absolute', right: 0, top: '110%', zIndex: 11,
+                      background: '#161614', border: '1px solid rgba(240,236,224,0.15)',
+                      borderRadius: 12, overflow: 'hidden', minWidth: 100,
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                    }}>
+                      <button onClick={() => { setMenuOpen(false); onReport?.() }} style={{
+                        display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                        color: '#c8c4b8', fontSize: 13, fontWeight: 700, padding: '10px 14px', cursor: 'pointer',
+                      }}>신고</button>
+                      <button onClick={() => { setMenuOpen(false); onBlock?.() }} style={{
+                        display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                        color: '#e05d5d', fontSize: 13, fontWeight: 700, padding: '10px 14px', cursor: 'pointer',
+                        borderTop: '1px solid rgba(240,236,224,0.08)',
+                      }}>차단</button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
         </div>
         {sub.caption && (
           <p style={{ fontSize: 13, color: '#7a6020', marginTop: 10, lineHeight: 1.6 }}>{sub.caption}</p>

@@ -35,22 +35,33 @@ export default function ProfilePage({ params }: { params: Promise<{ user_id: str
   const [profile, setProfile] = useState<Profile | null>(null)
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [loading, setLoading] = useState(true)
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
     async function load() {
-      const [{ data: prof }, { data: subs }] = await Promise.all([
+      const [{ data: { user } }, { data: prof }, { data: subs }] = await Promise.all([
+        supabase.auth.getUser(),
         supabase.from('profiles').select('name, avatar_url').eq('id', user_id).single(),
         supabase.from('submissions')
           .select('id, video_url, thumbnail_url, caption, likes_count, created_at, challenges(title, date)')
           .eq('user_id', user_id)
           .order('created_at', { ascending: false }),
       ])
+      setCurrentUserId(user?.id)
       setProfile(prof)
       setSubmissions(subs ?? [])
       setLoading(false)
     }
     load()
   }, [user_id])
+
+  async function handleBlock() {
+    if (!currentUserId) { window.location.href = '/login?from=' + encodeURIComponent(window.location.pathname); return }
+    if (!confirm(`${profile?.name ?? '이 사용자'}님을 차단할까요? 이후 이 사용자의 영상이 피드에 보이지 않아요.`)) return
+    await supabase.from('blocked_users').insert({ blocker_id: currentUserId, blocked_id: user_id })
+    router.back()
+  }
 
   return (
     <div style={{
@@ -60,18 +71,44 @@ export default function ProfilePage({ params }: { params: Promise<{ user_id: str
     }}>
       <header style={{
         padding: '0 20px', height: 54,
-        display: 'flex', alignItems: 'center', gap: 12,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         borderBottom: '1px solid rgba(240,236,224,0.08)',
         position: 'sticky', top: 0,
         background: 'rgba(8,8,8,0.9)', backdropFilter: 'blur(12px)', zIndex: 10,
       }}>
-        <button onClick={() => router.back()} style={{
-          background: 'none', border: 'none', color: '#a0988c',
-          fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1,
-        }}>←</button>
-        <span style={{ fontWeight: 800, fontSize: 16, color: '#f0ece0' }}>
-          {profile?.name ?? ''}
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button onClick={() => router.back()} style={{
+            background: 'none', border: 'none', color: '#a0988c',
+            fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1,
+          }}>←</button>
+          <span style={{ fontWeight: 800, fontSize: 16, color: '#f0ece0' }}>
+            {profile?.name ?? ''}
+          </span>
+        </div>
+        {currentUserId && currentUserId !== user_id && (
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setMenuOpen(v => !v)} style={{
+              background: 'none', border: 'none', color: '#605850',
+              fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1,
+            }}>⋯</button>
+            {menuOpen && (
+              <>
+                <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
+                <div style={{
+                  position: 'absolute', right: 0, top: '130%', zIndex: 11,
+                  background: '#161614', border: '1px solid rgba(240,236,224,0.15)',
+                  borderRadius: 12, overflow: 'hidden', minWidth: 100,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                }}>
+                  <button onClick={() => { setMenuOpen(false); handleBlock() }} style={{
+                    display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none',
+                    color: '#e05d5d', fontSize: 13, fontWeight: 700, padding: '10px 14px', cursor: 'pointer',
+                  }}>차단</button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
       </header>
 
       <main style={{ maxWidth: 560, margin: '0 auto', padding: '32px 16px 100px' }}>
