@@ -239,7 +239,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
         position: 'sticky', top: 0, zIndex: 50,
         background: 'rgba(8,8,8,0.88)', backdropFilter: 'blur(24px)',
         borderBottom: '1px solid rgba(240,236,224,0.12)',
-        padding: '0 16px', height: 54,
+        padding: '0 16px', height: 54, paddingTop: 'env(safe-area-inset-top)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
       }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>

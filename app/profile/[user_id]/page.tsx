@@ -70,7 +70,7 @@ export default function ProfilePage({ params }: { params: Promise<{ user_id: str
       fontFamily: '-apple-system, BlinkMacSystemFont, sans-serif',
     }}>
       <header style={{
-        padding: '0 20px', height: 54,
+        padding: '0 20px', height: 54, paddingTop: 'env(safe-area-inset-top)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
         borderBottom: '1px solid rgba(240,236,224,0.08)',
         position: 'sticky', top: 0,

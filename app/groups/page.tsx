@@ -70,7 +70,7 @@ export default function GroupsPage() {
         position: 'sticky', top: 0, zIndex: 50,
         background: 'rgba(8,8,8,0.88)', backdropFilter: 'blur(24px)',
         borderBottom: '1px solid rgba(240,236,224,0.12)',
-        padding: '0 20px', height: 54,
+        padding: '0 20px', height: 54, paddingTop: 'env(safe-area-inset-top)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <Link href="/chord" style={{ color: '#605850', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
