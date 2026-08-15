@@ -5,6 +5,12 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { isNativeApp } from '@/lib/capacitor'
 
+const AppleIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 384 512" fill="currentColor">
+    <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/>
+  </svg>
+)
+
 const GoogleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 48 48">
     <path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.9z"/>
@@ -138,6 +144,47 @@ export default function LoginPage() {
     if (error) setError('Google 로그인 오류: ' + error.message)
   }
 
+  async function handleApple() {
+    setError('')
+
+    // Google 로그인과 동일한 패턴 (choekyun://auth-callback 커스텀 URL
+    // 스킴으로 앱에 복귀). Apple 4.8 가이드라인 대응으로 추가 — 구글 같은
+    // 제3자 로그인을 제공하면 Sign in with Apple도 동등하게 제공해야 함.
+    if (isNativeApp()) {
+      const { Browser } = await import('@capacitor/browser')
+      const supabase = createClient()
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: { redirectTo: 'choekyun://auth-callback', skipBrowserRedirect: true },
+      })
+      if (error || !data?.url) { setError('Apple 로그인 오류: ' + (error?.message ?? '')); return }
+      await Browser.open({ url: data.url })
+      return
+    }
+
+    const isIOS = (window.navigator as { standalone?: boolean }).standalone !== undefined
+    if (isIOS) {
+      const { createClient: rawCreate } = await import('@supabase/supabase-js')
+      const supabase = rawCreate(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { auth: { flowType: 'implicit' } }
+      )
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      })
+      if (error) setError('Apple 로그인 오류: ' + error.message)
+      return
+    }
+    const supabase = createClient()
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    })
+    if (error) setError('Apple 로그인 오류: ' + error.message)
+  }
+
   async function handleReset(e: React.FormEvent) {
     e.preventDefault()
     setResetLoading(true)
@@ -234,6 +281,16 @@ export default function LoginPage() {
           )
         ) : (
           <>
+            <button onClick={handleApple} style={{
+              width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+              padding: '13px', borderRadius: 13,
+              background: '#ffffff', border: '1px solid rgba(240,236,224,0.18)',
+              color: '#0a0a08', fontSize: 14, fontWeight: 700, cursor: 'pointer', marginBottom: 10,
+            }}>
+              <AppleIcon />
+              Apple로 계속하기
+            </button>
+
             <button onClick={handleGoogle} style={{
               width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
               padding: '13px', borderRadius: 13,
