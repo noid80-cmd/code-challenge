@@ -1,5 +1,5 @@
 'use client'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 function RotateIcon() {
   return (
@@ -11,26 +11,38 @@ function RotateIcon() {
   )
 }
 
-// 이 앱은 iOS에서 가로 회전을 지원하도록 설정되어 있어서(Info.plist), 폰을
-// 옆으로 돌리면 OS가 실제로 레이아웃을 가로로 다시 그려준다. RhythmViewer/
-// MelodyPlayer는 ResizeObserver로 실제 너비 변화를 그대로 따라가므로 별도
-// 처리 없이 자동으로 더 크게 보인다. 예전엔 CSS로 억지로 90도 돌리는
-// 방식을 썼는데, 실제로 폰을 돌리면 OS 회전과 겹쳐 이중으로 돌아가며
-// 깨졌음 — 그래서 실제로 화면을 돌리는 대신, 버튼을 누르면 안내 문구를
-// 보여주는 정도로 단순화했다.
+// 기기 실제 회전(OS 레벨)에 의존하지 않고, 버튼을 누르면 항상 CSS로 화면을
+// 가로로 돌려서 보여준다. window.innerWidth/innerHeight를 픽셀 값으로 직접
+// 재서 회전된 박스 크기를 정하기 때문에 vh/vw 단위가 변환된 좌표계 안에서
+// 꼬이는 문제가 없다. 닫기 버튼은 회전 박스 밖(진짜 화면 좌표)에 둬서
+// 노치/세이프에어리어와 무관하게 항상 눌린다.
 export default function ZoomableNotation({ children }: { children: ReactNode }) {
-  const [hint, setHint] = useState(false)
+  const [open, setOpen] = useState(false)
+  const [vw, setVw] = useState(0)
+  const [vh, setVh] = useState(0)
+
+  useEffect(() => {
+    if (!open) return
+    const update = () => { setVw(window.innerWidth); setVh(window.innerHeight) }
+    update()
+    window.addEventListener('resize', update)
+    document.body.style.overflow = 'hidden'
+    return () => {
+      window.removeEventListener('resize', update)
+      document.body.style.overflow = ''
+    }
+  }, [open])
 
   return (
     <div>
       {children}
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
         <button
-          onClick={() => setHint(v => !v)}
+          onClick={() => setOpen(true)}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
             padding: '8px 14px', borderRadius: 20, cursor: 'pointer',
-            background: hint ? 'rgba(240,236,224,0.12)' : 'rgba(240,236,224,0.06)',
+            background: 'rgba(240,236,224,0.06)',
             border: '1px solid rgba(240,236,224,0.18)',
             color: '#c8c4b8', fontSize: 12, fontWeight: 700,
           }}
@@ -38,10 +50,38 @@ export default function ZoomableNotation({ children }: { children: ReactNode }) 
           <RotateIcon /> 가로로 확대
         </button>
       </div>
-      {hint && (
-        <p style={{ textAlign: 'center', color: '#a0988c', fontSize: 12, marginTop: 8 }}>
-          📱 폰을 옆으로 돌리면 화면에 맞춰 크게 보여요
-        </p>
+
+      {open && vw > 0 && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#0a0a0a', overflow: 'hidden' }}>
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%', left: '50%',
+              width: vh,
+              height: vw,
+              transform: 'translate(-50%, -50%) rotate(90deg)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >
+            <div style={{ width: '100%', padding: '0 28px', boxSizing: 'border-box' }}>
+              {children}
+            </div>
+          </div>
+          <button
+            onClick={() => setOpen(false)}
+            style={{
+              position: 'fixed',
+              top: 'calc(env(safe-area-inset-top) + 14px)',
+              right: 14,
+              width: 34, height: 34, borderRadius: '50%',
+              background: 'rgba(240,236,224,0.14)',
+              border: '1px solid rgba(240,236,224,0.3)',
+              color: '#f0ece0', fontSize: 16, fontWeight: 700,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              zIndex: 1001, cursor: 'pointer',
+            }}
+          >✕</button>
+        </div>
       )}
     </div>
   )
