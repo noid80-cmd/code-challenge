@@ -523,7 +523,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -28, marginBottom: 28 }}>
           <Link href="/challenges" style={{
-            fontSize: 12, fontWeight: 700, color: '#403830',
+            fontSize: 12, fontWeight: 700, color: '#a0988c',
             display: 'flex', alignItems: 'center', gap: 4,
           }}>지난 챌린지 보기 →</Link>
         </div>
