@@ -13,7 +13,7 @@ function useViewportZoomUnlock(active: boolean) {
     existing?.remove()
     const unlocked = document.createElement('meta')
     unlocked.name = 'viewport'
-    unlocked.content = 'width=device-width, initial-scale=1, maximum-scale=6, user-scalable=yes'
+    unlocked.content = 'width=device-width, initial-scale=1, maximum-scale=6, user-scalable=yes, viewport-fit=cover'
     document.head.appendChild(unlocked)
     return () => {
       unlocked.remove()
