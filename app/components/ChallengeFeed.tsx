@@ -7,6 +7,7 @@ import type { User } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
 import { localDate, challengeDate } from '@/lib/date'
 import { TYPE_COLORS } from '@/lib/theme'
+import ZoomableNotation from './ZoomableNotation'
 
 const ChordPlayer = dynamic(() => import('./ChordPlayer'), { ssr: false })
 const RhythmViewer = dynamic(() => import('./RhythmViewer'), { ssr: false })
@@ -429,12 +430,14 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                       {challenge.description}
                     </p>
                   )}
-                  {type === 'rhythm'
-                    ? <RhythmViewer patterns={challenge.chords?.patterns ?? []} />
-                    : type === 'melody'
-                    ? <MelodyPlayer patterns={challenge.chords?.patterns ?? []} />
-                    : <ChordPlayer progressions={challenge.chords?.progressions ?? []} title={challenge.title} />
-                  }
+                  <ZoomableNotation>
+                    {type === 'rhythm'
+                      ? <RhythmViewer patterns={challenge.chords?.patterns ?? []} />
+                      : type === 'melody'
+                      ? <MelodyPlayer patterns={challenge.chords?.patterns ?? []} />
+                      : <ChordPlayer progressions={challenge.chords?.progressions ?? []} title={challenge.title} />
+                    }
+                  </ZoomableNotation>
                   <div style={{ marginTop: 16 }}>
                     {user ? (
                       <Link href={`/upload?type=${type}`} style={{
@@ -500,10 +503,12 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
               {ec.description && ec.description !== ec.title && (
                 <p style={{ fontSize: 13, color: '#605850', lineHeight: 1.7, marginBottom: 18 }}>{ec.description}</p>
               )}
-              {type === 'melody'
-                ? <MelodyPlayer patterns={ec.chords?.patterns ?? []} />
-                : <RhythmViewer patterns={ec.chords?.patterns ?? []} />
-              }
+              <ZoomableNotation>
+                {type === 'melody'
+                  ? <MelodyPlayer patterns={ec.chords?.patterns ?? []} />
+                  : <RhythmViewer patterns={ec.chords?.patterns ?? []} />
+                }
+              </ZoomableNotation>
               <div style={{ marginTop: 16 }}>
                 <Link href={`/upload?type=${type}&challenge=${ec.id}`} style={{
                   display: 'block', padding: '14px', borderRadius: 13,

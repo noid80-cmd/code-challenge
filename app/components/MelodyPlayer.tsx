@@ -80,6 +80,7 @@ export default function MelodyPlayer({
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
   const [internalTab, setInternalTab] = useState(0)
   const [bassClef, setBassClef] = useState(false)
+  const [containerWidth, setContainerWidth] = useState(0)
   const activeTab = controlledTab ?? internalTab
   const hasMultiple = patterns.length > 1
 
@@ -98,9 +99,22 @@ export default function MelodyPlayer({
     [patterns, bassClef]
   )
 
+  // 마운트 직후 레이아웃이 아직 안정되기 전에 너비를 재면 잘못된 값으로
+  // 굳어버리는 문제(RhythmViewer와 동일)가 있어 ResizeObserver로 대체.
   useEffect(() => {
-    if (!containerRef.current) return
-    const containerWidth = containerRef.current.clientWidth - 4
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect.width
+      if (!w) return
+      setContainerWidth(prev => (Math.abs(w - prev) > 1 ? w : prev))
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!containerRef.current || containerWidth === 0) return
     const piList = hasMultiple ? [activeTab] : processedChunks.map((_, i) => i)
 
     import('abcjs').then(ABCJS => {
@@ -109,7 +123,7 @@ export default function MelodyPlayer({
           const el = document.getElementById(`mv-${uid}-${pi}-${ci}`)
           if (!el) return
           ABCJS.renderAbc(`mv-${uid}-${pi}-${ci}`, abc, {
-            staffwidth: containerWidth,
+            staffwidth: containerWidth - 4,
             // format.stretchlast=1 forces every row (the only/last line of each chunk) to fill staffwidth
             format: { stretchlast: 1 },
             scale: 0.8,
@@ -131,7 +145,7 @@ export default function MelodyPlayer({
         })
       })
     })
-  }, [processedChunks, uid, activeTab, hasMultiple])
+  }, [processedChunks, uid, activeTab, hasMultiple, containerWidth])
 
   return (
     <div ref={containerRef}>
