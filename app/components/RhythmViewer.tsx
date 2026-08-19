@@ -23,6 +23,10 @@ function getNoteDur(tok: string): number {
 }
 
 function beamBar(bar: string): string {
+  // 마디 끝 붙임줄(-)은 토큰 재조립 과정에서 유실되므로 떼어뒀다가 끝에 다시 붙인다
+  const tieMatch = bar.match(/-\s*$/)
+  if (tieMatch) return beamBar(bar.slice(0, tieMatch.index)) + '-'
+
   // Preserve broken rhythm notation — abcjs handles > and < directly
   if (bar.includes('>') || bar.includes('<')) return bar
 

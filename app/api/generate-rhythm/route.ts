@@ -85,6 +85,11 @@ const BAR_PATTERNS: Record<string, string> = {
   '42': 'B/B/z/B/ B/B/z/B/ B2 z2',
   '43': 'B/B/B/z/ B2 B/B/B/z/ z2',
   '44': 'z/B/z/B/ z2 (3BBB B2',
+  // 6잇단음표(6연음) 패턴 — (6은 표준 ABC 기본 비율로 "2박자 길이에 6개" (1비트)
+  '45': '(6BBBBBB BB z2 (3BBB',
+  '46': 'BB (6BBBBBB z2 B2',
+  '47': '(6BBBBBB B/B/B/B/ z2 (3BzB',
+  '48': '(6BBBBBB (6BBBBBB BB z2',
 }
 
 // Bars that contain (3BzB — triplet with rest (syncopated feel)
@@ -111,6 +116,12 @@ function tokenDuration(tok: string): number {
     const notes = inner.match(/[Bz](?:\/|\d+)?/g) ?? []
     const sum = notes.reduce((s, n) => s + noteDur(n), 0)
     return sum * (2 / 3)
+  }
+  if (tok.startsWith('(6')) {
+    const inner = tok.slice(2)
+    const notes = inner.match(/[Bz](?:\/|\d+)?/g) ?? []
+    const sum = notes.reduce((s, n) => s + noteDur(n), 0)
+    return sum * (2 / 6)
   }
   if (tok.includes('>') || tok.includes('<')) return 2
   const notes = tok.match(/[Bz](?:\/|\d+)?/g) ?? []
@@ -167,6 +178,22 @@ function shuffleBeatsAcrossBars(barTexts: string[]): string[] | null {
   return null
 }
 
+// 마디 경계를 넘는 붙임줄(tie). 마디 끝 토큰이 쉼표가 아니고(음표로 끝남)
+// 다음 마디 시작 토큰도 음표로 시작할 때만 '-'를 붙인다 — 쉼표를 타이로
+// 잇는 건 불가능하므로 안전하게 스킵.
+function addRandomTies(bars: string[]): string[] {
+  const result = [...bars]
+  for (let i = 0; i < result.length - 1; i++) {
+    if (Math.random() >= 0.3) continue
+    const lastToken = result[i].trim().split(/\s+/).pop() ?? ''
+    const firstToken = result[i + 1].trim().split(/\s+/)[0] ?? ''
+    if (/B$/.test(lastToken) && /^B/.test(firstToken)) {
+      result[i] = result[i] + '-'
+    }
+  }
+  return result
+}
+
 function assemblePatternsABC(
   aiPatterns: Array<{ label: string; bars: string[] }>
 ): Array<{ label: string; abc: string }> | null {
@@ -195,7 +222,7 @@ function assemblePatternsABC(
         return null
       }
     }
-    const finalBars = shuffleBeatsAcrossBars(barTexts) ?? barTexts
+    const finalBars = addRandomTies(shuffleBeatsAcrossBars(barTexts) ?? barTexts)
     const abc =
       'X:1\nM:4/4\nL:1/8\nQ:1/4=100\nK:perc\nV:1 clef=none stafflines=1 stem=up\n|' +
       finalBars.join('|') + '|]'
@@ -207,8 +234,8 @@ function assemblePatternsABC(
 function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
-    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 4개 포함 (나머지는 A~O, 4~9, 13~19, 22~35)'
-    : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35)'
+    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 4개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~48(6잇단음표)은 최대 1개까지만 선택적으로 포함 가능'
+    : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~48은 사용하지 않음'
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -313,6 +340,12 @@ Z: z/ B/ B B z/ B/ (3BzB z2
 42: B/B/z/B/ B/B/z/B/ B2 z2
 43: B/B/B/z/ B2 B/B/B/z/ z2
 44: z/B/z/B/ z2 (3BBB B2
+
+[매우 복잡: 6잇단음표(6연음) 패턴 45~48 — 고급 전용, 한 챌린지당 최대 1개]
+45: (6BBBBBB BB z2 (3BBB
+46: BB (6BBBBBB z2 B2
+47: (6BBBBBB B/B/B/B/ z2 (3BzB
+48: (6BBBBBB (6BBBBBB BB z2
 
 규칙:
 - ${levelRule}

@@ -53,6 +53,11 @@ const BAR_PATTERNS: Record<string, string> = {
   X: 'z/ B/ B B/B/B/B/ z B z2',
   Y: 'z/ B/ B B z/ B/ (3BBB z2',
   Z: 'z/ B/ B B z/ B/ (3BzB z2',
+  // 6잇단음표(6연음) 패턴 — (6은 표준 ABC 기본 비율로 "2박자 길이에 6개" (1비트)
+  '45': '(6BBBBBB BB z2 (3BBB',
+  '46': 'BB (6BBBBBB z2 B2',
+  '47': '(6BBBBBB B/B/B/B/ z2 (3BzB',
+  '48': '(6BBBBBB (6BBBBBB BB z2',
 }
 
 // --- 박자 단위 재조립 (generate-rhythm/route.ts와 동일 로직, 중복 구현 스타일 유지) ---
@@ -74,6 +79,12 @@ function tokenDuration(tok: string): number {
     const notes = inner.match(/[Bz](?:\/|\d+)?/g) ?? []
     const sum = notes.reduce((s, n) => s + noteDur(n), 0)
     return sum * (2 / 3)
+  }
+  if (tok.startsWith('(6')) {
+    const inner = tok.slice(2)
+    const notes = inner.match(/[Bz](?:\/|\d+)?/g) ?? []
+    const sum = notes.reduce((s, n) => s + noteDur(n), 0)
+    return sum * (2 / 6)
   }
   if (tok.includes('>') || tok.includes('<')) return 2
   const notes = tok.match(/[Bz](?:\/|\d+)?/g) ?? []
@@ -128,6 +139,21 @@ function shuffleBeatsAcrossBars(barTexts: string[]): string[] | null {
   return null
 }
 
+// 마디 경계를 넘는 붙임줄(tie). 마디 끝 토큰이 쉼표가 아니고(음표로 끝남)
+// 다음 마디 시작 토큰도 음표로 시작할 때만 '-'를 붙인다.
+function addRandomTies(bars: string[]): string[] {
+  const result = [...bars]
+  for (let i = 0; i < result.length - 1; i++) {
+    if (Math.random() >= 0.3) continue
+    const lastToken = result[i].trim().split(/\s+/).pop() ?? ''
+    const firstToken = result[i + 1].trim().split(/\s+/)[0] ?? ''
+    if (/B$/.test(lastToken) && /^B/.test(firstToken)) {
+      result[i] = result[i] + '-'
+    }
+  }
+  return result
+}
+
 function assemblePatternsABC(
   aiPatterns: Array<{ label: string; bars: string[] }>
 ): Array<{ label: string; abc: string }> | null {
@@ -146,7 +172,7 @@ function assemblePatternsABC(
       }
       barTexts.push(barText)
     }
-    const finalBars = shuffleBeatsAcrossBars(barTexts) ?? barTexts
+    const finalBars = addRandomTies(shuffleBeatsAcrossBars(barTexts) ?? barTexts)
     const abc =
       'X:1\nM:4/4\nL:1/8\nQ:1/4=100\nK:perc\nV:1 clef=none stafflines=1 stem=up\n|' +
       finalBars.join('|') + '|]'
@@ -352,8 +378,8 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
     const rhythmLevel = Math.random() < 0.7 ? 'intermediate' : 'advanced'
 
     const rhythmLevelRule = rhythmLevel === 'advanced'
-      ? '각 패턴에 P~Z 중 최소 4개 포함 (나머지는 A~O)'
-      : '각 패턴에 P~Z 중 2~3개 포함 (나머지는 A~O)'
+      ? '각 패턴에 P~Z 중 최소 4개 포함 (나머지는 A~O). 45~48(6잇단음표)은 최대 1개까지만 선택적으로 포함 가능'
+      : '각 패턴에 P~Z 중 2~3개 포함 (나머지는 A~O). 45~48은 사용하지 않음'
 
     const rhythmPrompt = `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
@@ -391,6 +417,12 @@ W: z4 B B/B/B/B/ z
 X: z/ B/ B B/B/B/B/ z B z2
 Y: z/ B/ B B z/ B/ (3BBB z2
 Z: z/ B/ B B z/ B/ (3BzB z2
+
+[매우 복잡: 6잇단음표(6연음) 패턴 45~48 — 고급 전용, 한 챌린지당 최대 1개]
+45: (6BBBBBB BB z2 (3BBB
+46: BB (6BBBBBB z2 B2
+47: (6BBBBBB B/B/B/B/ z2 (3BzB
+48: (6BBBBBB (6BBBBBB BB z2
 
 규칙:
 - ${rhythmLevelRule}
