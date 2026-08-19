@@ -1,13 +1,24 @@
 'use client'
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 // 코드/리듬/멜로디 악보를 감싸서 우측 상단에 돋보기 버튼을 붙인다. 누르면
-// 전체화면 오버레이에 같은 컴포넌트를 다시 렌더링하되 훨씬 넓은 폭으로
-// 그려서(가로 스크롤 가능) 폰 화면에서도 크게 볼 수 있게 한다.
-// RhythmViewer/MelodyPlayer는 자기 컨테이너 폭을 스스로 재서 그리므로,
-// children을 그대로 다시 배치하는 것만으로 더 넓게 다시 렌더링된다.
+// 전체화면 오버레이로 같은 컴포넌트를 다시 보여준다.
+// 앱 전체가 layout.tsx의 viewport 설정(userScalable: false)으로 핀치줌이
+// 막혀있어서, 이 오버레이가 열려있는 동안만 <meta name="viewport"> 태그를
+// 직접 완화해 사용자가 손가락으로 원하는 만큼 확대/축소·이동할 수 있게 하고
+// 닫으면 원래 설정으로 되돌린다.
 export default function ZoomableNotation({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    if (!open) return
+    const meta = document.querySelector('meta[name="viewport"]')
+    const original = meta?.getAttribute('content') ?? null
+    meta?.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes')
+    return () => {
+      if (original) meta?.setAttribute('content', original)
+    }
+  }, [open])
 
   return (
     <>
@@ -51,11 +62,11 @@ export default function ZoomableNotation({ children }: { children: ReactNode }) 
               }}
             >✕</button>
           </div>
-          <div onClick={e => e.stopPropagation()} style={{ minWidth: 720 }}>
+          <div onClick={e => e.stopPropagation()}>
             {children}
           </div>
           <p style={{ textAlign: 'center', color: '#605850', fontSize: 12, marginTop: 16 }}>
-            좌우로 스크롤해서 보세요
+            손가락으로 벌리고 오므려서 확대/축소하세요
           </p>
         </div>
       )}
