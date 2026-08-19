@@ -106,12 +106,15 @@ export default function ZoomableNotation({ children }: { children: ReactNode }) 
             transform: 'rotate(90deg) translateY(-100%)',
             background: 'rgba(4,4,4,0.98)', zIndex: 200,
             overflow: 'auto', WebkitOverflowScrolling: 'touch',
-            padding: '20px 16px 48px',
+            // 회전된 상태라 물리적 노치는 이 좌표계의 왼쪽에 걸리므로 여유
+            // 패딩을 넉넉히 줌 (정확한 safe-area 계산은 회전 좌표계에서
+            // 의미가 달라져 단순화함)
+            padding: '20px 16px 20px calc(env(safe-area-inset-top) + 20px)',
           } : {
             position: 'fixed', inset: 0, zIndex: 200,
             background: 'rgba(4,4,4,0.97)',
             overflow: 'auto', WebkitOverflowScrolling: 'touch',
-            padding: '20px 16px 48px',
+            padding: 'calc(env(safe-area-inset-top) + 16px) 16px 48px',
           }}
         >
           {controls}
