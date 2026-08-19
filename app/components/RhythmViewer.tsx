@@ -41,41 +41,27 @@ function beamBar(bar: string): string {
   }
   if (notes.length === 0) return bar
 
+  // 같은 박(beat) 안에서 8분음표 이하 길이의 음표가 연속되면 전부 하나의
+  // 빔으로 묶는다 (쉼표를 만나면 끊음). 특정 조합만 하드코딩해서 놓치는
+  // 케이스가 생기던 걸 박 단위 일반화로 대체.
   const out: string[] = []
   let i = 0
   while (i < notes.length) {
     const cur = notes[i]
-    const next = notes[i + 1]
-    const next2 = notes[i + 2]
     if (cur.tok.startsWith('(')) { out.push(cur.tok); i++; continue }
-
-    // B B/ B/ → BB/B/ (8th + two 16ths beamed)
-    if (cur.tok === 'B' && cur.dur === 1 && cur.pos % 2 === 0 &&
-        next?.tok === 'B/' && next2?.tok === 'B/') {
-      out.push('BB/B/'); i += 3; continue
-    }
-    // B/ B/ B → B/B/B (two 16ths + 8th beamed)
-    if (cur.tok === 'B/' && cur.pos % 2 === 0 &&
-        next?.tok === 'B/' && next2?.tok === 'B') {
-      out.push('B/B/B'); i += 3; continue
-    }
-    // B/ B B/ → B/BB/ (16th + 8th + 16th beamed)
-    if (cur.tok === 'B/' && cur.pos % 2 === 0 &&
-        next?.tok === 'B' && next2?.tok === 'B/') {
-      out.push('B/BB/'); i += 3; continue
-    }
-    // BB → beam two 8ths
-    if (cur.tok === 'B' && cur.dur === 1 && cur.pos % 2 === 0 &&
-        next?.tok === 'B' && next.dur === 1) {
-      out.push('BB'); i += 2; continue
-    }
-    // B/ group → beam 16ths within beat
-    if (cur.tok === 'B/' && cur.dur === 0.5) {
-      const beatEnd = (Math.floor(cur.pos / 2) + 1) * 2
+    const isRest = cur.tok.startsWith('z')
+    if (!isRest && cur.dur <= 1) {
+      const beatIdx = Math.floor(cur.pos / 2)
       let j = i
       const group: string[] = []
-      while (j < notes.length && notes[j].tok === 'B/' && notes[j].pos + 0.5 <= beatEnd) {
-        group.push('B/'); j++
+      while (
+        j < notes.length &&
+        !notes[j].tok.startsWith('(') &&
+        !notes[j].tok.startsWith('z') &&
+        notes[j].dur <= 1 &&
+        Math.floor(notes[j].pos / 2) === beatIdx
+      ) {
+        group.push(notes[j].tok); j++
       }
       if (group.length >= 2) { out.push(group.join('')); i = j; continue }
     }
