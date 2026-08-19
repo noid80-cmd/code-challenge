@@ -141,6 +141,7 @@ export default function RhythmViewer({
   const containerRef = useRef<HTMLDivElement>(null)
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
   const [internalTab, setInternalTab] = useState(0)
+  const [containerWidth, setContainerWidth] = useState(0)
   const activeTab = controlledTab ?? internalTab
   const hasMultiple = patterns.length > 1
 
@@ -159,9 +160,24 @@ export default function RhythmViewer({
     [patterns]
   )
 
+  // 마운트 직후엔 폰트/레이아웃이 아직 자리잡기 전이라 clientWidth를 한
+  // 번만 재면 너비가 틀어진 채로 굳어버려서(예: 기둥 하나가 잘리는 등)
+  // 악보가 깨져 보이는 문제가 있었음. ResizeObserver로 실제 크기가
+  // 안정된 이후 값을 계속 갱신해서 렌더 이펙트가 최신 너비로 다시 그리게 함.
   useEffect(() => {
-    if (!containerRef.current) return
-    const containerWidth = containerRef.current.clientWidth - 4
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => {
+      const w = entries[0]?.contentRect.width
+      if (!w) return
+      setContainerWidth(prev => (Math.abs(w - prev) > 1 ? w : prev))
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  useEffect(() => {
+    if (!containerRef.current || containerWidth === 0) return
     const piList = hasMultiple ? [activeTab] : processedChunks.map((_, i) => i)
 
     import('abcjs').then(ABCJS => {
@@ -170,7 +186,7 @@ export default function RhythmViewer({
           const el = document.getElementById(`rv-${uid}-${pi}-${ci}`)
           if (!el) return
           ABCJS.renderAbc(`rv-${uid}-${pi}-${ci}`, abc, {
-            staffwidth: containerWidth,
+            staffwidth: containerWidth - 4,
             // format.stretchlast=1 forces every row (the only/last line of each chunk) to fill staffwidth
             format: { stretchlast: 1 },
             scale: 0.8,
@@ -192,7 +208,7 @@ export default function RhythmViewer({
         })
       })
     })
-  }, [processedChunks, uid, activeTab, hasMultiple])
+  }, [processedChunks, uid, activeTab, hasMultiple, containerWidth])
 
   return (
     <div ref={containerRef}>

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
 import { localDate, challengeDate } from '@/lib/date'
+import { TYPE_COLORS } from '@/lib/theme'
 
 const ChordPlayer = dynamic(() => import('./ChordPlayer'), { ssr: false })
 const RhythmViewer = dynamic(() => import('./RhythmViewer'), { ssr: false })
@@ -116,6 +117,7 @@ function calcStreak(dates: string[]) {
 }
 
 export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'melody' }) {
+  const c = TYPE_COLORS[type]
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [challenge, setChallenge] = useState<Challenge | null>(null)
   const [extraChallenges, setExtraChallenges] = useState<Challenge[]>([])
@@ -258,13 +260,13 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
         <Link href="/" style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           <div style={{
             width: 30, height: 30, borderRadius: 9,
-            background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+            background: c.grad,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(240,236,224,0.4)',
+            boxShadow: `0 4px 12px ${c.glow}`,
           }}>
             <svg width="14" height="13" viewBox="0 0 14 13" fill="none">
-              <path d="M1.5 6L7 1.5L12.5 6" stroke="rgba(4,7,0,0.9)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M3 5V11.5H11V5" stroke="rgba(4,7,0,0.9)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M1.5 6L7 1.5L12.5 6" stroke="rgba(255,255,255,0.92)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M3 5V11.5H11V5" stroke="rgba(255,255,255,0.92)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
         </Link>
@@ -273,14 +275,14 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
         <div style={{ position: 'relative', display: 'flex', background: 'rgba(240,236,224,0.06)', borderRadius: 11, padding: 3 }}>
           <div style={{
             position: 'absolute', top: 3, left: 3, width: 36, height: 28, borderRadius: 8,
-            background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-            boxShadow: '0 2px 8px rgba(240,236,224,0.25)',
+            background: c.grad,
+            boxShadow: `0 2px 8px ${c.glow}`,
             transform: `translateX(${(['chord', 'rhythm', 'melody'] as const).indexOf(type) * 36}px)`,
             transition: 'transform 0.25s cubic-bezier(0.34, 1.2, 0.64, 1)',
           }} />
           {(['chord', 'rhythm', 'melody'] as const).map(t => {
             const active = type === t
-            const iconColor = active ? 'rgba(4,7,0,0.85)' : 'rgba(240,236,224,0.4)'
+            const iconColor = active ? 'rgba(255,255,255,0.92)' : 'rgba(240,236,224,0.4)'
             return (
               <Link key={t} href={`/${t}`} style={{
                 position: 'relative', zIndex: 1,
@@ -329,9 +331,9 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
             <>
               <Link href={`/upload?type=${type}`} style={{
                 padding: '6px 14px', borderRadius: 8,
-                background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-                color: '#0a0a08', fontSize: 13, fontWeight: 800,
-                boxShadow: '0 3px 12px rgba(240,236,224,0.35)',
+                background: c.grad,
+                color: '#fff', fontSize: 13, fontWeight: 800,
+                boxShadow: `0 3px 12px ${c.glow}`,
               }}>업로드</Link>
               <Link href="/groups" style={{
                 padding: '6px 14px', borderRadius: 8,
@@ -355,8 +357,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
           ) : (
             <Link href={`/login?from=/${type}`} style={{
               padding: '6px 14px', borderRadius: 8,
-              background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-              color: '#0a0a08', fontSize: 13, fontWeight: 800,
+              background: c.grad,
+              color: '#fff', fontSize: 13, fontWeight: 800,
             }}>로그인</Link>
           )}
         </div>
@@ -389,8 +391,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
           {challenge ? (
             <div style={{
               background: 'linear-gradient(145deg, #111110, #0d0d0c)',
-              border: '1px solid rgba(240,236,224,0.2)', borderRadius: 22, padding: 22,
-              boxShadow: '0 0 0 1px rgba(240,236,224,0.06), 0 24px 60px rgba(240,236,224,0.1)',
+              border: `1px solid ${c.border}`, borderRadius: 22, padding: 22,
+              boxShadow: `0 0 0 1px rgba(240,236,224,0.06), 0 24px 60px ${c.glowSoft}`,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: challengeOpen ? (challenge.description && challenge.description !== challenge.title ? 6 : 18) : 0 }}>
                 <h2 style={{ fontSize: 20, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.025em', margin: 0, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -437,18 +439,18 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                     {user ? (
                       <Link href={`/upload?type=${type}`} style={{
                         display: 'block', padding: '14px', borderRadius: 13,
-                        background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-                        color: '#0a0a08', fontSize: 14, fontWeight: 800, textAlign: 'center',
-                        letterSpacing: '-0.01em', boxShadow: '0 6px 24px rgba(240,236,224,0.4)',
+                        background: c.grad,
+                        color: '#fff', fontSize: 14, fontWeight: 800, textAlign: 'center',
+                        letterSpacing: '-0.01em', boxShadow: `0 6px 24px ${c.glow}`,
                       }}>
                         챌린지 참여하기
                       </Link>
                     ) : (
                       <Link href="/login" style={{
                         display: 'block', padding: '14px', borderRadius: 13,
-                        background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-                        color: '#0a0a08', fontSize: 14, fontWeight: 800, textAlign: 'center',
-                        boxShadow: '0 6px 24px rgba(240,236,224,0.35)',
+                        background: c.grad,
+                        color: '#fff', fontSize: 14, fontWeight: 800, textAlign: 'center',
+                        boxShadow: `0 6px 24px ${c.glow}`,
                       }}>
                         로그인하고 참여하기
                       </Link>
@@ -468,8 +470,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
               {isAdmin && (
                 <Link href="/admin" style={{
                   display: 'inline-block', marginTop: 22, padding: '9px 20px', borderRadius: 10,
-                  background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-                  color: '#0a0a08', fontSize: 13, fontWeight: 700,
+                  background: c.grad,
+                  color: '#fff', fontSize: 13, fontWeight: 700,
                 }}>챌린지 생성하기</Link>
               )}
             </div>
@@ -478,8 +480,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
             <div key={ec.id} style={{
               marginTop: 16,
               background: 'linear-gradient(145deg, #111110, #0d0d0c)',
-              border: '1px solid rgba(240,236,224,0.2)', borderRadius: 22, padding: 22,
-              boxShadow: '0 0 0 1px rgba(240,236,224,0.06), 0 24px 60px rgba(240,236,224,0.1)',
+              border: `1px solid ${c.border}`, borderRadius: 22, padding: 22,
+              boxShadow: `0 0 0 1px rgba(240,236,224,0.06), 0 24px 60px ${c.glowSoft}`,
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                 <h2 style={{ fontSize: 20, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.025em', margin: 0, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -505,9 +507,9 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
               <div style={{ marginTop: 16 }}>
                 <Link href={`/upload?type=${type}&challenge=${ec.id}`} style={{
                   display: 'block', padding: '14px', borderRadius: 13,
-                  background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-                  color: '#0a0a08', fontSize: 14, fontWeight: 800, textAlign: 'center',
-                  boxShadow: '0 6px 24px rgba(240,236,224,0.4)',
+                  background: c.grad,
+                  color: '#fff', fontSize: 14, fontWeight: 800, textAlign: 'center',
+                  boxShadow: `0 6px 24px ${c.glow}`,
                 }}>챌린지 참여하기</Link>
               </div>
             </div>
@@ -532,7 +534,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
           }}>
             <div style={{
               width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-              background: 'rgba(240,236,224,0.12)',
+              background: uploadedToday ? c.glowSoft : streak > 0 ? 'rgba(240,150,60,0.14)' : c.glowSoft,
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18,
             }}>
               {uploadedToday ? '✓' : streak > 0 ? '🔥' : '🎵'}
@@ -575,8 +577,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
               {submissions.length > 0 && (
                 <span style={{
                   fontSize: 11, fontWeight: 800,
-                  background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-                  color: '#0a0a08', padding: '2px 9px', borderRadius: 20,
+                  background: c.grad,
+                  color: '#fff', padding: '2px 9px', borderRadius: 20,
                 }}>{submissions.length}</span>
               )}
             </div>
@@ -595,10 +597,10 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                   [{ key: 'all' as const, label: '전체' }, ...(challenge?.chords?.progressions ?? []).map((_, i) => ({ key: i as number, label: `진행 ${i + 1}` }))].map(tab => (
                     <button key={String(tab.key)} onClick={() => setFilterProg(tab.key)} style={{
                       padding: '5px 12px', borderRadius: 20, border: 'none', cursor: 'pointer',
-                      background: filterProg === tab.key ? 'rgba(240,236,224,0.15)' : 'transparent',
-                      color: filterProg === tab.key ? '#f0ece0' : '#403830',
+                      background: filterProg === tab.key ? c.glowSoft : 'transparent',
+                      color: filterProg === tab.key ? c.solid : '#403830',
                       fontSize: 12, fontWeight: 700,
-                      outline: filterProg === tab.key ? '1px solid rgba(240,236,224,0.25)' : '1px solid transparent',
+                      outline: filterProg === tab.key ? `1px solid ${c.border}` : '1px solid transparent',
                       transition: 'all 0.15s',
                     }}>{tab.label}</button>
                   ))
@@ -735,11 +737,11 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <button onClick={onLike} style={{
-              background: sub.user_liked ? 'rgba(240,236,224,0.12)' : 'rgba(255,255,255,0.02)',
-              border: sub.user_liked ? '1px solid rgba(240,236,224,0.4)' : '1px solid rgba(255,255,255,0.06)',
+              background: sub.user_liked ? 'rgba(244,63,94,0.14)' : 'rgba(255,255,255,0.02)',
+              border: sub.user_liked ? '1px solid rgba(244,63,94,0.4)' : '1px solid rgba(255,255,255,0.06)',
               borderRadius: 10, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
-              color: sub.user_liked ? '#f0ece0' : '#303028',
+              color: sub.user_liked ? '#fb7185' : '#303028',
               fontSize: 14, fontWeight: 800, padding: '7px 13px', transition: 'all 0.2s',
             }}>
               {sub.user_liked ? '♥' : '♡'}

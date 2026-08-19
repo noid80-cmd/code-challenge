@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
+import { TYPE_COLORS } from '@/lib/theme'
 
 export default function LandingPage() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
@@ -88,22 +89,22 @@ export default function LandingPage() {
           <Link href="/chord" style={{ textDecoration: 'none' }}>
             <div style={{
               background: 'linear-gradient(145deg, #111110, #0e0e0c)',
-              border: '1px solid rgba(240,236,224,0.15)',
+              border: `1px solid ${TYPE_COLORS.chord.border}`,
               borderRadius: 24, padding: '24px',
               display: 'flex', alignItems: 'center', gap: 20,
-              boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+              boxShadow: `0 8px 40px rgba(0,0,0,0.4), 0 0 32px ${TYPE_COLORS.chord.glowSoft}`,
               cursor: 'pointer',
             }}>
               <div style={{
                 width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-                background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                background: TYPE_COLORS.chord.grad,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(240,236,224,0.3)',
+                boxShadow: `0 4px 16px ${TYPE_COLORS.chord.glow}`,
               }}>
                 <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
-                  <line x1="1" y1="3" x2="21" y2="3" stroke="rgba(4,7,0,0.85)" strokeWidth="2" strokeLinecap="round"/>
-                  <line x1="1" y1="9" x2="21" y2="9" stroke="rgba(4,7,0,0.85)" strokeWidth="2" strokeLinecap="round"/>
-                  <line x1="1" y1="15" x2="14" y2="15" stroke="rgba(4,7,0,0.85)" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="1" y1="3" x2="21" y2="3" stroke="rgba(255,255,255,0.92)" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="1" y1="9" x2="21" y2="9" stroke="rgba(255,255,255,0.92)" strokeWidth="2" strokeLinecap="round"/>
+                  <line x1="1" y1="15" x2="14" y2="15" stroke="rgba(255,255,255,0.92)" strokeWidth="2" strokeLinecap="round"/>
                 </svg>
               </div>
               <div style={{ flex: 1 }}>
@@ -121,23 +122,23 @@ export default function LandingPage() {
           <Link href="/rhythm" style={{ textDecoration: 'none' }}>
             <div style={{
               background: 'linear-gradient(145deg, #111110, #0e0e0c)',
-              border: '1px solid rgba(240,236,224,0.15)',
+              border: `1px solid ${TYPE_COLORS.rhythm.border}`,
               borderRadius: 24, padding: '24px',
               display: 'flex', alignItems: 'center', gap: 20,
-              boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+              boxShadow: `0 8px 40px rgba(0,0,0,0.4), 0 0 32px ${TYPE_COLORS.rhythm.glowSoft}`,
               cursor: 'pointer',
             }}>
               <div style={{
                 width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-                background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                background: TYPE_COLORS.rhythm.grad,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(240,236,224,0.3)',
+                boxShadow: `0 4px 16px ${TYPE_COLORS.rhythm.glow}`,
               }}>
                 <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
-                  <rect x="1" y="6" width="4" height="10" rx="1.5" fill="rgba(4,7,0,0.85)"/>
-                  <rect x="7" y="3" width="4" height="13" rx="1.5" fill="rgba(4,7,0,0.85)"/>
-                  <rect x="13" y="1" width="4" height="15" rx="1.5" fill="rgba(4,7,0,0.85)"/>
-                  <rect x="19" y="4" width="2" height="12" rx="1" fill="rgba(4,7,0,0.85)"/>
+                  <rect x="1" y="6" width="4" height="10" rx="1.5" fill="rgba(255,255,255,0.92)"/>
+                  <rect x="7" y="3" width="4" height="13" rx="1.5" fill="rgba(255,255,255,0.92)"/>
+                  <rect x="13" y="1" width="4" height="15" rx="1.5" fill="rgba(255,255,255,0.92)"/>
+                  <rect x="19" y="4" width="2" height="12" rx="1" fill="rgba(255,255,255,0.92)"/>
                 </svg>
               </div>
               <div style={{ flex: 1 }}>
@@ -155,24 +156,24 @@ export default function LandingPage() {
           <Link href="/melody" style={{ textDecoration: 'none' }}>
             <div style={{
               background: 'linear-gradient(145deg, #111110, #0e0e0c)',
-              border: '1px solid rgba(240,236,224,0.15)',
+              border: `1px solid ${TYPE_COLORS.melody.border}`,
               borderRadius: 24, padding: '24px',
               display: 'flex', alignItems: 'center', gap: 20,
-              boxShadow: '0 8px 40px rgba(0,0,0,0.4)',
+              boxShadow: `0 8px 40px rgba(0,0,0,0.4), 0 0 32px ${TYPE_COLORS.melody.glowSoft}`,
               cursor: 'pointer',
             }}>
               <div style={{
                 width: 52, height: 52, borderRadius: 14, flexShrink: 0,
-                background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                background: TYPE_COLORS.melody.grad,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(240,236,224,0.3)',
+                boxShadow: `0 4px 16px ${TYPE_COLORS.melody.glow}`,
               }}>
                 <svg width="22" height="18" viewBox="0 0 22 18" fill="none">
-                  <circle cx="5" cy="14" r="3.2" fill="rgba(4,7,0,0.85)"/>
-                  <circle cx="16" cy="11" r="3.2" fill="rgba(4,7,0,0.85)"/>
-                  <line x1="8" y1="14" x2="8" y2="2" stroke="rgba(4,7,0,0.85)" strokeWidth="1.8" strokeLinecap="round"/>
-                  <line x1="19" y1="11" x2="19" y2="2" stroke="rgba(4,7,0,0.85)" strokeWidth="1.8" strokeLinecap="round"/>
-                  <line x1="8" y1="2" x2="19" y2="2" stroke="rgba(4,7,0,0.85)" strokeWidth="2.4" strokeLinecap="round"/>
+                  <circle cx="5" cy="14" r="3.2" fill="rgba(255,255,255,0.92)"/>
+                  <circle cx="16" cy="11" r="3.2" fill="rgba(255,255,255,0.92)"/>
+                  <line x1="8" y1="14" x2="8" y2="2" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
+                  <line x1="19" y1="11" x2="19" y2="2" stroke="rgba(255,255,255,0.92)" strokeWidth="1.8" strokeLinecap="round"/>
+                  <line x1="8" y1="2" x2="19" y2="2" stroke="rgba(255,255,255,0.92)" strokeWidth="2.4" strokeLinecap="round"/>
                 </svg>
               </div>
               <div style={{ flex: 1 }}>
