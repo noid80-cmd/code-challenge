@@ -96,6 +96,14 @@ export default function ZoomableNotation({ children }: { children: ReactNode }) 
               {zoomedChild}
             </div>
           </div>
+          {/* 임시 디버그 표시 - 원인 확인되면 제거 예정 */}
+          <div style={{
+            position: 'fixed', top: 'calc(env(safe-area-inset-top) + 14px)', left: 14,
+            zIndex: 1001, color: '#0f0', fontSize: 11, fontFamily: 'monospace',
+            background: 'rgba(0,0,0,0.6)', padding: '4px 8px', borderRadius: 6,
+          }}>
+            vw:{vw} vh:{vh} w:{modalContentWidth}
+          </div>
           <button
             onClick={() => setOpen(false)}
             style={{
