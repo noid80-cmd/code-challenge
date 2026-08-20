@@ -192,7 +192,7 @@ export default function RhythmViewer({
             scale: 0.8,
             foregroundColor: '#f0ece0',
             selectionColor: 'none',
-            paddingtop: ci === 0 ? 4 : 0,
+            paddingtop: ci === 0 ? 4 : 20,
             paddingbottom: 0,
             paddingright: 0,
             paddingleft: 0,
@@ -213,17 +213,18 @@ export default function RhythmViewer({
   return (
     <div ref={containerRef}>
       {hasMultiple && (
-        <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 5, marginBottom: 8 }}>
           {processedChunks.map((p, pi) => {
             const shortLabel = p.label.replace(/^패턴\s*\d+\s*[-–—]?\s*/i, '') || `패턴 ${pi + 1}`
             return (
               <button key={pi} onClick={() => handleTabChange(pi)} style={{
-                flex: 1, padding: '7px 10px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                flex: 1, padding: '5px 6px', borderRadius: 9, border: 'none', cursor: 'pointer',
                 background: activeTab === pi ? 'rgba(240,236,224,0.15)' : 'rgba(240,236,224,0.04)',
                 outline: activeTab === pi ? '1px solid rgba(240,236,224,0.3)' : '1px solid rgba(240,236,224,0.08)',
                 color: activeTab === pi ? '#f0ece0' : '#605850',
-                fontSize: 11, fontWeight: 700, letterSpacing: '0.03em',
+                fontSize: 10, fontWeight: 700, letterSpacing: '0.02em',
                 transition: 'all 0.15s', textAlign: 'center',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
                 {shortLabel}
               </button>
@@ -236,7 +237,7 @@ export default function RhythmViewer({
         return (
           <div key={pi}>
             {!hasMultiple && !hideLabel && pattern.label && (
-              <div style={{ fontSize: 12, fontWeight: 700, color: '#a0988c', marginBottom: 8, letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#a0988c', marginBottom: 5, letterSpacing: '0.05em' }}>
                 {pattern.label}
               </div>
             )}

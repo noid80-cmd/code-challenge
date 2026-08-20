@@ -63,7 +63,7 @@ export default function ZoomableNotation({ children }: { children: ReactNode }) 
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <div style={{ width: '100%', padding: '0 28px', boxSizing: 'border-box' }}>
+            <div style={{ width: '100%', padding: '0 42px', boxSizing: 'border-box' }}>
               {children}
             </div>
           </div>
