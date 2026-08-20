@@ -21,14 +21,28 @@ export default function ZoomableNotation({ children }: { children: ReactNode }) 
   const [vw, setVw] = useState(0)
   const [vh, setVh] = useState(0)
 
+  // 모달이 열릴 때 window.innerWidth/Height를 곧바로 읽으면 아직 세이프
+  // 에어리어/상태바 관련 레이아웃이 다 자리잡기 전 값을 잡아서, 같은
+  // 챌린지를 다시 열어도 악보 너비가 매번 달라지는 문제가 있었음. rAF를
+  // 두 번 걸쳐 측정을 늦춰서 레이아웃이 완전히 안정된 뒤 값을 읽는다.
   useEffect(() => {
     if (!open) return
-    const update = () => { setVw(window.innerWidth); setVh(window.innerHeight) }
-    update()
-    window.addEventListener('resize', update)
+    let raf1 = 0
+    let raf2 = 0
+    const measure = () => {
+      const vv = window.visualViewport
+      setVw(Math.round(vv?.width ?? window.innerWidth))
+      setVh(Math.round(vv?.height ?? window.innerHeight))
+    }
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(measure)
+    })
+    window.addEventListener('resize', measure)
     document.body.style.overflow = 'hidden'
     return () => {
-      window.removeEventListener('resize', update)
+      cancelAnimationFrame(raf1)
+      cancelAnimationFrame(raf2)
+      window.removeEventListener('resize', measure)
       document.body.style.overflow = ''
     }
   }, [open])
