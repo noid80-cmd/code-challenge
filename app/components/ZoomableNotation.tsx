@@ -83,10 +83,16 @@ export default function ZoomableNotation({ children }: { children: ReactNode }) 
               width: vh,
               height: vw,
               transform: 'translate(-50%, -50%) rotate(90deg)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              // 마디 시스템이 여러 줄이면 세로축(vw) 고정 크기보다 실제
+              // 내용이 더 길어질 수 있는데, alignItems:center로 넘치는
+              // 콘텐츠를 가운데 정렬하면 위/아래가 잘려서 보이는 문제가
+              // 있었음(같은 악보인데 열 때마다 잘리는 위치가 달라 보이던
+              // 원인). overflowY:auto + flex-start로 스크롤 가능하게 함.
+              display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+              overflowY: 'auto',
             }}
           >
-            <div style={{ width: '100%', padding: `0 ${SIDE_PAD}px`, boxSizing: 'border-box' }}>
+            <div style={{ width: '100%', padding: `${SIDE_PAD}px`, boxSizing: 'border-box' }}>
               {zoomedChild}
             </div>
           </div>
