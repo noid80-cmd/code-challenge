@@ -1,5 +1,7 @@
 'use client'
-import { useEffect, useState, type ReactNode } from 'react'
+import { cloneElement, isValidElement, useEffect, useState, type ReactElement, type ReactNode } from 'react'
+
+const SIDE_PAD = 42
 
 function RotateIcon() {
   return (
@@ -47,6 +49,15 @@ export default function ZoomableNotation({ children }: { children: ReactNode }) 
     }
   }, [open])
 
+  // RhythmViewer/MelodyPlayer가 자체 ResizeObserver로 너비를 재게 두면
+  // transform:rotate 안에서 WebKit이 값을 들쭉날쭉 보고해 같은 악보도
+  // 열 때마다 폭이 달라지는 문제가 있었다. vh(위에서 이미 안정적으로
+  // 측정됨)에서 좌우 여백만 빼서 고정폭을 직접 넘겨 관찰 자체를 건너뛴다.
+  const modalContentWidth = vh > 0 ? vh - SIDE_PAD * 2 : 0
+  const zoomedChild = isValidElement(children)
+    ? cloneElement(children as ReactElement<{ forcedWidth?: number }>, { forcedWidth: modalContentWidth })
+    : children
+
   return (
     <div>
       {children}
@@ -77,8 +88,8 @@ export default function ZoomableNotation({ children }: { children: ReactNode }) 
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}
           >
-            <div style={{ width: '100%', padding: '0 42px', boxSizing: 'border-box' }}>
-              {children}
+            <div style={{ width: '100%', padding: `0 ${SIDE_PAD}px`, boxSizing: 'border-box' }}>
+              {zoomedChild}
             </div>
           </div>
           <button

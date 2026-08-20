@@ -132,16 +132,19 @@ export default function RhythmViewer({
   activeTab: controlledTab,
   onTabChange,
   hideLabel = false,
+  forcedWidth,
 }: {
   patterns: Pattern[]
   activeTab?: number
   onTabChange?: (i: number) => void
   hideLabel?: boolean
+  forcedWidth?: number
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
   const [internalTab, setInternalTab] = useState(0)
-  const [containerWidth, setContainerWidth] = useState(0)
+  const [measuredWidth, setMeasuredWidth] = useState(0)
+  const containerWidth = forcedWidth ?? measuredWidth
   const activeTab = controlledTab ?? internalTab
   const hasMultiple = patterns.length > 1
 
@@ -164,17 +167,21 @@ export default function RhythmViewer({
   // 번만 재면 너비가 틀어진 채로 굳어버려서(예: 기둥 하나가 잘리는 등)
   // 악보가 깨져 보이는 문제가 있었음. ResizeObserver로 실제 크기가
   // 안정된 이후 값을 계속 갱신해서 렌더 이펙트가 최신 너비로 다시 그리게 함.
+  // 단, transform:rotate 안에서는 WebKit의 ResizeObserver가 값을 들쭉날쭉
+  // 보고하는 경우가 있어서(가로 확대 모달에서 같은 악보가 열 때마다 다르게
+  // 그려지던 원인) forcedWidth가 주어지면 관찰 자체를 하지 않고 그 값을 그대로 쓴다.
   useEffect(() => {
+    if (forcedWidth != null) return
     const el = containerRef.current
     if (!el) return
     const ro = new ResizeObserver(entries => {
       const w = entries[0]?.contentRect.width
       if (!w) return
-      setContainerWidth(prev => (Math.abs(w - prev) > 1 ? w : prev))
+      setMeasuredWidth(prev => (Math.abs(w - prev) > 1 ? w : prev))
     })
     ro.observe(el)
     return () => ro.disconnect()
-  }, [])
+  }, [forcedWidth])
 
   useEffect(() => {
     if (!containerRef.current || containerWidth === 0) return

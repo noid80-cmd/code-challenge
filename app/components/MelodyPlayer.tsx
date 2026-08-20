@@ -70,17 +70,20 @@ export default function MelodyPlayer({
   activeTab: controlledTab,
   onTabChange,
   hideLabel = false,
+  forcedWidth,
 }: {
   patterns: Pattern[]
   activeTab?: number
   onTabChange?: (i: number) => void
   hideLabel?: boolean
+  forcedWidth?: number
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const uid = useId().replace(/[^a-zA-Z0-9]/g, '')
   const [internalTab, setInternalTab] = useState(0)
   const [bassClef, setBassClef] = useState(false)
-  const [containerWidth, setContainerWidth] = useState(0)
+  const [measuredWidth, setMeasuredWidth] = useState(0)
+  const containerWidth = forcedWidth ?? measuredWidth
   const activeTab = controlledTab ?? internalTab
   const hasMultiple = patterns.length > 1
 
@@ -101,17 +104,20 @@ export default function MelodyPlayer({
 
   // 마운트 직후 레이아웃이 아직 안정되기 전에 너비를 재면 잘못된 값으로
   // 굳어버리는 문제(RhythmViewer와 동일)가 있어 ResizeObserver로 대체.
+  // transform:rotate 안에서는 WebKit ResizeObserver가 들쭉날쭉해서
+  // forcedWidth가 주어지면 관찰하지 않고 그 값을 그대로 쓴다.
   useEffect(() => {
+    if (forcedWidth != null) return
     const el = containerRef.current
     if (!el) return
     const ro = new ResizeObserver(entries => {
       const w = entries[0]?.contentRect.width
       if (!w) return
-      setContainerWidth(prev => (Math.abs(w - prev) > 1 ? w : prev))
+      setMeasuredWidth(prev => (Math.abs(w - prev) > 1 ? w : prev))
     })
     ro.observe(el)
     return () => ro.disconnect()
-  }, [])
+  }, [forcedWidth])
 
   useEffect(() => {
     if (!containerRef.current || containerWidth === 0) return
