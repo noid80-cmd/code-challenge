@@ -23,28 +23,26 @@ export default function ZoomableNotation({ children }: { children: ReactNode }) 
   const [vw, setVw] = useState(0)
   const [vh, setVh] = useState(0)
 
-  // 모달이 열릴 때 window.innerWidth/Height를 곧바로 읽으면 아직 세이프
-  // 에어리어/상태바 관련 레이아웃이 다 자리잡기 전 값을 잡아서, 같은
-  // 챌린지를 다시 열어도 악보 너비가 매번 달라지는 문제가 있었음. rAF를
-  // 두 번 걸쳐 측정을 늦춰서 레이아웃이 완전히 안정된 뒤 값을 읽는다.
+  // visualViewport는 키보드/줌 등 "동적" 뷰포트를 반영하도록 설계된
+  // API라 값이 조금씩 흔들릴 수 있었음 — 같은 챌린지를 다시 열어도 폭이
+  // 달라지던 원인 중 하나. document.documentElement.clientWidth/Height
+  // (레이아웃 뷰포트, 키보드 등과 무관하게 고정)로 바꾸고, 열릴 때 딱
+  // 한 번만 재고 그 이후로는 resize에 다시 반응하지 않게 해서 값이
+  // 중간에 다른 값으로 덮어써지는 일이 없게 한다.
   useEffect(() => {
     if (!open) return
     let raf1 = 0
     let raf2 = 0
-    const measure = () => {
-      const vv = window.visualViewport
-      setVw(Math.round(vv?.width ?? window.innerWidth))
-      setVh(Math.round(vv?.height ?? window.innerHeight))
-    }
     raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(measure)
+      raf2 = requestAnimationFrame(() => {
+        setVw(document.documentElement.clientWidth)
+        setVh(document.documentElement.clientHeight)
+      })
     })
-    window.addEventListener('resize', measure)
     document.body.style.overflow = 'hidden'
     return () => {
       cancelAnimationFrame(raf1)
       cancelAnimationFrame(raf2)
-      window.removeEventListener('resize', measure)
       document.body.style.overflow = ''
     }
   }, [open])
