@@ -410,6 +410,8 @@ export async function GET(req: NextRequest) {
   )
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  // insert 실패를 조용히 삼키면 응답에는 제목이 찍혀 성공처럼 보인다
+  const insertErrors: string[] = []
   const today = new Date().toISOString().slice(0, 10)
 
   // ── 코드챌린지 ──────────────────────────────────────────
@@ -476,7 +478,7 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
     const chordMatch = chordText.match(/\{[\s\S]*\}/)
     if (chordMatch) {
       const chordData = JSON.parse(chordMatch[0])
-      await supabase.from('challenges').insert({
+      const { error: insErr } = await supabase.from('challenges').insert({
         date: today,
         type: 'chord',
         title: chordData.title,
@@ -484,6 +486,10 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
         level,
         chords: { progressions: chordData.progressions },
       })
+      if (insErr) {
+        console.error('[cron] challenge insert failed:', insErr.message)
+        insertErrors.push(insErr.message)
+      }
       chordTitle = chordData.title
     }
   }
@@ -496,11 +502,15 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 
   if (!existingRhythm && level === 'beginner') {
     const b = buildBeginnerRhythm()
-    await supabase.from('challenges').insert({
+    const { error: insErr } = await supabase.from('challenges').insert({
       date: today, type: 'rhythm', level,
       title: b.title, description: b.description,
       chords: { patterns: b.patterns },
     })
+    if (insErr) {
+      console.error('[cron] challenge insert failed:', insErr.message)
+      insertErrors.push(insErr.message)
+    }
     rhythmTitle = b.title
   } else if (!existingRhythm) {
     const rhythmLevel = level
@@ -604,7 +614,7 @@ JSON 객체로만 응답:
     }
 
     if (rhythmCh) {
-      await supabase.from('challenges').insert({
+      const { error: insErr } = await supabase.from('challenges').insert({
         date: today,
         type: 'rhythm',
         level: rhythmLevel,
@@ -612,6 +622,10 @@ JSON 객체로만 응답:
         description: rhythmCh.description,
         chords: { patterns: rhythmCh.patterns },
       })
+      if (insErr) {
+        console.error('[cron] challenge insert failed:', insErr.message)
+        insertErrors.push(insErr.message)
+      }
       rhythmTitle = rhythmCh.title
     }
   }
@@ -780,11 +794,15 @@ JSON 객체로만 응답:
 
   if (!existingMelody && level === 'beginner') {
     const b = buildBeginnerMelody()
-    await supabase.from('challenges').insert({
+    const { error: insErr } = await supabase.from('challenges').insert({
       date: today, type: 'melody', level,
       title: b.title, description: b.description,
       chords: { patterns: b.patterns },
     })
+    if (insErr) {
+      console.error('[cron] challenge insert failed:', insErr.message)
+      insertErrors.push(insErr.message)
+    }
     melodyTitle = b.title
   } else if (!existingMelody) {
     const melodyLevel = level
@@ -1001,7 +1019,7 @@ JSON 객체로만 응답:
     }
 
     if (melodyCh) {
-      await supabase.from('challenges').insert({
+      const { error: insErr } = await supabase.from('challenges').insert({
         date: today,
         type: 'melody',
         level: melodyLevel,
@@ -1009,6 +1027,10 @@ JSON 객체로만 응답:
         description: melodyCh.description,
         chords: { patterns: melodyCh.patterns },
       })
+      if (insErr) {
+        console.error('[cron] challenge insert failed:', insErr.message)
+        insertErrors.push(insErr.message)
+      }
       melodyTitle = melodyCh.title
     }
   }
@@ -1016,14 +1038,14 @@ JSON 객체로만 응답:
   // ── 푸시 알림 ──────────────────────────────────────────
   // 난이도별 요청마다 보내면 하루 세 번 울린다. 기본 요청에서만 보낸다.
   if (!isPrimary) {
-    return NextResponse.json({ level, chordTitle, rhythmTitle, melodyTitle })
+    return NextResponse.json({ level, chordTitle, rhythmTitle, melodyTitle, insertErrors })
   }
 
   const { data: subs } = await supabase
     .from('push_subscriptions').select('subscription, endpoint')
 
   if (!subs || subs.length === 0) {
-    return NextResponse.json({ chordTitle, rhythmTitle, melodyTitle, sent: 0 })
+    return NextResponse.json({ chordTitle, rhythmTitle, melodyTitle, insertErrors, sent: 0 })
   }
 
   const notifTitle = 'PlayDaily — 오늘의 챌린지'
@@ -1053,5 +1075,5 @@ JSON 객체로만 응답:
   }
 
   const sent = results.filter(r => r.status === 'fulfilled').length
-  return NextResponse.json({ chordTitle, rhythmTitle, melodyTitle, sent, total: subs.length })
+  return NextResponse.json({ chordTitle, rhythmTitle, melodyTitle, insertErrors, sent, total: subs.length })
 }
