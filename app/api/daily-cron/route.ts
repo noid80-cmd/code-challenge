@@ -292,6 +292,19 @@ const RHYTHM_BEGINNER_BARS: string[] = [
   'BB z2 B2 z2',
   'B2 B2 B2 BB',
   'BB B2 z2 B2',
+  // 여기부터 한 단계 위. 8분쉼표(z), 8분음표 연속, 점4분음표(B3)가 들어간다.
+  'BB BB BB BB',
+  'B2 BB BB B2',
+  'BB B2 BB B2',
+  'B z B2 B2 z2',
+  'B z BB B2 B2',
+  'B2 B z B2 B2',
+  'B3 B B2 B2',
+  'B2 B3 B z2',
+  'B>B B>B B2 z2',
+  'B>B BB B2 z2',
+  'BB z B B2 B2',
+  'z B B2 B2 B2',
 ]
 
 // 순차진행과 3도 도약, 온음표 없는 단순 리듬. 반음·당김음·16분음표는 넣지 않는다.
@@ -316,6 +329,20 @@ const MELODY_BEGINNER_BARS: string[] = [
   'E2 G2 F2 D2',
   'D2 E2 F2 G2',
   'A2 G2 F2 E2',
+  // 여기부터 한 단계 위. 8분음표 순차, 4·5도 도약, 높은 도까지 올라간다.
+  'CD ED C2 D2',
+  'GF EF G2 F2',
+  'EF GF E2 D2',
+  'DC DE C4',
+  'z2 CD ED C2',
+  'C2 D2 EF G2',
+  'C2 G2 E2 C2',
+  'G2 C2 E2 G2',
+  'C2 F2 E2 D2',
+  'E2 C2 G2 E2',
+  'F2 G2 A2 G2',
+  'G2 A2 B2 c2',
+  'c2 B2 A2 G2',
 ]
 
 // 같은 마디가 3번 이상 나오지 않게 8마디를 뽑는다
@@ -357,7 +384,7 @@ function buildBeginnerRhythm() {
   })
   return {
     title: RHYTHM_BEGINNER_TITLES[Math.floor(Math.random() * RHYTHM_BEGINNER_TITLES.length)],
-    description: '4분음표와 8분음표, 기본 쉼표로만 이루어진 초급 리듬 초견입니다.',
+    description: '4분음표와 8분음표, 붓점과 기본 쉼표로 이루어진 초급 리듬 초견입니다.',
     patterns,
   }
 }
@@ -372,7 +399,7 @@ function buildBeginnerMelody() {
   })
   return {
     title: MELODY_BEGINNER_TITLES[Math.floor(Math.random() * MELODY_BEGINNER_TITLES.length)],
-    description: '순차진행과 3도 도약 위주로 이루어진 초급 계이름 시창입니다.',
+    description: '순차진행과 도약을 함께 다루는 초급 계이름 시창입니다.',
     patterns,
   }
 }
@@ -395,6 +422,8 @@ export async function GET(req: NextRequest) {
   const levelParam = reqUrl.searchParams.get('level')
   const level: Level = isLevel(levelParam) ? levelParam : 'intermediate'
   const isPrimary = !levelParam
+  // 초급 마디 라이브러리를 손본 뒤 그날 것을 다시 만들 때 쓴다(아래에서 실행).
+  const force = reqUrl.searchParams.get('force') === '1'
 
   if (isPrimary) {
     for (const other of ['beginner', 'advanced'] as const) {
@@ -412,7 +441,19 @@ export async function GET(req: NextRequest) {
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   // insert 실패를 조용히 삼키면 응답에는 제목이 찍혀 성공처럼 보인다
   const insertErrors: string[] = []
+
   const today = new Date().toISOString().slice(0, 10)
+
+  // force=1이면 그 난이도의 오늘 행을 지우고 새로 만든다. 이미 있는 데이터를
+  // 지우므로 요청에 명시했을 때만 동작한다.
+  if (force) {
+    const { error: delErr } = await supabase
+      .from('challenges').delete().eq('date', today).eq('level', level)
+    if (delErr) {
+      console.error('[cron] force delete failed:', delErr.message)
+      insertErrors.push('force delete: ' + delErr.message)
+    }
+  }
 
   // ── 코드챌린지 ──────────────────────────────────────────
   const { data: existingChord } = await supabase
