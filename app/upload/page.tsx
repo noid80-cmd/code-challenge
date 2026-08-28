@@ -8,6 +8,8 @@ import ChordPlayer from '@/app/components/ChordPlayer'
 import dynamic from 'next/dynamic'
 import { normalizeMeasures } from '@/lib/chords'
 import { challengeDate } from '@/lib/date'
+import { LEVEL_FALLBACK, toLevel } from '@/lib/level'
+import { fetchLevel } from '@/app/components/levelClient'
 import { isNativeApp } from '@/lib/capacitor'
 
 const RhythmViewer = dynamic(() => import('@/app/components/RhythmViewer'), { ssr: false })
@@ -52,11 +54,26 @@ export default function UploadPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login?from=' + encodeURIComponent(window.location.pathname + window.location.search)); return }
       const { date: today } = challengeDate()
-      const typeParam = new URLSearchParams(window.location.search).get('type') ?? 'chord'
-      const { data } = await supabase.from('challenges').select('*')
-        .eq('date', today).eq('type', typeParam)
-        .order('created_at', { ascending: false }).limit(1).maybeSingle()
-      setChallenge(data)
+      const search = new URLSearchParams(window.location.search)
+      const typeParam = search.get('type') ?? 'chord'
+
+      // 하루에 난이도별로 여러 개가 올라오므로 어느 챌린지에 올리는지 명시해야 한다.
+      // 예전에는 이 파라미터를 무시하고 가장 최근 생성분을 집어서, 피드에서 고른
+      // 챌린지와 다른 난이도에 영상이 붙을 수 있었다.
+      const idParam = search.get('challenge')
+      if (idParam) {
+        const { data } = await supabase.from('challenges').select('*').eq('id', idParam).maybeSingle()
+        setChallenge(data)
+      } else {
+        const lvl = await fetchLevel(user.id)
+        const { data: all } = await supabase.from('challenges').select('*')
+          .eq('date', today).eq('type', typeParam)
+          .order('created_at', { ascending: false })
+        const picked = LEVEL_FALLBACK[lvl]
+          .map(l => (all ?? []).filter(ch => toLevel(ch.level) === l))
+          .find(list => list.length > 0)?.[0] ?? null
+        setChallenge(picked)
+      }
       const { data: memberships } = await supabase
         .from('group_members').select('groups(id, name)').eq('user_id', user.id)
       const groups = (memberships ?? []).map(m => m.groups as unknown as Group).filter(Boolean)

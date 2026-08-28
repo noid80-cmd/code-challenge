@@ -7,7 +7,7 @@ import type { User } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
 import { localDate, challengeDate } from '@/lib/date'
 import { TYPE_COLORS } from '@/lib/theme'
-import { LEVEL_FALLBACK, LEVEL_LABELS, toLevel, type Level } from '@/lib/level'
+import { LEVELS, LEVEL_COLORS, LEVEL_FALLBACK, LEVEL_LABELS, toLevel, type Level } from '@/lib/level'
 import { cachedLevel, fetchLevel, saveLevel } from './levelClient'
 import LevelSheet, { LevelChip } from './LevelSheet'
 import ZoomableNotation from './ZoomableNotation'
@@ -139,6 +139,9 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   // 유저 난이도의 챌린지가 그날 없어서 다른 난이도로 대신 보여주는 경우
   const [substituted, setSubstituted] = useState<Level | null>(null)
   const [levelSheetOpen, setLevelSheetOpen] = useState(false)
+  // 내 난이도 말고 다른 난이도도 눌러서 해볼 수 있게 접어둔다
+  const [otherLevels, setOtherLevels] = useState<Challenge[]>([])
+  const [openOther, setOpenOther] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -166,6 +169,14 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
     setChallenge(ch)
     setExtraChallenges(byLevel.slice(1))
     setSubstituted(ch && toLevel(ch.level) !== lvl ? toLevel(ch.level) : null)
+
+    const shownLevel = ch ? toLevel(ch.level) : lvl
+    setOtherLevels(
+      (chAll ?? [])
+        .filter(c => toLevel(c.level) !== shownLevel)
+        .sort((a, b) => LEVELS.indexOf(toLevel(a.level)) - LEVELS.indexOf(toLevel(b.level)))
+    )
+    setOpenOther(null)
 
     if (ch) {
       const { data: subsRaw, error: subsError } = await supabase
@@ -486,7 +497,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                   </ZoomableNotation>
                   <div style={{ marginTop: 16 }}>
                     {user ? (
-                      <Link href={`/upload?type=${type}`} style={{
+                      <Link href={`/upload?type=${type}&challenge=${challenge.id}`} style={{
                         display: 'block', padding: '14px', borderRadius: 13,
                         background: c.grad,
                         color: '#fff', fontSize: 14, fontWeight: 800, textAlign: 'center',
@@ -566,6 +577,65 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
             </div>
           ))}
         </section>
+
+        {otherLevels.length > 0 && (
+          <section style={{ marginTop: -24, marginBottom: 36 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#605850', marginBottom: 10 }}>
+              다른 난이도도 해보기
+            </div>
+            {otherLevels.map(oc => {
+              const olv = toLevel(oc.level)
+              const isOpen = openOther === oc.id
+              return (
+                <div key={oc.id} style={{
+                  background: 'rgba(240,236,224,0.03)',
+                  border: '1px solid rgba(240,236,224,0.09)',
+                  borderRadius: 16, marginBottom: 8, overflow: 'hidden',
+                }}>
+                  <button
+                    onClick={() => setOpenOther(isOpen ? null : oc.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 10, width: '100%',
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      padding: '13px 15px', textAlign: 'left',
+                    }}
+                  >
+                    <span style={{
+                      flexShrink: 0, fontSize: 11, fontWeight: 800,
+                      color: LEVEL_COLORS[olv], border: `1px solid ${LEVEL_COLORS[olv]}55`,
+                      background: `${LEVEL_COLORS[olv]}1f`,
+                      borderRadius: 7, padding: '3px 9px',
+                    }}>{LEVEL_LABELS[olv]}</span>
+                    <span style={{
+                      flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: '#a0988c',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>{oc.title}</span>
+                    <span style={{ flexShrink: 0, color: '#504840', fontSize: 12 }}>{isOpen ? '▴' : '▾'}</span>
+                  </button>
+                  {isOpen && (
+                    <div style={{ padding: '0 15px 15px' }}>
+                      <ZoomableNotation>
+                        {type === 'rhythm'
+                          ? <RhythmViewer patterns={oc.chords?.patterns ?? []} />
+                          : type === 'melody'
+                          ? <MelodyPlayer patterns={oc.chords?.patterns ?? []} />
+                          : <ChordPlayer progressions={oc.chords?.progressions ?? []} title={oc.title} />
+                        }
+                      </ZoomableNotation>
+                      {user && (
+                        <Link href={`/upload?type=${type}&challenge=${oc.id}`} style={{
+                          display: 'block', marginTop: 14, padding: '12px', borderRadius: 12,
+                          background: 'rgba(240,236,224,0.07)', border: '1px solid rgba(240,236,224,0.16)',
+                          color: '#c8c4b0', fontSize: 13, fontWeight: 800, textAlign: 'center',
+                        }}>이 난이도로 참여하기</Link>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </section>
+        )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -28, marginBottom: 28 }}>
           <Link href="/challenges" style={{
