@@ -142,6 +142,10 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   // 내 난이도 말고 다른 난이도도 눌러서 해볼 수 있게 접어둔다
   const [otherLevels, setOtherLevels] = useState<Challenge[]>([])
   const [openOther, setOpenOther] = useState<string | null>(null)
+  // 이 앱의 본체는 초견 연습이고 피드는 부가 기능이다. 매일 비어 있는 피드가
+  // 화면 절반을 차지하면 아무도 안 쓰는 앱처럼 보여서, 기본은 접어두고
+  // 연주가 하나도 없으면 아예 띄우지 않는다.
+  const [feedOpen, setFeedOpen] = useState(false)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -692,19 +696,29 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
         )}
 
         <section>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: totalCount > submissions.length ? 4 : 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 15, fontWeight: 800, color: '#e0dcd0', letterSpacing: '-0.01em' }}>오늘의 연주</span>
-              {submissions.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: feedOpen && totalCount > submissions.length ? 4 : 10 }}>
+            {submissions.length > 0 ? (
+              <button
+                onClick={() => setFeedOpen(o => !o)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                }}
+              >
+                <span style={{ fontSize: 15, fontWeight: 800, color: '#e0dcd0', letterSpacing: '-0.01em' }}>오늘의 연주</span>
                 <span style={{
                   fontSize: 11, fontWeight: 800,
                   background: c.grad,
                   color: '#fff', padding: '2px 9px', borderRadius: 20,
                 }}>{submissions.length}</span>
-              )}
-            </div>
+                <span style={{ color: '#504840', fontSize: 12 }}>{feedOpen ? '▴' : '▾'}</span>
+              </button>
+            ) : <span />}
             <Link href="/ranking" style={{ fontSize: 12, color: '#303028', fontWeight: 700 }}>주간랭킹</Link>
           </div>
+
+          {submissions.length > 0 && feedOpen && (
+            <>
           {totalCount > submissions.length && (
             <p style={{ fontSize: 12, color: '#504840', marginBottom: 10, marginTop: 0 }}>
               오늘 {totalCount}명이 참여했어요
@@ -757,12 +771,6 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
             </div>
           )}
 
-          {submissions.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '60px 0' }}>
-              <p style={{ color: '#303028', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>아직 연주가 없어요</p>
-              <p style={{ color: '#1a1a18', fontSize: 13, marginTop: 5 }}>첫 번째로 올려보세요</p>
-            </div>
-          ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {[...submissions]
                 .filter(s => type === 'chord' ? (filterProg === 'all' || s.progression_index === filterProg) : true)
@@ -779,6 +787,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                     patterns={type === 'rhythm' || type === 'melody' ? challenge?.chords?.patterns : undefined} />
                 ))}
             </div>
+            </>
           )}
         </section>
       </main>
