@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
+import { LEVEL_LABELS, isLevel, type Level } from '@/lib/level'
 
 export const maxDuration = 120
 
@@ -269,6 +270,113 @@ function validateABC(patterns: Array<{ abc: string }>): boolean {
   return true
 }
 
+// ── 초급 전용 ────────────────────────────────────────────────
+// 초급은 마디 라이브러리가 고정이라 AI가 보탤 게 없다. LLM을 부르지 않고
+// 여기서 직접 조립한다. 크론 시간도 아끼고, 초급에 안 맞는 마디가 섞일
+// 여지도 없앤다. 중급/고급 생성 경로는 그대로 둔다.
+
+// 8분음표·4분음표·기본 쉼표·붓점까지만. 한 마디는 8(=4박, L:1/8 기준).
+// validateABC가 B4 이상을 막으므로 2분음표는 쓰지 않는다.
+const RHYTHM_BEGINNER_BARS: string[] = [
+  'B2 B2 B2 B2',
+  'B2 B2 z2 B2',
+  'B2 z2 B2 z2',
+  'BB B2 B2 z2',
+  'B2 BB B2 z2',
+  'BB BB B2 B2',
+  'z2 B2 B2 B2',
+  'B2 B2 BB BB',
+  'z4 B2 B2',
+  'B>B B2 B2 z2',
+  'B>B z2 B2 B2',
+  'BB z2 B2 z2',
+  'B2 B2 B2 BB',
+  'BB B2 z2 B2',
+]
+
+// 순차진행과 3도 도약, 온음표 없는 단순 리듬. 반음·당김음·16분음표는 넣지 않는다.
+const MELODY_BEGINNER_BARS: string[] = [
+  'C2 D2 E2 D2',
+  'E2 D2 C2 D2',
+  'G2 A2 G2 F2',
+  'E2 F2 G2 F2',
+  'C2 E2 D2 C2',
+  'G2 E2 F2 D2',
+  'C4 D2 E2',
+  'E4 D2 C2',
+  'G4 F2 E2',
+  'C2 D2 E4',
+  'G2 F2 E4',
+  'G4 E2 C2',
+  'C2 D2 E2 z2',
+  'E2 D2 z2 C2',
+  'G2 F2 E2 z2',
+  'z2 C2 D2 E2',
+  'C4 z2 D2',
+  'E2 G2 F2 D2',
+  'D2 E2 F2 G2',
+  'A2 G2 F2 E2',
+]
+
+// 같은 마디가 3번 이상 나오지 않게 8마디를 뽑는다
+function pickBeginnerBars(lib: string[], count = 8): string[] {
+  const used: Record<string, number> = {}
+  const out: string[] = []
+  while (out.length < count) {
+    const bar = lib[Math.floor(Math.random() * lib.length)]
+    if ((used[bar] ?? 0) >= 2) continue
+    used[bar] = (used[bar] ?? 0) + 1
+    out.push(bar)
+  }
+  return out
+}
+
+const RHYTHM_BEGINNER_TITLES = [
+  '4분음표와 8분음표 초견',
+  '쉼표가 있는 기본 리듬',
+  '기본 박 나누기 초견',
+  '붓점이 있는 기본 리듬',
+]
+
+const MELODY_BEGINNER_TITLES = [
+  '순차진행 계이름 시창',
+  '기본 음계 시창 초견',
+  '3도 도약 시창',
+  '쉼표가 있는 기본 시창',
+]
+
+function buildBeginnerRhythm() {
+  const patterns = [1, 2].map(n => {
+    const bars = pickBeginnerBars(RHYTHM_BEGINNER_BARS)
+    return {
+      label: `패턴 ${n}`,
+      abc:
+        'X:1\nM:4/4\nL:1/8\nQ:1/4=100\nK:perc\nV:1 clef=none stafflines=1 stem=up\n|' +
+        bars.join('|') + '|]',
+    }
+  })
+  return {
+    title: RHYTHM_BEGINNER_TITLES[Math.floor(Math.random() * RHYTHM_BEGINNER_TITLES.length)],
+    description: '4분음표와 8분음표, 기본 쉼표로만 이루어진 초급 리듬 초견입니다.',
+    patterns,
+  }
+}
+
+function buildBeginnerMelody() {
+  const patterns = [1, 2].map(n => {
+    const bars = pickBeginnerBars(MELODY_BEGINNER_BARS)
+    return {
+      label: `프레이즈 ${n}`,
+      abc: 'X:1\nM:4/4\nL:1/8\nQ:1/4=100\nK:C\nV:1 clef=treble\n|' + bars.join('|') + '|]',
+    }
+  })
+  return {
+    title: MELODY_BEGINNER_TITLES[Math.floor(Math.random() * MELODY_BEGINNER_TITLES.length)],
+    description: '순차진행과 3도 도약 위주로 이루어진 초급 계이름 시창입니다.',
+    patterns,
+  }
+}
+
 export async function GET(req: NextRequest) {
   webpush.setVapidDetails(
     `mailto:${process.env.VAPID_EMAIL}`,
@@ -278,6 +386,22 @@ export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization')
   if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  // 챌린지는 난이도별로 하루 하나씩 만든다. 세 난이도를 한 요청에서 다 만들면
+  // 함수 제한 시간(120초)을 넘기므로, 크론이 부르는 기본 요청은 중급만 처리하고
+  // 나머지 두 난이도는 별도 요청으로 넘겨 각자 시간 예산을 쓰게 한다.
+  const reqUrl = new URL(req.url)
+  const levelParam = reqUrl.searchParams.get('level')
+  const level: Level = isLevel(levelParam) ? levelParam : 'intermediate'
+  const isPrimary = !levelParam
+
+  if (isPrimary) {
+    for (const other of ['beginner', 'advanced'] as const) {
+      fetch(`${reqUrl.origin}/api/daily-cron?level=${other}`, {
+        headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
+      }).catch(() => {})
+    }
   }
 
   const supabase = createClient(
@@ -290,7 +414,7 @@ export async function GET(req: NextRequest) {
 
   // ── 코드챌린지 ──────────────────────────────────────────
   const { data: existingChord } = await supabase
-    .from('challenges').select('id, title').eq('date', today).eq('type', 'chord').maybeSingle()
+    .from('challenges').select('id, title').eq('date', today).eq('type', 'chord').eq('level', level).maybeSingle()
 
   let chordTitle: string | null = existingChord?.title ?? null
 
@@ -301,10 +425,6 @@ export async function GET(req: NextRequest) {
     const keys = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
     const randomKey = keys[Math.floor(Math.random() * keys.length)]
 
-    const levels = ['beginner', 'intermediate', 'advanced'] as const
-    const levelWeights = [0.25, 0.5, 0.25]
-    const levelRand = Math.random()
-    const level = levelWeights[0] > levelRand ? levels[0] : levelWeights[0] + levelWeights[1] > levelRand ? levels[1] : levels[2]
     const levelGuide = level === 'beginner'
       ? '초급 수준: 기본 코드(maj7, m7, 7)만 사용, 흔한 키, 단순한 진행'
       : level === 'advanced'
@@ -370,12 +490,20 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 
   // ── 리듬챌린지 (패턴 2개를 하나의 레코드로) ────────────────
   const { data: existingRhythm } = await supabase
-    .from('challenges').select('id, title').eq('date', today).eq('type', 'rhythm').maybeSingle()
+    .from('challenges').select('id, title').eq('date', today).eq('type', 'rhythm').eq('level', level).maybeSingle()
 
   let rhythmTitle: string | null = existingRhythm?.title ?? null
 
-  if (!existingRhythm) {
-    const rhythmLevel = Math.random() < 0.7 ? 'intermediate' : 'advanced'
+  if (!existingRhythm && level === 'beginner') {
+    const b = buildBeginnerRhythm()
+    await supabase.from('challenges').insert({
+      date: today, type: 'rhythm', level,
+      title: b.title, description: b.description,
+      chords: { patterns: b.patterns },
+    })
+    rhythmTitle = b.title
+  } else if (!existingRhythm) {
+    const rhythmLevel = level
 
     const rhythmLevelRule = rhythmLevel === 'advanced'
       ? '각 패턴에 P~Z 중 최소 4개 포함 (나머지는 A~O). 45~48(6잇단음표)은 최대 1개까지만 선택적으로 포함 가능'
@@ -383,7 +511,7 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 
     const rhythmPrompt = `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
-난이도: ${rhythmLevel === 'advanced' ? '고급' : '중급'}
+난이도: ${LEVEL_LABELS[rhythmLevel]}
 
 아래 마디 패턴 라이브러리에서 각 패턴에 대해 정확히 8개 마디 ID를 선택하세요.
 각 패턴은 정확히 4박자입니다.
@@ -646,12 +774,20 @@ JSON 객체로만 응답:
   }
 
   const { data: existingMelody } = await supabase
-    .from('challenges').select('id, title').eq('date', today).eq('type', 'melody').maybeSingle()
+    .from('challenges').select('id, title').eq('date', today).eq('type', 'melody').eq('level', level).maybeSingle()
 
   let melodyTitle: string | null = existingMelody?.title ?? null
 
-  if (!existingMelody) {
-    const melodyLevel = Math.random() < 0.7 ? 'intermediate' : 'advanced'
+  if (!existingMelody && level === 'beginner') {
+    const b = buildBeginnerMelody()
+    await supabase.from('challenges').insert({
+      date: today, type: 'melody', level,
+      title: b.title, description: b.description,
+      chords: { patterns: b.patterns },
+    })
+    melodyTitle = b.title
+  } else if (!existingMelody) {
+    const melodyLevel = level
     const melodyRecipe = pickMelodyRecipe()
     console.log(`[cron-melody] recipe=${melodyRecipe.name} level=${melodyLevel}`)
 
@@ -662,7 +798,7 @@ JSON 객체로만 응답:
 
     const melodyPrompt = `계이름 시창(멜로디 초견) 챌린지를 생성하세요. 서로 다른 멜로디 특징을 가진 프레이즈 2개를 포함합니다.
 
-난이도: ${melodyLevel === 'advanced' ? '고급' : '중급'}
+난이도: ${LEVEL_LABELS[melodyLevel]}
 조성: C장조 고정
 
 아래 마디 패턴 라이브러리에서 각 프레이즈에 대해 정확히 8개 마디 ID를 선택하세요.
@@ -868,7 +1004,7 @@ JSON 객체로만 응답:
       await supabase.from('challenges').insert({
         date: today,
         type: 'melody',
-        level: melodyCh.level,
+        level: melodyLevel,
         title: melodyCh.title,
         description: melodyCh.description,
         chords: { patterns: melodyCh.patterns },
@@ -878,6 +1014,11 @@ JSON 객체로만 응답:
   }
 
   // ── 푸시 알림 ──────────────────────────────────────────
+  // 난이도별 요청마다 보내면 하루 세 번 울린다. 기본 요청에서만 보낸다.
+  if (!isPrimary) {
+    return NextResponse.json({ level, chordTitle, rhythmTitle, melodyTitle })
+  }
+
   const { data: subs } = await supabase
     .from('push_subscriptions').select('subscription, endpoint')
 

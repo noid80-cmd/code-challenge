@@ -3,13 +3,17 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import AcademyCard from '@/app/components/AcademyCard'
+import LevelPicker from '@/app/components/LevelPicker'
+import { saveLevel } from '@/app/components/levelClient'
+import { DEFAULT_LEVEL, type Level } from '@/lib/level'
 
-const STEPS = 3
+const STEPS = 4
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
+  const [level, setLevel] = useState<Level>(DEFAULT_LEVEL)
 
   useEffect(() => {
     async function check() {
@@ -27,6 +31,7 @@ export default function OnboardingPage() {
   async function finish() {
     if (!userId) return
     const supabase = createClient()
+    await saveLevel(userId, level)
     await supabase.from('profiles').update({ onboarded_at: new Date().toISOString() }).eq('id', userId)
     window.location.href = '/'
   }
@@ -117,6 +122,18 @@ export default function OnboardingPage() {
         )}
 
         {step === 2 && (
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.03em', marginBottom: 8, textAlign: 'center' }}>
+              지금 어느 정도인가요?
+            </h1>
+            <p style={{ fontSize: 13.5, color: '#c8c4b0', lineHeight: 1.7, marginBottom: 22, textAlign: 'center', wordBreak: 'keep-all' }}>
+              고른 난이도의 챌린지만 보여드려요.<br />나중에 언제든 바꿀 수 있어요.
+            </p>
+            <LevelPicker value={level} onChange={setLevel} />
+          </div>
+        )}
+
+        {step === 3 && (
           <div style={{ textAlign: 'center' }}>
             <h1 style={{ fontSize: 24, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.03em', marginBottom: 10 }}>
               준비됐어요!

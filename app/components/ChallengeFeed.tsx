@@ -7,6 +7,9 @@ import type { User } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
 import { localDate, challengeDate } from '@/lib/date'
 import { TYPE_COLORS } from '@/lib/theme'
+import { LEVEL_FALLBACK, LEVEL_LABELS, toLevel, type Level } from '@/lib/level'
+import { cachedLevel, fetchLevel, saveLevel } from './levelClient'
+import LevelSheet, { LevelChip } from './LevelSheet'
 import ZoomableNotation from './ZoomableNotation'
 
 const ChordPlayer = dynamic(() => import('./ChordPlayer'), { ssr: false })
@@ -132,6 +135,10 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   const [totalCount, setTotalCount] = useState(0)
   const [uploadedToday, setUploadedToday] = useState(false)
   const [challengeOpen, setChallengeOpen] = useState(true)
+  const [userLevel, setUserLevel] = useState<Level>(cachedLevel)
+  // 유저 난이도의 챌린지가 그날 없어서 다른 난이도로 대신 보여주는 경우
+  const [substituted, setSubstituted] = useState<Level | null>(null)
+  const [levelSheetOpen, setLevelSheetOpen] = useState(false)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -140,13 +147,25 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
 
     const { date: chDate, isBeforeNoon } = challengeDate()
     setIsBeforeNoon(isBeforeNoon)
+    const lvl = await fetchLevel(user?.id)
+    setUserLevel(lvl)
+
     const { data: chAll, error: chError } = await supabase.from('challenges').select('*')
       .eq('date', chDate).eq('type', type)
       .order('seq', { ascending: true })
     if (chError) console.error('[ChallengeFeed] challenge query error:', chError)
-    const ch = chAll?.[0] ?? null
+
+    // 하루에 난이도별로 하나씩 올라오므로 유저 난이도에 맞는 것만 남긴다.
+    // 그 난이도가 아직 없으면 가까운 난이도로 대신 보여주고, 대신 보여준다는
+    // 사실을 화면에 밝힌다(조용히 다른 난이도를 주면 난이도 설정이 고장난
+    // 것처럼 보인다).
+    const byLevel = LEVEL_FALLBACK[lvl]
+      .map(l => (chAll ?? []).filter(c => toLevel(c.level) === l))
+      .find(list => list.length > 0) ?? []
+    const ch = byLevel[0] ?? null
     setChallenge(ch)
-    setExtraChallenges(chAll?.slice(1) ?? [])
+    setExtraChallenges(byLevel.slice(1))
+    setSubstituted(ch && toLevel(ch.level) !== lvl ? toLevel(ch.level) : null)
 
     if (ch) {
       const { data: subsRaw, error: subsError } = await supabase
@@ -196,6 +215,15 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   }, [type])
 
   useEffect(() => { load() }, [load])
+
+  async function changeLevel(next: Level) {
+    setLevelSheetOpen(false)
+    if (next === userLevel) return
+    setUserLevel(next)
+    setLoading(true)
+    await saveLevel(user?.id, next)
+    await load()
+  }
 
   async function toggleLike(submissionId: string, liked: boolean) {
     if (!user) { window.location.href = '/login?from=' + encodeURIComponent(window.location.pathname); return }
@@ -372,7 +400,25 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
           <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#a0988c' }}>
             오늘의 챌린지 · {dateStr}
           </span>
+          <LevelChip level={userLevel} onClick={() => setLevelSheetOpen(true)} style={{ marginLeft: 'auto' }} />
         </div>
+
+        {substituted && (
+          <div style={{
+            background: 'rgba(240,236,224,0.04)', border: '1px solid rgba(240,236,224,0.1)',
+            borderRadius: 12, padding: '10px 14px', marginBottom: 16,
+            fontSize: 12.5, color: '#a0988c', lineHeight: 1.6, wordBreak: 'keep-all',
+          }}>
+            오늘 {LEVEL_LABELS[userLevel]} 챌린지가 아직 없어서 {LEVEL_LABELS[substituted]} 챌린지를 대신 보여드려요.
+          </div>
+        )}
+
+        <LevelSheet
+          open={levelSheetOpen}
+          value={userLevel}
+          onChange={changeLevel}
+          onClose={() => setLevelSheetOpen(false)}
+        />
 
         {isBeforeNoon && (
           <div style={{

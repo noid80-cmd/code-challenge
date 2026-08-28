@@ -5,19 +5,25 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
 import { TYPE_COLORS } from '@/lib/theme'
+import { toLevel, type Level } from '@/lib/level'
+import { cachedLevel, saveLevel } from '@/app/components/levelClient'
+import LevelSheet, { LevelChip } from '@/app/components/LevelSheet'
 
 export default function LandingPage() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [level, setLevel] = useState<Level>(cachedLevel)
+  const [levelSheetOpen, setLevelSheetOpen] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       setUser(user)
       if (user) {
-        const { data: prof } = await supabase.from('profiles').select('avatar_url, onboarded_at').eq('id', user.id).single()
+        const { data: prof } = await supabase.from('profiles').select('avatar_url, onboarded_at, level').eq('id', user.id).single()
         if (!prof?.onboarded_at) { window.location.href = '/onboarding'; return }
         setAvatarUrl(prof?.avatar_url ?? user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null)
+        setLevel(toLevel(prof?.level))
       }
     })
   }, [])
@@ -83,7 +89,21 @@ export default function LandingPage() {
           <p style={{ fontSize: 14, color: '#504840', marginTop: 10, fontWeight: 500 }}>
             매일 새로 배달되는 초견
           </p>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14 }}>
+            <LevelChip level={level} onClick={() => setLevelSheetOpen(true)} />
+          </div>
         </div>
+
+        <LevelSheet
+          open={levelSheetOpen}
+          value={level}
+          onChange={async next => {
+            setLevelSheetOpen(false)
+            setLevel(next)
+            await saveLevel(user?.id, next)
+          }}
+          onClose={() => setLevelSheetOpen(false)}
+        />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, width: '100%', maxWidth: 640 }}>
           <Link href="/chord" style={{ textDecoration: 'none' }}>
