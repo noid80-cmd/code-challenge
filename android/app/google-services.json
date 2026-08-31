@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "218520242511",
+    "project_id": "code-challenge-bab22",
+    "storage_bucket": "code-challenge-bab22.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:218520242511:android:a576ad9e7e11a06c879d3a",
+        "android_client_info": {
+          "package_name": "app.choekyun.android"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDIQuRw5an5xSAx6C9aMBC0-dT16GzkYlI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
