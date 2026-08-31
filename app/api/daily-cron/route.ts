@@ -425,13 +425,6 @@ export async function GET(req: NextRequest) {
   // 초급 마디 라이브러리를 손본 뒤 그날 것을 다시 만들 때 쓴다(아래에서 실행).
   const force = reqUrl.searchParams.get('force') === '1'
 
-  if (isPrimary) {
-    for (const other of ['beginner', 'advanced'] as const) {
-      fetch(`${reqUrl.origin}/api/daily-cron?level=${other}`, {
-        headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
-      }).catch(() => {})
-    }
-  }
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -1073,6 +1066,23 @@ JSON 객체로만 응답:
         insertErrors.push(insErr.message)
       }
       melodyTitle = melodyCh.title
+    }
+  }
+
+  // ── 나머지 난이도 ──────────────────────────────────────
+  // 예전에는 여기서 fetch를 던져놓고 기다리지 않았는데, 서버리스 함수가 응답을
+  // 돌려주는 순간 종료돼서 그 요청이 실제로 나가지 않았다(8/29~8/31 사흘 내내
+  // 중급만 생성됨). 한 난이도당 20초 안쪽이라 그냥 기다리면 된다.
+  if (isPrimary) {
+    for (const other of ['beginner', 'advanced'] as const) {
+      try {
+        const res = await fetch(`${reqUrl.origin}/api/daily-cron?level=${other}`, {
+          headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
+        })
+        if (!res.ok) insertErrors.push(`${other}: HTTP ${res.status}`)
+      } catch (e) {
+        insertErrors.push(`${other}: ${e instanceof Error ? e.message : 'fetch 실패'}`)
+      }
     }
   }
 

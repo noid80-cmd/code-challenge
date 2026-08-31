@@ -33,7 +33,25 @@ function PushBanner({ user }: { user: User }) {
   useEffect(() => {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
     setSupported(true)
-    if (Notification.permission === 'granted') setAlreadyGranted(true)
+
+    // 예전에는 권한이 granted면 배너를 숨겼는데, 그러면 구독이 만료되거나
+    // 서버에서 정리된 뒤에는 다시 켤 방법이 없어진다(권한은 계속 granted라
+    // 배너가 영영 안 뜬다). 권한이 아니라 실제 구독 유무로 판단한다.
+    navigator.serviceWorker.ready
+      .then(reg => reg.pushManager.getSubscription())
+      .then(sub => {
+        setAlreadyGranted(!!sub)
+        // 브라우저에는 구독이 남아 있는데 서버 행만 사라진 경우를 스스로 복구한다.
+        // /api/subscribe 는 endpoint 기준 upsert라 중복이 생기지 않는다.
+        if (sub) {
+          fetch('/api/subscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(sub),
+          }).catch(() => {})
+        }
+      })
+      .catch(() => setAlreadyGranted(false))
   }, [])
 
   if (!supported || alreadyGranted || state === 'done') return null
