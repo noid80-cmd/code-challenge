@@ -9,6 +9,8 @@ import { localDate, challengeDate } from '@/lib/date'
 import { TYPE_COLORS } from '@/lib/theme'
 import { LEVELS, LEVEL_COLORS, LEVEL_FALLBACK, LEVEL_LABELS, toLevel, type Level } from '@/lib/level'
 import { cachedLevel, fetchLevel, saveLevel } from './levelClient'
+import { isNativeApp } from '@/lib/capacitor'
+import { nativeNotifState, enableNativeNotifications, refreshNativeToken } from '@/lib/pushNative'
 import LevelSheet, { LevelChip } from './LevelSheet'
 import ZoomableNotation from './ZoomableNotation'
 
@@ -30,7 +32,22 @@ function PushBanner({ user }: { user: User }) {
   const [supported, setSupported] = useState(false)
   const [alreadyGranted, setAlreadyGranted] = useState(false)
 
+  // 스토어에서 받은 앱은 웹뷰라 PushManager가 없다. 그동안 앱에서는 이 배너가
+  // 아예 안 떠서 알림을 켤 방법 자체가 없었다. 앱이면 FCM 경로를 쓴다.
+  const [native, setNative] = useState(false)
+
   useEffect(() => {
+    if (isNativeApp()) {
+      setNative(true)
+      nativeNotifState().then(st => {
+        setSupported(st !== 'unsupported')
+        setAlreadyGranted(st === 'granted')
+        // 토큰은 재설치·갱신으로 바뀐다. 허용 상태면 열 때마다 다시 등록한다.
+        if (st === 'granted') refreshNativeToken()
+      })
+      return
+    }
+
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
     setSupported(true)
 
@@ -58,6 +75,13 @@ function PushBanner({ user }: { user: User }) {
 
   async function subscribe() {
     setState('loading')
+
+    if (native) {
+      const ok = await enableNativeNotifications()
+      setState(ok ? 'done' : 'idle')
+      return
+    }
+
     try {
       const reg = await navigator.serviceWorker.ready
       const sub = await reg.pushManager.subscribe({

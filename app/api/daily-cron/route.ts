@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
 import { LEVEL_LABELS, isLevel, type Level } from '@/lib/level'
+import { sendFcm } from '@/lib/fcm'
 
 export const maxDuration = 120
 
@@ -1095,10 +1096,6 @@ JSON 객체로만 응답:
   const { data: subs } = await supabase
     .from('push_subscriptions').select('subscription, endpoint')
 
-  if (!subs || subs.length === 0) {
-    return NextResponse.json({ chordTitle, rhythmTitle, melodyTitle, insertErrors, sent: 0 })
-  }
-
   const notifTitle = 'PlayDaily — 오늘의 챌린지'
   const notifBody = [
     chordTitle ? `🎵 ${chordTitle}` : null,
@@ -1108,7 +1105,7 @@ JSON 객체로만 응답:
 
   const deadEndpoints: string[] = []
   const results = await Promise.allSettled(
-    subs.map(async ({ subscription, endpoint }) => {
+    (subs ?? []).map(async ({ subscription, endpoint }) => {
       try {
         await webpush.sendNotification(subscription, JSON.stringify({ title: notifTitle, body: notifBody, url: '/' }))
       } catch (err: unknown) {
@@ -1126,5 +1123,19 @@ JSON 객체로만 응답:
   }
 
   const sent = results.filter(r => r.status === 'fulfilled').length
-  return NextResponse.json({ chordTitle, rhythmTitle, melodyTitle, insertErrors, sent, total: subs.length })
+
+  // ── 앱(FCM) 알림 ───────────────────────────────────────
+  // 스토어에서 받은 앱은 웹뷰라 웹 푸시를 받을 수 없다. 앱은 여기로 보낸다.
+  const { data: devices } = await supabase.from('device_tokens').select('token')
+  const tokens = (devices ?? []).map(d => d.token as string)
+  const fcm = await sendFcm(tokens, { title: notifTitle, body: notifBody, url: '/' })
+  if (fcm.deadTokens.length > 0) {
+    await supabase.from('device_tokens').delete().in('token', fcm.deadTokens)
+  }
+
+  return NextResponse.json({
+    chordTitle, rhythmTitle, melodyTitle, insertErrors,
+    web: { sent, total: subs?.length ?? 0 },
+    app: { sent: fcm.sent, failed: fcm.failed, removed: fcm.deadTokens.length, total: tokens.length },
+  })
 }
