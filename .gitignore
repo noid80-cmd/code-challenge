@@ -43,3 +43,4 @@ android/keystore.properties
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+ios/App/CapApp-SPM/symlinks/
