@@ -1,0 +1,146 @@
+'use client'
+
+import { useCallback, useEffect, useState } from 'react'
+import type { User } from '@supabase/supabase-js'
+import { isNativeApp } from '@/lib/capacitor'
+import { nativeNotifState, enableNativeNotifications, refreshNativeToken } from '@/lib/pushNative'
+
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
+
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4)
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+  const rawData = window.atob(base64)
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)))
+}
+
+/**
+ * 알림 설정 줄.
+ *
+ * 매일 올라오는 챌린지를 알림으로 알리는 게 이 앱의 핵심이라, 꺼져 있으면
+ * 그 사실이 화면 맨 위에서 바로 보여야 한다. 예전에는 스크롤을 내려야 나오는
+ * 자리에 있었고, 켤 수 없는 상황(로그아웃·구버전 앱)에서는 아예 사라져서
+ * 왜 안 되는지 알 방법이 없었다. 실제로 테스터 12명 전부 토큰이 없었다.
+ *
+ * 그래서 켜져 있을 때만 사라지고, 나머지 상황에서는 이유와 할 일을 보여준다.
+ *
+ * 이 컴포넌트는 앱 토큰을 서버에 등록하는 유일한 지점이기도 하다. 챌린지
+ * 화면에만 두었더니 앱을 열고 홈만 보는 사람은 토큰이 영영 등록되지 않아
+ * 알림 대상이 0명이었다. 그래서 홈에도 같이 둔다.
+ */
+type PushStatus = 'checking' | 'on' | 'off' | 'blocked' | 'needLogin' | 'outdated'
+
+// user가 undefined면 아직 로그인 확인 중이다. 그 사이에 '로그인 필요'를 띄우면
+// 로그인한 사람에게도 잠깐 깜빡인다.
+export default function PushBanner({ user }: { user: User | null | undefined }) {
+  const [status, setStatus] = useState<PushStatus>('checking')
+  const [busy, setBusy] = useState(false)
+
+  const check = useCallback(async () => {
+    if (user === undefined) return
+    if (isNativeApp()) {
+      const st = await nativeNotifState()
+      // 구버전 앱에는 푸시 플러그인 자체가 없다. 켜라고 해봐야 방법이 없으니
+      // 앱을 업데이트하라고 말해 주는 게 맞다.
+      if (st === 'unsupported') return setStatus('outdated')
+      if (st === 'denied') return setStatus('blocked')
+      if (!user) return setStatus('needLogin')
+      // 권한이 허용이어도 서버에 토큰이 없으면 알림은 안 온다. 권한이 아니라
+      // 등록 성공 여부로 판단한다.
+      if (st === 'granted') return setStatus((await refreshNativeToken()) ? 'on' : 'off')
+      return setStatus('off')
+    }
+
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return setStatus('outdated')
+    if (Notification.permission === 'denied') return setStatus('blocked')
+    if (!user) return setStatus('needLogin')
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      if (!sub) return setStatus('off')
+      // 브라우저에는 구독이 남아 있는데 서버 행만 사라진 경우를 스스로 복구한다.
+      await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub),
+      }).catch(() => {})
+      setStatus('on')
+    } catch {
+      setStatus('off')
+    }
+  }, [user])
+
+  useEffect(() => { check() }, [check])
+
+  async function enable() {
+    setBusy(true)
+    try {
+      if (isNativeApp()) {
+        // 실패 이유를 구분해야 한다. 권한을 막은 것과 토큰 등록이 안 된 것은
+        // 사용자가 할 일이 다르다. 둘 다 '차단'으로 뭉뚱그리면 안내가 틀린다.
+        if (await enableNativeNotifications()) return setStatus('on')
+        const st = await nativeNotifState()
+        if (st === 'denied') return setStatus('blocked')
+        if (st === 'unsupported') return setStatus('outdated')
+        return setStatus(user ? 'off' : 'needLogin')
+      }
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      })
+      await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub),
+      })
+      setStatus('on')
+    } catch {
+      setStatus('blocked')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  // 켜져 있으면 조용히 사라진다. 이미 한 사람을 계속 붙잡지 않는다.
+  if (status === 'checking' || status === 'on') return null
+
+  const copy: Record<Exclude<PushStatus, 'checking' | 'on'>, { body: string; cta: string | null }> = {
+    off: { body: '알림을 켜지 않으면 매일 올라오는 챌린지를 모르고 지나갑니다.', cta: '알림 켜기' },
+    blocked: { body: '기기 설정에서 알림이 꺼져 있습니다. 설정 > 초견챌린지 > 알림에서 켜 주세요.', cta: null },
+    needLogin: { body: '로그인하면 매일 새 챌린지를 알림으로 받을 수 있습니다.', cta: '로그인' },
+    outdated: { body: '앱을 업데이트하면 매일 새 챌린지를 알림으로 받을 수 있습니다.', cta: null },
+  }
+  const { body, cta } = copy[status]
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14,
+      background: 'linear-gradient(135deg, rgba(240,180,60,0.14), rgba(240,180,60,0.06))',
+      border: '1px solid rgba(240,180,60,0.35)',
+      borderRadius: 14, padding: '14px 16px', marginBottom: 20,
+      width: '100%', maxWidth: 640,
+    }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 800, color: '#f0ece0', marginBottom: 3 }}>
+          매일 알림 받기
+        </div>
+        <div style={{ fontSize: 11.5, color: '#a0988c', lineHeight: 1.55 }}>{body}</div>
+      </div>
+      {cta && (
+        <button
+          onClick={status === 'needLogin' ? () => { window.location.href = '/login' } : enable}
+          disabled={busy}
+          style={{
+            padding: '9px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+            color: '#0a0a08', fontSize: 12.5, fontWeight: 800,
+            opacity: busy ? 0.6 : 1, flexShrink: 0, whiteSpace: 'nowrap',
+          }}
+        >
+          {busy ? '설정 중...' : cta}
+        </button>
+      )}
+    </div>
+  )
+}

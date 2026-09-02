@@ -61,8 +61,9 @@ export async function enableNativeNotifications(): Promise<boolean> {
     if (receive !== 'granted') return false
     const { token } = await fm.getToken()
     if (!token) return false
-    await saveToken(token)
-    return true
+    // 저장 성공 여부를 그대로 돌려줘야 한다. 예전에는 무조건 true를 돌려줘서
+    // 로그아웃 상태로 켜면 서버에는 토큰이 없는데 화면은 '켜짐'이 됐다.
+    return await saveToken(token)
   } catch {
     return false
   }

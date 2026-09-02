@@ -8,6 +8,7 @@ import { TYPE_COLORS } from '@/lib/theme'
 import { toLevel, type Level } from '@/lib/level'
 import { cachedLevel, saveLevel } from '@/app/components/levelClient'
 import LevelSheet, { LevelChip } from '@/app/components/LevelSheet'
+import PushBanner from '@/app/components/PushBanner'
 
 export default function LandingPage() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
@@ -93,6 +94,10 @@ export default function LandingPage() {
             <LevelChip level={level} onClick={() => setLevelSheetOpen(true)} />
           </div>
         </div>
+
+        {/* 앱은 이 화면으로 열린다. 앱 토큰을 서버에 올리는 것도 여기서 일어나므로
+            챌린지 화면에만 두면 홈만 보는 사람은 알림 대상에서 빠진다. */}
+        <PushBanner user={user} />
 
         <LevelSheet
           open={levelSheetOpen}
