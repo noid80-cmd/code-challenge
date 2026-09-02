@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import type { User } from '@supabase/supabase-js'
 import { isNativeApp } from '@/lib/capacitor'
 import { nativeNotifState, enableNativeNotifications, refreshNativeToken } from '@/lib/pushNative'
 
@@ -30,9 +29,13 @@ function urlBase64ToUint8Array(base64String: string) {
  */
 type PushStatus = 'checking' | 'on' | 'off' | 'blocked' | 'needLogin' | 'outdated'
 
+// 로그인 여부만 보면 되므로 Supabase User 전체를 요구하지 않는다.
+// (호출하는 쪽이 id만 들고 있는 화면도 있다.)
+type SignedIn = { id: string } | null | undefined
+
 // user가 undefined면 아직 로그인 확인 중이다. 그 사이에 '로그인 필요'를 띄우면
 // 로그인한 사람에게도 잠깐 깜빡인다.
-export default function PushBanner({ user }: { user: User | null | undefined }) {
+function usePushStatus(user: SignedIn) {
   const [status, setStatus] = useState<PushStatus>('checking')
   const [busy, setBusy] = useState(false)
 
@@ -102,16 +105,24 @@ export default function PushBanner({ user }: { user: User | null | undefined }) 
     }
   }
 
+  return { status, busy, enable }
+}
+
+const COPY: Record<Exclude<PushStatus, 'checking'>, { body: string; cta: string | null }> = {
+  on: { body: '매일 새 챌린지가 올라오면 알려드립니다.', cta: null },
+  off: { body: '알림을 켜지 않으면 매일 올라오는 챌린지를 모르고 지나갑니다.', cta: '알림 켜기' },
+  blocked: { body: '기기 설정에서 알림이 꺼져 있습니다. 설정 > 초견챌린지 > 알림에서 켜 주세요.', cta: null },
+  needLogin: { body: '로그인하면 매일 새 챌린지를 알림으로 받을 수 있습니다.', cta: '로그인' },
+  outdated: { body: '앱을 업데이트하면 매일 새 챌린지를 알림으로 받을 수 있습니다.', cta: null },
+}
+
+export default function PushBanner({ user }: { user: SignedIn }) {
+  const { status, busy, enable } = usePushStatus(user)
+
   // 켜져 있으면 조용히 사라진다. 이미 한 사람을 계속 붙잡지 않는다.
   if (status === 'checking' || status === 'on') return null
 
-  const copy: Record<Exclude<PushStatus, 'checking' | 'on'>, { body: string; cta: string | null }> = {
-    off: { body: '알림을 켜지 않으면 매일 올라오는 챌린지를 모르고 지나갑니다.', cta: '알림 켜기' },
-    blocked: { body: '기기 설정에서 알림이 꺼져 있습니다. 설정 > 초견챌린지 > 알림에서 켜 주세요.', cta: null },
-    needLogin: { body: '로그인하면 매일 새 챌린지를 알림으로 받을 수 있습니다.', cta: '로그인' },
-    outdated: { body: '앱을 업데이트하면 매일 새 챌린지를 알림으로 받을 수 있습니다.', cta: null },
-  }
-  const { body, cta } = copy[status]
+  const { body, cta } = COPY[status]
 
   return (
     <div style={{
@@ -126,6 +137,57 @@ export default function PushBanner({ user }: { user: User | null | undefined }) 
           매일 알림 받기
         </div>
         <div style={{ fontSize: 11.5, color: '#a0988c', lineHeight: 1.55 }}>{body}</div>
+      </div>
+      {cta && (
+        <button
+          onClick={status === 'needLogin' ? () => { window.location.href = '/login' } : enable}
+          disabled={busy}
+          style={{
+            padding: '9px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+            color: '#0a0a08', fontSize: 12.5, fontWeight: 800,
+            opacity: busy ? 0.6 : 1, flexShrink: 0, whiteSpace: 'nowrap',
+          }}
+        >
+          {busy ? '설정 중...' : cta}
+        </button>
+      )}
+    </div>
+  )
+}
+
+/**
+ * 마이페이지의 알림 설정 항목.
+ *
+ * 배너는 켜져 있으면 사라지고 조건이 맞아야만 나타난다. 그래서 배너가 안 뜨면
+ * 알림을 켤 방법이 화면 어디에도 없었다("어디서 켜는 건지 모르겠다"). 설정은
+ * 상태와 상관없이 늘 같은 자리에 있어야 찾을 수 있으므로, 이 항목은 켜져
+ * 있을 때도 '켜짐'을 그대로 보여주고 사라지지 않는다.
+ */
+export function PushSettingRow({ user }: { user: SignedIn }) {
+  const { status, busy, enable } = usePushStatus(user)
+  const on = status === 'on'
+  const { body, cta } = status === 'checking'
+    ? { body: '확인 중...', cta: null }
+    : COPY[status]
+
+  return (
+    <div style={{
+      background: 'linear-gradient(145deg, #111110, #0d0d0c)',
+      border: '1px solid rgba(240,236,224,0.1)',
+      borderRadius: 18, padding: '16px 18px', marginBottom: 28,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14,
+    }}>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+          <span style={{ fontSize: 14, fontWeight: 800, color: '#f0ece0' }}>매일 챌린지 알림</span>
+          <span style={{
+            fontSize: 10.5, fontWeight: 800, padding: '2px 7px', borderRadius: 6,
+            background: on ? 'rgba(120,200,120,0.16)' : 'rgba(240,180,60,0.16)',
+            color: on ? '#8fd08f' : '#e0b45c',
+          }}>{status === 'checking' ? '확인 중' : on ? '켜짐' : '꺼짐'}</span>
+        </div>
+        <div style={{ fontSize: 11.5, color: '#807060', lineHeight: 1.55 }}>{body}</div>
       </div>
       {cta && (
         <button

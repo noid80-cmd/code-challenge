@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { localDate } from '@/lib/date'
 import AcademyCard from '@/app/components/AcademyCard'
+import { PushSettingRow } from '@/app/components/PushBanner'
 
 type Submission = {
   id: string; video_url: string; caption: string | null
@@ -287,6 +288,9 @@ export default function MyVideosPage() {
                 {uploadsToday ? '내일도 올려보세요!' : `오늘 올리면 ${streak + 1}일이 돼요!`}
               </div>
             )}
+
+            {/* 알림 설정 — 늘 같은 자리에 있어야 찾을 수 있다 */}
+            <PushSettingRow user={userId ? { id: userId } : null} />
 
             {/* 달력 */}
             <div style={{
