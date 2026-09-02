@@ -8,15 +8,33 @@ import { isNativeApp } from './capacitor'
 
 type Messaging = typeof import('@capacitor-firebase/messaging')['FirebaseMessaging']
 
+/**
+ * 네이티브 다리는 대답을 안 할 수도 있다.
+ *
+ * Capacitor는 네이티브에 등록되지 않은 플러그인을 부르면 에러를 던지는 게
+ * 아니라 프로미스를 영영 안 끝낸다. 그래서 푸시 플러그인이 없는 구버전 앱에서
+ * `checkPermissions()`를 부르면 await가 그대로 매달리고, 화면은 '확인 중'에서
+ * 멈춘 채 알림을 켤 방법이 사라진다(실제로 겪음).
+ *
+ * 대답이 없으면 없는 대로 판단을 내리고 사용자에게 할 일을 알려줘야 한다.
+ */
+function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return new Promise<T>(resolve => {
+    let settled = false
+    const finish = (v: T) => { if (!settled) { settled = true; clearTimeout(timer); resolve(v) } }
+    const timer = setTimeout(() => finish(fallback), ms)
+    p.then(finish, () => finish(fallback))
+  })
+}
+
 async function messaging(): Promise<Messaging | null> {
   if (!isNativeApp()) return null
-  try {
-    const mod = await import('@capacitor-firebase/messaging')
-    return mod.FirebaseMessaging
-  } catch {
-    // 플러그인이 없는 빌드(구버전 앱)에서도 화면이 깨지지 않아야 한다
-    return null
-  }
+  // 플러그인이 없는 빌드(구버전 앱)에서도 화면이 깨지지 않아야 한다
+  return withTimeout(
+    import('@capacitor-firebase/messaging').then(mod => mod.FirebaseMessaging),
+    6000,
+    null
+  )
 }
 
 /**
@@ -44,29 +62,26 @@ async function saveToken(token: string): Promise<boolean> {
 export async function nativeNotifState(): Promise<'granted' | 'denied' | 'prompt' | 'unsupported'> {
   const fm = await messaging()
   if (!fm) return 'unsupported'
-  try {
-    const { receive } = await fm.checkPermissions()
-    return receive === 'granted' ? 'granted' : receive === 'denied' ? 'denied' : 'prompt'
-  } catch {
-    return 'unsupported'
-  }
+  // 대답이 없으면 플러그인이 없는 빌드로 본다. 실패든 무응답이든 사용자가
+  // 할 일은 '앱 업데이트'로 같다.
+  const res = await withTimeout(fm.checkPermissions(), 5000, null)
+  if (!res) return 'unsupported'
+  const { receive } = res
+  return receive === 'granted' ? 'granted' : receive === 'denied' ? 'denied' : 'prompt'
 }
 
 /** 권한을 요청하고 토큰을 서버에 등록한다. 성공하면 true */
 export async function enableNativeNotifications(): Promise<boolean> {
   const fm = await messaging()
   if (!fm) return false
-  try {
-    const { receive } = await fm.requestPermissions()
-    if (receive !== 'granted') return false
-    const { token } = await fm.getToken()
-    if (!token) return false
-    // 저장 성공 여부를 그대로 돌려줘야 한다. 예전에는 무조건 true를 돌려줘서
-    // 로그아웃 상태로 켜면 서버에는 토큰이 없는데 화면은 '켜짐'이 됐다.
-    return await saveToken(token)
-  } catch {
-    return false
-  }
+  // 권한 창은 사용자가 읽고 누를 때까지 열려 있으므로 넉넉히 기다린다.
+  const perm = await withTimeout(fm.requestPermissions(), 60000, null)
+  if (perm?.receive !== 'granted') return false
+  const got = await withTimeout(fm.getToken(), 15000, null)
+  if (!got?.token) return false
+  // 저장 성공 여부를 그대로 돌려줘야 한다. 예전에는 무조건 true를 돌려줘서
+  // 로그아웃 상태로 켜면 서버에는 토큰이 없는데 화면은 '켜짐'이 됐다.
+  return await saveToken(got.token)
 }
 
 /**
@@ -78,17 +93,13 @@ export async function enableNativeNotifications(): Promise<boolean> {
 export async function refreshNativeToken(): Promise<boolean> {
   const fm = await messaging()
   if (!fm) return false
-  try {
-    const { receive } = await fm.checkPermissions()
-    if (receive !== 'granted') return false
-    const { token } = await fm.getToken()
-    const ok = token ? await saveToken(token) : false
-    fm.addListener('tokenReceived', ({ token: t }) => {
-      if (t) saveToken(t).catch(() => {})
-    })
-    return ok
-  } catch {
-    // 토큰 갱신 실패가 앱 사용을 막으면 안 된다
-    return false
-  }
+  // 토큰 갱신이 안 되는 것보다 화면이 멈추는 게 나쁘다. 안 되면 '꺼짐'으로 본다.
+  const perm = await withTimeout(fm.checkPermissions(), 5000, null)
+  if (perm?.receive !== 'granted') return false
+  const got = await withTimeout(fm.getToken(), 15000, null)
+  const ok = got?.token ? await saveToken(got.token) : false
+  fm.addListener('tokenReceived', ({ token: t }) => {
+    if (t) saveToken(t).catch(() => {})
+  }).catch(() => {})
+  return ok
 }
