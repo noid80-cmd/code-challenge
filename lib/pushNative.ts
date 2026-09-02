@@ -1,6 +1,6 @@
 'use client'
 
-import { isNativeApp } from './capacitor'
+import { isNativeAppAsync } from './capacitor'
 
 // 스토어에서 받은 앱(웹뷰)에는 웹 푸시(PushManager)가 아예 없다. 그래서 앱에서는
 // 알림을 켤 방법 자체가 없었다. 앱에서는 FCM 토큰을 받아 서버에 저장하고,
@@ -12,7 +12,7 @@ type Messaging = typeof import('@capacitor-firebase/messaging')['FirebaseMessagi
  * 네이티브 다리는 대답을 안 할 수도 있다.
  *
  * Capacitor는 네이티브에 등록되지 않은 플러그인을 부르면 에러를 던지는 게
- * 아니라 프로미스를 영영 안 끝낸다. 그래서 푸시 플러그인이 없는 구버전 앱에서
+ * 아니라 프로미스를 영영 안 끝낸다. 그래서 푸시 플러그인이 없는 빌드에서
  * `checkPermissions()`를 부르면 await가 그대로 매달리고, 화면은 '확인 중'에서
  * 멈춘 채 알림을 켤 방법이 사라진다(실제로 겪음).
  *
@@ -27,13 +27,22 @@ function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
   })
 }
 
-async function messaging(): Promise<Messaging | null> {
-  if (!isNativeApp()) return null
-  // 플러그인이 없는 빌드(구버전 앱)에서도 화면이 깨지지 않아야 한다
-  return withTimeout(
-    import('@capacitor-firebase/messaging').then(mod => mod.FirebaseMessaging),
+/**
+ * 브릿지가 붙을 때까지 기다려서 판단한다.
+ *
+ * 동기 `isNativeApp()`은 페이지가 막 뜬 순간 `window.Capacitor`가 아직 안
+ * 붙어 있으면 false를 준다. 그 false를 믿으면 앱 안에서 웹 경로로 빠지고,
+ * iOS 웹뷰에는 PushManager가 없으니 "이 기기는 푸시 미지원"이라는 엉뚱한
+ * 결론이 나온다(실제로 1.2를 깔고도 "앱을 업데이트하세요"가 떴다).
+ */
+async function loadMessaging(): Promise<Messaging | 'no-bridge' | 'no-plugin' | 'timeout'> {
+  if (!(await isNativeAppAsync(10, 300))) return 'no-bridge'
+  return withTimeout<Messaging | 'no-plugin' | 'timeout'>(
+    import('@capacitor-firebase/messaging')
+      .then(mod => mod.FirebaseMessaging as Messaging | 'no-plugin' | 'timeout')
+      .catch(() => 'no-plugin' as const),
     6000,
-    null
+    'timeout'
   )
 }
 
@@ -58,22 +67,36 @@ async function saveToken(token: string): Promise<boolean> {
   }
 }
 
-/** 이미 허용된 상태인지 */
-export async function nativeNotifState(): Promise<'granted' | 'denied' | 'prompt' | 'unsupported'> {
-  const fm = await messaging()
-  if (!fm) return 'unsupported'
-  // 대답이 없으면 플러그인이 없는 빌드로 본다. 실패든 무응답이든 사용자가
-  // 할 일은 '앱 업데이트'로 같다.
-  const res = await withTimeout(fm.checkPermissions(), 5000, null)
-  if (!res) return 'unsupported'
-  const { receive } = res
-  return receive === 'granted' ? 'granted' : receive === 'denied' ? 'denied' : 'prompt'
+// 왜 그렇게 판단했는지를 화면에 그대로 보여주려고 이유를 함께 돌려준다.
+// 알림이 안 온다는 얘기가 나올 때마다 추측으로 좁혀 들어가느라 며칠을 썼다.
+export type PushReason =
+  | 'no-bridge' | 'no-plugin' | 'timeout'
+  | 'denied' | 'prompt' | 'granted'
+export type NativeProbe = {
+  state: 'granted' | 'denied' | 'prompt' | 'unsupported'
+  reason: PushReason
+}
+
+/** 앱의 알림 권한 상태와, 그렇게 판단한 이유 */
+export async function probeNativePush(): Promise<NativeProbe> {
+  const fm = await loadMessaging()
+  if (typeof fm === 'string') return { state: 'unsupported', reason: fm }
+
+  const receive = await withTimeout(
+    fm.checkPermissions().then(r => r.receive as string),
+    5000,
+    'timeout'
+  )
+  if (receive === 'timeout') return { state: 'unsupported', reason: 'timeout' }
+  if (receive === 'granted') return { state: 'granted', reason: 'granted' }
+  if (receive === 'denied') return { state: 'denied', reason: 'denied' }
+  return { state: 'prompt', reason: 'prompt' }
 }
 
 /** 권한을 요청하고 토큰을 서버에 등록한다. 성공하면 true */
 export async function enableNativeNotifications(): Promise<boolean> {
-  const fm = await messaging()
-  if (!fm) return false
+  const fm = await loadMessaging()
+  if (typeof fm === 'string') return false
   // 권한 창은 사용자가 읽고 누를 때까지 열려 있으므로 넉넉히 기다린다.
   const perm = await withTimeout(fm.requestPermissions(), 60000, null)
   if (perm?.receive !== 'granted') return false
@@ -91,8 +114,8 @@ export async function enableNativeNotifications(): Promise<boolean> {
  * (토큰 기준 upsert라 중복되지 않는다).
  */
 export async function refreshNativeToken(): Promise<boolean> {
-  const fm = await messaging()
-  if (!fm) return false
+  const fm = await loadMessaging()
+  if (typeof fm === 'string') return false
   // 토큰 갱신이 안 되는 것보다 화면이 멈추는 게 나쁘다. 안 되면 '꺼짐'으로 본다.
   const perm = await withTimeout(fm.checkPermissions(), 5000, null)
   if (perm?.receive !== 'granted') return false

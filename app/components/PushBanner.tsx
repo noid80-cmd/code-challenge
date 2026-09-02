@@ -1,8 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { isNativeApp } from '@/lib/capacitor'
-import { nativeNotifState, enableNativeNotifications, refreshNativeToken } from '@/lib/pushNative'
+import { probeNativePush, enableNativeNotifications, refreshNativeToken, type PushReason } from '@/lib/pushNative'
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
 
@@ -27,7 +26,7 @@ function urlBase64ToUint8Array(base64String: string) {
  * 화면에만 두었더니 앱을 열고 홈만 보는 사람은 토큰이 영영 등록되지 않아
  * 알림 대상이 0명이었다. 그래서 홈에도 같이 둔다.
  */
-type PushStatus = 'checking' | 'on' | 'off' | 'blocked' | 'needLogin' | 'outdated'
+type PushStatus = 'checking' | 'on' | 'off' | 'blocked' | 'needLogin' | 'outdated' | 'webOnly'
 
 // 로그인 여부만 보면 되므로 Supabase User 전체를 요구하지 않는다.
 // (호출하는 쪽이 id만 들고 있는 화면도 있다.)
@@ -37,24 +36,30 @@ type SignedIn = { id: string } | null | undefined
 // 로그인한 사람에게도 잠깐 깜빡인다.
 function usePushStatus(user: SignedIn) {
   const [status, setStatus] = useState<PushStatus>('checking')
+  const [reason, setReason] = useState<PushReason | null>(null)
   const [busy, setBusy] = useState(false)
 
   const check = useCallback(async () => {
     if (user === undefined) return
-    if (isNativeApp()) {
-      const st = await nativeNotifState()
-      // 구버전 앱에는 푸시 플러그인 자체가 없다. 켜라고 해봐야 방법이 없으니
-      // 앱을 업데이트하라고 말해 주는 게 맞다.
-      if (st === 'unsupported') return setStatus('outdated')
-      if (st === 'denied') return setStatus('blocked')
+    const probe = await probeNativePush()
+    setReason(probe.reason)
+
+    // 브릿지가 아예 없으면 진짜 브라우저다. 그때만 웹 푸시 경로로 간다.
+    if (probe.reason !== 'no-bridge') {
+      // 플러그인이 없거나 대답이 없는 빌드는 켤 방법이 없다. 앱을 업데이트하라고
+      // 말해 주는 게 맞다.
+      if (probe.state === 'unsupported') return setStatus('outdated')
+      if (probe.state === 'denied') return setStatus('blocked')
       if (!user) return setStatus('needLogin')
       // 권한이 허용이어도 서버에 토큰이 없으면 알림은 안 온다. 권한이 아니라
       // 등록 성공 여부로 판단한다.
-      if (st === 'granted') return setStatus((await refreshNativeToken()) ? 'on' : 'off')
+      if (probe.state === 'granted') return setStatus((await refreshNativeToken()) ? 'on' : 'off')
       return setStatus('off')
     }
 
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return setStatus('outdated')
+    // 앱이 아닌데 브라우저가 푸시를 못 받는 경우다(예: iOS Safari). 이건
+    // 업데이트할 앱이 없는 상황이라 '앱을 업데이트하세요'가 틀린 안내다.
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return setStatus('webOnly')
     if (Notification.permission === 'denied') return setStatus('blocked')
     if (!user) return setStatus('needLogin')
     try {
@@ -78,13 +83,14 @@ function usePushStatus(user: SignedIn) {
   async function enable() {
     setBusy(true)
     try {
-      if (isNativeApp()) {
+      if (reason && reason !== 'no-bridge') {
         // 실패 이유를 구분해야 한다. 권한을 막은 것과 토큰 등록이 안 된 것은
         // 사용자가 할 일이 다르다. 둘 다 '차단'으로 뭉뚱그리면 안내가 틀린다.
         if (await enableNativeNotifications()) return setStatus('on')
-        const st = await nativeNotifState()
-        if (st === 'denied') return setStatus('blocked')
-        if (st === 'unsupported') return setStatus('outdated')
+        const probe = await probeNativePush()
+        setReason(probe.reason)
+        if (probe.state === 'denied') return setStatus('blocked')
+        if (probe.state === 'unsupported') return setStatus('outdated')
         return setStatus(user ? 'off' : 'needLogin')
       }
       const reg = await navigator.serviceWorker.ready
@@ -105,7 +111,7 @@ function usePushStatus(user: SignedIn) {
     }
   }
 
-  return { status, busy, enable }
+  return { status, reason, busy, enable }
 }
 
 // 앱을 업데이트하라고만 하면 어디서 하는지를 또 찾아야 한다. 스토어 이름을
@@ -125,6 +131,8 @@ function copyFor(status: Exclude<PushStatus, 'checking'>): { body: string; cta: 
       return { body: '기기 설정에서 알림이 꺼져 있습니다. 설정 > 초견챌린지 > 알림에서 켜 주세요.', cta: null }
     case 'needLogin':
       return { body: '로그인하면 매일 새 챌린지를 알림으로 받을 수 있습니다.', cta: '로그인' }
+    case 'webOnly':
+      return { body: '이 브라우저는 알림을 지원하지 않습니다. 앱에서 켜 주세요.', cta: null }
     case 'outdated':
       // 알림 기능은 iOS 1.2 / 안드로이드 versionCode 2부터 들어갔다. 그 이전
       // 빌드에는 알림을 켜는 방법 자체가 없다.
@@ -180,8 +188,19 @@ export default function PushBanner({ user }: { user: SignedIn }) {
  * 상태와 상관없이 늘 같은 자리에 있어야 찾을 수 있으므로, 이 항목은 켜져
  * 있을 때도 '켜짐'을 그대로 보여주고 사라지지 않는다.
  */
+// 판정 근거를 화면에 그대로 남긴다. 알림이 안 온다는 얘기가 나올 때마다
+// 화면에는 결론만 있고 근거가 없어 추측으로 좁혀 들어가느라 며칠을 썼다.
+const REASON_LABEL: Record<PushReason, string> = {
+  'no-bridge': '브라우저로 열림',
+  'no-plugin': '앱 · 알림 모듈 없음',
+  'timeout': '앱 · 알림 모듈 응답 없음',
+  'denied': '앱 · 권한 거부됨',
+  'prompt': '앱 · 권한 요청 전',
+  'granted': '앱 · 권한 허용됨',
+}
+
 export function PushSettingRow({ user }: { user: SignedIn }) {
-  const { status, busy, enable } = usePushStatus(user)
+  const { status, reason, busy, enable } = usePushStatus(user)
   const on = status === 'on'
   const { body, cta } = status === 'checking'
     ? { body: '확인 중...', cta: null }
@@ -204,6 +223,11 @@ export function PushSettingRow({ user }: { user: SignedIn }) {
           }}>{status === 'checking' ? '확인 중' : on ? '켜짐' : '꺼짐'}</span>
         </div>
         <div style={{ fontSize: 11.5, color: '#807060', lineHeight: 1.55 }}>{body}</div>
+        {reason && (
+          <div style={{ fontSize: 10.5, color: '#403830', marginTop: 6, fontWeight: 700 }}>
+            {REASON_LABEL[reason]}
+          </div>
+        )}
       </div>
       {cta && (
         <button
