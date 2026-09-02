@@ -70,27 +70,56 @@ async function saveToken(token: string): Promise<boolean> {
 // 왜 그렇게 판단했는지를 화면에 그대로 보여주려고 이유를 함께 돌려준다.
 // 알림이 안 온다는 얘기가 나올 때마다 추측으로 좁혀 들어가느라 며칠을 썼다.
 export type PushReason =
-  | 'no-bridge' | 'no-plugin' | 'timeout'
+  | 'no-bridge' | 'no-plugin' | 'timeout' | 'error'
   | 'denied' | 'prompt' | 'granted'
 export type NativeProbe = {
   state: 'granted' | 'denied' | 'prompt' | 'unsupported'
   reason: PushReason
+  /** 화면에 그대로 찍는 진단 문자열. 플랫폼·플러그인 등록 여부·에러 메시지. */
+  detail?: string
+}
+
+// Capacitor는 네이티브 플러그인 등록 여부를 직접 알려준다. 이걸 안 보고
+// 호출 결과만으로 원인을 좁히려다 며칠을 썼다.
+function bridgeInfo(): string {
+  const cap = (window as unknown as {
+    Capacitor?: { getPlatform?: () => string; isPluginAvailable?: (n: string) => boolean }
+  }).Capacitor
+  if (!cap) return 'no-capacitor'
+  const platform = cap.getPlatform?.() ?? '?'
+  const available = cap.isPluginAvailable?.('FirebaseMessaging')
+  return `${platform}·플러그인 ${available === undefined ? '?' : available ? '등록됨' : '미등록'}`
 }
 
 /** 앱의 알림 권한 상태와, 그렇게 판단한 이유 */
 export async function probeNativePush(): Promise<NativeProbe> {
   const fm = await loadMessaging()
-  if (typeof fm === 'string') return { state: 'unsupported', reason: fm }
+  if (fm === 'no-bridge') return { state: 'unsupported', reason: 'no-bridge' }
+  const info = bridgeInfo()
+  if (typeof fm === 'string') return { state: 'unsupported', reason: fm, detail: info }
 
-  const receive = await withTimeout(
-    fm.checkPermissions().then(r => r.receive as string),
+  // 거부와 무응답을 갈라야 한다. 둘을 같은 값으로 뭉뚱그렸더니 "응답 없음"이
+  // 사실은 "즉시 에러"인 경우를 구분할 수 없었다.
+  type Outcome =
+    | { k: 'ok'; receive: string }
+    | { k: 'err'; msg: string }
+    | { k: 'timeout' }
+  const outcome = await withTimeout<Outcome>(
+    fm.checkPermissions()
+      .then(r => ({ k: 'ok' as const, receive: r.receive as string }))
+      .catch((e: unknown) => ({ k: 'err' as const, msg: e instanceof Error ? e.message : String(e) })),
     5000,
-    'timeout'
+    { k: 'timeout' }
   )
-  if (receive === 'timeout') return { state: 'unsupported', reason: 'timeout' }
-  if (receive === 'granted') return { state: 'granted', reason: 'granted' }
-  if (receive === 'denied') return { state: 'denied', reason: 'denied' }
-  return { state: 'prompt', reason: 'prompt' }
+
+  if (outcome.k === 'timeout') return { state: 'unsupported', reason: 'timeout', detail: info }
+  if (outcome.k === 'err') {
+    return { state: 'unsupported', reason: 'error', detail: `${info} · ${outcome.msg}`.slice(0, 120) }
+  }
+  const detail = info
+  if (outcome.receive === 'granted') return { state: 'granted', reason: 'granted', detail }
+  if (outcome.receive === 'denied') return { state: 'denied', reason: 'denied', detail }
+  return { state: 'prompt', reason: 'prompt', detail }
 }
 
 /** 권한을 요청하고 토큰을 서버에 등록한다. 성공하면 true */

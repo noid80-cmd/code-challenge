@@ -37,12 +37,14 @@ type SignedIn = { id: string } | null | undefined
 function usePushStatus(user: SignedIn) {
   const [status, setStatus] = useState<PushStatus>('checking')
   const [reason, setReason] = useState<PushReason | null>(null)
+  const [detail, setDetail] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const check = useCallback(async () => {
     if (user === undefined) return
     const probe = await probeNativePush()
     setReason(probe.reason)
+    setDetail(probe.detail ?? null)
 
     // 브릿지가 아예 없으면 진짜 브라우저다. 그때만 웹 푸시 경로로 간다.
     if (probe.reason !== 'no-bridge') {
@@ -89,6 +91,7 @@ function usePushStatus(user: SignedIn) {
         if (await enableNativeNotifications()) return setStatus('on')
         const probe = await probeNativePush()
         setReason(probe.reason)
+        setDetail(probe.detail ?? null)
         if (probe.state === 'denied') return setStatus('blocked')
         if (probe.state === 'unsupported') return setStatus('outdated')
         return setStatus(user ? 'off' : 'needLogin')
@@ -111,7 +114,7 @@ function usePushStatus(user: SignedIn) {
     }
   }
 
-  return { status, reason, busy, enable }
+  return { status, reason, detail, busy, enable }
 }
 
 // 앱을 업데이트하라고만 하면 어디서 하는지를 또 찾아야 한다. 스토어 이름을
@@ -194,13 +197,14 @@ const REASON_LABEL: Record<PushReason, string> = {
   'no-bridge': '브라우저로 열림',
   'no-plugin': '앱 · 알림 모듈 없음',
   'timeout': '앱 · 알림 모듈 응답 없음',
+  'error': '앱 · 알림 모듈 오류',
   'denied': '앱 · 권한 거부됨',
   'prompt': '앱 · 권한 요청 전',
   'granted': '앱 · 권한 허용됨',
 }
 
 export function PushSettingRow({ user }: { user: SignedIn }) {
-  const { status, reason, busy, enable } = usePushStatus(user)
+  const { status, reason, detail, busy, enable } = usePushStatus(user)
   const on = status === 'on'
   const { body, cta } = status === 'checking'
     ? { body: '확인 중...', cta: null }
@@ -225,7 +229,7 @@ export function PushSettingRow({ user }: { user: SignedIn }) {
         <div style={{ fontSize: 11.5, color: '#807060', lineHeight: 1.55 }}>{body}</div>
         {reason && (
           <div style={{ fontSize: 10.5, color: '#403830', marginTop: 6, fontWeight: 700 }}>
-            {REASON_LABEL[reason]}
+            {REASON_LABEL[reason]}{detail ? ` (${detail})` : ''}
           </div>
         )}
       </div>
