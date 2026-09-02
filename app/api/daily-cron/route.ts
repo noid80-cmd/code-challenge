@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js'
 import { LEVEL_LABELS, isLevel, type Level } from '@/lib/level'
 import { sendFcm } from '@/lib/fcm'
 
-export const maxDuration = 120
+export const maxDuration = 300
 
 function extractJsonObject(text: string): string | null {
   const start = text.indexOf('{')
@@ -421,7 +421,10 @@ export async function GET(req: NextRequest) {
   // 나머지 두 난이도는 별도 요청으로 넘겨 각자 시간 예산을 쓰게 한다.
   const reqUrl = new URL(req.url)
   const levelParam = reqUrl.searchParams.get('level')
-  const level: Level = isLevel(levelParam) ? levelParam : 'intermediate'
+  // 크론이 부르면 세 난이도를 한 번에 만든다. 난이도를 지정해 부르면 그것만.
+  const levels: Level[] = isLevel(levelParam)
+    ? [levelParam]
+    : ['intermediate', 'beginner', 'advanced']
   const isPrimary = !levelParam
   // 초급 마디 라이브러리를 손본 뒤 그날 것을 다시 만들 때 쓴다(아래에서 실행).
   const force = reqUrl.searchParams.get('force') === '1'
@@ -442,13 +445,19 @@ export async function GET(req: NextRequest) {
   // 지우므로 요청에 명시했을 때만 동작한다.
   if (force) {
     const { error: delErr } = await supabase
-      .from('challenges').delete().eq('date', today).eq('level', level)
+      .from('challenges').delete().eq('date', today).in('level', levels)
     if (delErr) {
       console.error('[cron] force delete failed:', delErr.message)
       insertErrors.push('force delete: ' + delErr.message)
     }
   }
 
+  // 알림에 쓸 제목. 여러 난이도를 돌리므로 첫 난이도(중급) 것만 담는다.
+  let pushChord: string | null = null
+  let pushRhythm: string | null = null
+  let pushMelody: string | null = null
+
+  for (const level of levels) {
   // ── 코드챌린지 ──────────────────────────────────────────
   const { data: existingChord } = await supabase
     .from('challenges').select('id, title').eq('date', today).eq('type', 'chord').eq('level', level).maybeSingle()
@@ -1070,27 +1079,23 @@ JSON 객체로만 응답:
     }
   }
 
-  // ── 나머지 난이도 ──────────────────────────────────────
-  // 예전에는 여기서 fetch를 던져놓고 기다리지 않았는데, 서버리스 함수가 응답을
-  // 돌려주는 순간 종료돼서 그 요청이 실제로 나가지 않았다(8/29~8/31 사흘 내내
-  // 중급만 생성됨). 한 난이도당 20초 안쪽이라 그냥 기다리면 된다.
-  if (isPrimary) {
-    for (const other of ['beginner', 'advanced'] as const) {
-      try {
-        const res = await fetch(`${reqUrl.origin}/api/daily-cron?level=${other}`, {
-          headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
-        })
-        if (!res.ok) insertErrors.push(`${other}: HTTP ${res.status}`)
-      } catch (e) {
-        insertErrors.push(`${other}: ${e instanceof Error ? e.message : 'fetch 실패'}`)
-      }
-    }
+  if (level === levels[0]) {
+    pushChord = chordTitle
+    pushRhythm = rhythmTitle
+    pushMelody = melodyTitle
+  }
   }
 
   // ── 푸시 알림 ──────────────────────────────────────────
   // 난이도별 요청마다 보내면 하루 세 번 울린다. 기본 요청에서만 보낸다.
   if (!isPrimary) {
-    return NextResponse.json({ level, chordTitle, rhythmTitle, melodyTitle, insertErrors })
+    return NextResponse.json({
+      level: levels[0],
+      chordTitle: pushChord,
+      rhythmTitle: pushRhythm,
+      melodyTitle: pushMelody,
+      insertErrors,
+    })
   }
 
   const { data: subs } = await supabase
@@ -1098,9 +1103,9 @@ JSON 객체로만 응답:
 
   const notifTitle = 'PlayDaily — 오늘의 챌린지'
   const notifBody = [
-    chordTitle ? `🎵 ${chordTitle}` : null,
-    rhythmTitle ? `🥁 ${rhythmTitle}` : null,
-    melodyTitle ? `🎼 ${melodyTitle}` : null,
+    pushChord ? `🎵 ${pushChord}` : null,
+    pushRhythm ? `🥁 ${pushRhythm}` : null,
+    pushMelody ? `🎼 ${pushMelody}` : null,
   ].filter(Boolean).join('\n') || '새로운 챌린지가 올라왔어요!'
 
   const deadEndpoints: string[] = []
@@ -1134,7 +1139,8 @@ JSON 객체로만 응답:
   }
 
   return NextResponse.json({
-    chordTitle, rhythmTitle, melodyTitle, insertErrors,
+    chordTitle: pushChord, rhythmTitle: pushRhythm, melodyTitle: pushMelody,
+    levels, insertErrors,
     web: { sent, total: subs?.length ?? 0 },
     app: { sent: fcm.sent, failed: fcm.failed, removed: fcm.deadTokens.length, total: tokens.length },
   })
