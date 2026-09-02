@@ -27,68 +27,67 @@ function urlBase64ToUint8Array(base64String: string) {
   return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)))
 }
 
-function PushBanner({ user }: { user: User }) {
-  const [state, setState] = useState<'idle' | 'loading' | 'done'>('idle')
-  const [supported, setSupported] = useState(false)
-  const [alreadyGranted, setAlreadyGranted] = useState(false)
+/**
+ * 알림 설정 줄.
+ *
+ * 매일 올라오는 챌린지를 알림으로 알리는 게 이 앱의 핵심이라, 꺼져 있으면
+ * 그 사실이 화면 맨 위에서 바로 보여야 한다. 예전에는 스크롤을 내려야 나오는
+ * 자리에 있었고, 켤 수 없는 상황(로그아웃·구버전 앱)에서는 아예 사라져서
+ * 왜 안 되는지 알 방법이 없었다. 실제로 테스터 12명 전부 토큰이 없었다.
+ *
+ * 그래서 켜져 있을 때만 사라지고, 나머지 상황에서는 이유와 할 일을 보여준다.
+ */
+type PushStatus = 'checking' | 'on' | 'off' | 'blocked' | 'needLogin' | 'outdated'
 
-  // 스토어에서 받은 앱은 웹뷰라 PushManager가 없다. 그동안 앱에서는 이 배너가
-  // 아예 안 떠서 알림을 켤 방법 자체가 없었다. 앱이면 FCM 경로를 쓴다.
-  const [native, setNative] = useState(false)
+// user가 undefined면 아직 로그인 확인 중이다. 그 사이에 '로그인 필요'를 띄우면
+// 로그인한 사람에게도 잠깐 깜빡인다.
+function PushBanner({ user }: { user: User | null | undefined }) {
+  const [status, setStatus] = useState<PushStatus>('checking')
+  const [busy, setBusy] = useState(false)
 
-  useEffect(() => {
+  const check = useCallback(async () => {
+    if (user === undefined) return
     if (isNativeApp()) {
-      setNative(true)
-      nativeNotifState().then(async st => {
-        setSupported(st !== 'unsupported')
-        if (st !== 'granted') {
-          setAlreadyGranted(false)
-          return
-        }
-        // 권한만 보고 배너를 숨기면 안 된다. 로그아웃 상태로 허용했거나 토큰
-        // 등록이 실패하면, 권한은 계속 허용이라 배너가 영영 안 뜨고 알림만
-        // 조용히 안 오는 상태로 굳는다. 웹 푸시 쪽에서 이미 겪은 함정이다.
-        // 토큰이 실제로 서버에 올라갔는지로 판단한다.
-        setAlreadyGranted(await refreshNativeToken())
-      })
-      return
+      const st = await nativeNotifState()
+      // 구버전 앱에는 푸시 플러그인 자체가 없다. 켜라고 해봐야 방법이 없으니
+      // 앱을 업데이트하라고 말해 주는 게 맞다.
+      if (st === 'unsupported') return setStatus('outdated')
+      if (st === 'denied') return setStatus('blocked')
+      if (!user) return setStatus('needLogin')
+      // 권한이 허용이어도 서버에 토큰이 없으면 알림은 안 온다. 권한이 아니라
+      // 등록 성공 여부로 판단한다.
+      if (st === 'granted') return setStatus((await refreshNativeToken()) ? 'on' : 'off')
+      return setStatus('off')
     }
 
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
-    setSupported(true)
-
-    // 예전에는 권한이 granted면 배너를 숨겼는데, 그러면 구독이 만료되거나
-    // 서버에서 정리된 뒤에는 다시 켤 방법이 없어진다(권한은 계속 granted라
-    // 배너가 영영 안 뜬다). 권한이 아니라 실제 구독 유무로 판단한다.
-    navigator.serviceWorker.ready
-      .then(reg => reg.pushManager.getSubscription())
-      .then(sub => {
-        setAlreadyGranted(!!sub)
-        // 브라우저에는 구독이 남아 있는데 서버 행만 사라진 경우를 스스로 복구한다.
-        // /api/subscribe 는 endpoint 기준 upsert라 중복이 생기지 않는다.
-        if (sub) {
-          fetch('/api/subscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(sub),
-          }).catch(() => {})
-        }
-      })
-      .catch(() => setAlreadyGranted(false))
-  }, [])
-
-  if (!supported || alreadyGranted || state === 'done') return null
-
-  async function subscribe() {
-    setState('loading')
-
-    if (native) {
-      const ok = await enableNativeNotifications()
-      setState(ok ? 'done' : 'idle')
-      return
-    }
-
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return setStatus('outdated')
+    if (Notification.permission === 'denied') return setStatus('blocked')
+    if (!user) return setStatus('needLogin')
     try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      if (!sub) return setStatus('off')
+      // 브라우저에는 구독이 남아 있는데 서버 행만 사라진 경우를 스스로 복구한다.
+      await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub),
+      }).catch(() => {})
+      setStatus('on')
+    } catch {
+      setStatus('off')
+    }
+  }, [user])
+
+  useEffect(() => { check() }, [check])
+
+  async function enable() {
+    setBusy(true)
+    try {
+      if (isNativeApp()) {
+        setStatus((await enableNativeNotifications()) ? 'on' : 'blocked')
+        return
+      }
       const reg = await navigator.serviceWorker.ready
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
@@ -99,30 +98,52 @@ function PushBanner({ user }: { user: User }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(sub),
       })
-      setState('done')
+      setStatus('on')
     } catch {
-      setState('idle')
+      setStatus('blocked')
+    } finally {
+      setBusy(false)
     }
   }
 
+  // 켜져 있으면 조용히 사라진다. 이미 한 사람을 계속 붙잡지 않는다.
+  if (status === 'checking' || status === 'on') return null
+
+  const copy: Record<Exclude<PushStatus, 'checking' | 'on'>, { body: string; cta: string | null }> = {
+    off: { body: '알림을 켜지 않으면 매일 올라오는 챌린지를 모르고 지나갑니다.', cta: '알림 켜기' },
+    blocked: { body: '기기 설정에서 알림이 꺼져 있습니다. 설정 > 초견챌린지 > 알림에서 켜 주세요.', cta: null },
+    needLogin: { body: '로그인하면 매일 새 챌린지를 알림으로 받을 수 있습니다.', cta: '로그인' },
+    outdated: { body: '앱을 업데이트하면 매일 새 챌린지를 알림으로 받을 수 있습니다.', cta: null },
+  }
+  const { body, cta } = copy[status]
+
   return (
     <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-      background: 'rgba(240,236,224,0.06)', border: '1px solid rgba(240,236,224,0.15)',
-      borderRadius: 14, padding: '12px 16px', marginBottom: 20,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14,
+      background: 'linear-gradient(135deg, rgba(240,180,60,0.14), rgba(240,180,60,0.06))',
+      border: '1px solid rgba(240,180,60,0.35)',
+      borderRadius: 14, padding: '14px 16px', marginBottom: 20,
     }}>
-      <div>
-        <div style={{ fontSize: 13, fontWeight: 800, color: '#f0ece0', marginBottom: 2 }}>매일 알림 받기</div>
-        <div style={{ fontSize: 11, color: '#605850' }}>낮 12시에 오늘의 챌린지를 알려드려요</div>
+      <div style={{ minWidth: 0 }}>
+        <div style={{ fontSize: 13.5, fontWeight: 800, color: '#f0ece0', marginBottom: 3 }}>
+          매일 알림 받기
+        </div>
+        <div style={{ fontSize: 11.5, color: '#a0988c', lineHeight: 1.55 }}>{body}</div>
       </div>
-      <button onClick={subscribe} disabled={state === 'loading'} style={{
-        padding: '8px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
-        background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-        color: '#0a0a08', fontSize: 12, fontWeight: 800,
-        opacity: state === 'loading' ? 0.6 : 1, flexShrink: 0,
-      }}>
-        {state === 'loading' ? '설정 중...' : '알림 켜기'}
-      </button>
+      {cta && (
+        <button
+          onClick={status === 'needLogin' ? () => { window.location.href = '/login' } : enable}
+          disabled={busy}
+          style={{
+            padding: '9px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+            color: '#0a0a08', fontSize: 12.5, fontWeight: 800,
+            opacity: busy ? 0.6 : 1, flexShrink: 0, whiteSpace: 'nowrap',
+          }}
+        >
+          {busy ? '설정 중...' : cta}
+        </button>
+      )}
     </div>
   )
 }
@@ -458,6 +479,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
 
       <main style={{ maxWidth: 800, margin: '0 auto', padding: '32px 16px 100px' }}>
 
+        <PushBanner user={user} />
+
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#f0ece0' }} />
           <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#a0988c' }}>
@@ -695,8 +718,6 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
             display: 'flex', alignItems: 'center', gap: 4,
           }}>지난 챌린지 보기 →</Link>
         </div>
-
-        {user && <PushBanner user={user} />}
 
         {user && (
           <div style={{
