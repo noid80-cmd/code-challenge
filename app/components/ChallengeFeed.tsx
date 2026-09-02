@@ -39,11 +39,17 @@ function PushBanner({ user }: { user: User }) {
   useEffect(() => {
     if (isNativeApp()) {
       setNative(true)
-      nativeNotifState().then(st => {
+      nativeNotifState().then(async st => {
         setSupported(st !== 'unsupported')
-        setAlreadyGranted(st === 'granted')
-        // 토큰은 재설치·갱신으로 바뀐다. 허용 상태면 열 때마다 다시 등록한다.
-        if (st === 'granted') refreshNativeToken()
+        if (st !== 'granted') {
+          setAlreadyGranted(false)
+          return
+        }
+        // 권한만 보고 배너를 숨기면 안 된다. 로그아웃 상태로 허용했거나 토큰
+        // 등록이 실패하면, 권한은 계속 허용이라 배너가 영영 안 뜨고 알림만
+        // 조용히 안 오는 상태로 굳는다. 웹 푸시 쪽에서 이미 겪은 함정이다.
+        // 토큰이 실제로 서버에 올라갔는지로 판단한다.
+        setAlreadyGranted(await refreshNativeToken())
       })
       return
     }

@@ -19,14 +19,25 @@ async function messaging(): Promise<Messaging | null> {
   }
 }
 
-async function saveToken(token: string) {
+/**
+ * 서버에 토큰을 올린다. 성공 여부를 돌려주는 게 중요하다.
+ *
+ * 이 요청은 로그인을 요구한다. 로그아웃 상태로 알림을 허용하면 권한은 허용으로
+ * 남는데 서버에는 토큰이 없는, 알림만 조용히 안 오는 상태가 된다.
+ */
+async function saveToken(token: string): Promise<boolean> {
   const platform =
     /iPad|iPhone|iPod/.test(navigator.userAgent) ? 'ios' : 'android'
-  await fetch('/api/device-token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, platform }),
-  })
+  try {
+    const res = await fetch('/api/device-token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, platform }),
+    })
+    return res.ok
+  } catch {
+    return false
+  }
 }
 
 /** 이미 허용된 상태인지 */
@@ -63,18 +74,20 @@ export async function enableNativeNotifications(): Promise<boolean> {
  * 알림이 조용히 끊기므로, 허용 상태면 매번 현재 토큰을 서버에 다시 올린다
  * (토큰 기준 upsert라 중복되지 않는다).
  */
-export async function refreshNativeToken(): Promise<void> {
+export async function refreshNativeToken(): Promise<boolean> {
   const fm = await messaging()
-  if (!fm) return
+  if (!fm) return false
   try {
     const { receive } = await fm.checkPermissions()
-    if (receive !== 'granted') return
+    if (receive !== 'granted') return false
     const { token } = await fm.getToken()
-    if (token) await saveToken(token)
+    const ok = token ? await saveToken(token) : false
     fm.addListener('tokenReceived', ({ token: t }) => {
       if (t) saveToken(t).catch(() => {})
     })
+    return ok
   } catch {
     // 토큰 갱신 실패가 앱 사용을 막으면 안 된다
+    return false
   }
 }
