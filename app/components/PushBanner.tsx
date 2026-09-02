@@ -108,12 +108,28 @@ function usePushStatus(user: SignedIn) {
   return { status, busy, enable }
 }
 
-const COPY: Record<Exclude<PushStatus, 'checking'>, { body: string; cta: string | null }> = {
-  on: { body: '매일 새 챌린지가 올라오면 알려드립니다.', cta: null },
-  off: { body: '알림을 켜지 않으면 매일 올라오는 챌린지를 모르고 지나갑니다.', cta: '알림 켜기' },
-  blocked: { body: '기기 설정에서 알림이 꺼져 있습니다. 설정 > 초견챌린지 > 알림에서 켜 주세요.', cta: null },
-  needLogin: { body: '로그인하면 매일 새 챌린지를 알림으로 받을 수 있습니다.', cta: '로그인' },
-  outdated: { body: '앱을 업데이트하면 매일 새 챌린지를 알림으로 받을 수 있습니다.', cta: null },
+// 앱을 업데이트하라고만 하면 어디서 하는지를 또 찾아야 한다. 스토어 이름을
+// 직접 말해 준다.
+function storeName(): string {
+  if (typeof navigator === 'undefined') return '스토어'
+  return /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) ? 'App Store' : 'Play 스토어'
+}
+
+function copyFor(status: Exclude<PushStatus, 'checking'>): { body: string; cta: string | null } {
+  switch (status) {
+    case 'on':
+      return { body: '매일 새 챌린지가 올라오면 알려드립니다.', cta: null }
+    case 'off':
+      return { body: '알림을 켜지 않으면 매일 올라오는 챌린지를 모르고 지나갑니다.', cta: '알림 켜기' }
+    case 'blocked':
+      return { body: '기기 설정에서 알림이 꺼져 있습니다. 설정 > 초견챌린지 > 알림에서 켜 주세요.', cta: null }
+    case 'needLogin':
+      return { body: '로그인하면 매일 새 챌린지를 알림으로 받을 수 있습니다.', cta: '로그인' }
+    case 'outdated':
+      // 알림 기능은 iOS 1.2 / 안드로이드 versionCode 2부터 들어갔다. 그 이전
+      // 빌드에는 알림을 켜는 방법 자체가 없다.
+      return { body: `${storeName()}에서 초견챌린지를 업데이트해 주세요. 지금 깔린 버전에는 알림 기능이 없습니다.`, cta: null }
+  }
 }
 
 export default function PushBanner({ user }: { user: SignedIn }) {
@@ -122,7 +138,7 @@ export default function PushBanner({ user }: { user: SignedIn }) {
   // 켜져 있으면 조용히 사라진다. 이미 한 사람을 계속 붙잡지 않는다.
   if (status === 'checking' || status === 'on') return null
 
-  const { body, cta } = COPY[status]
+  const { body, cta } = copyFor(status)
 
   return (
     <div style={{
@@ -169,7 +185,7 @@ export function PushSettingRow({ user }: { user: SignedIn }) {
   const on = status === 'on'
   const { body, cta } = status === 'checking'
     ? { body: '확인 중...', cta: null }
-    : COPY[status]
+    : copyFor(status)
 
   return (
     <div style={{
