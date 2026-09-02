@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import PreferencesPlugin
+import FirebaseMessagingPlugin
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -16,6 +17,10 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // 뷰 컨트롤러가 로드되기 전에 클래스를 미리 참조해 dyld가 먼저
         // 로드하도록 강제한다.
         _ = PreferencesPlugin.self
+        // FirebaseMessaging도 SPM으로 별도 링크된 모듈이라 같은 함정에 걸린다.
+        // 등록에 실패하면 JS의 checkPermissions()가 응답 없이 매달리고, 화면은
+        // "알림 기능이 없는 구버전"으로 오판한다(1.2 실기기에서 실측).
+        _ = FirebaseMessagingPlugin.self
         return true
     }
 
