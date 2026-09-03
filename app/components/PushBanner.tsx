@@ -162,11 +162,10 @@ export default function PushBanner({ user }: { user: SignedIn }) {
       borderRadius: 14, padding: '14px 16px', marginBottom: 20,
       width: '100%', maxWidth: 640,
     }}>
+      {/* 제목("매일 알림 받기")은 본문과 같은 말을 두 번 하는 것이라 뺐다.
+          한 줄만 남았으니 그 줄이 무게를 받아야 한다. */}
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, fontWeight: 800, color: '#f0ece0', marginBottom: 3 }}>
-          매일 알림 받기
-        </div>
-        <div style={{ fontSize: 11.5, color: '#a0988c', lineHeight: 1.55 }}>{body}</div>
+        <div style={{ fontSize: 13, color: '#e0d9cb', lineHeight: 1.5, fontWeight: 600 }}>{body}</div>
       </div>
       {cta && (
         <button
