@@ -130,9 +130,9 @@ function storeName(): string {
 function copyFor(status: Exclude<PushStatus, 'checking'>): { body: string; cta: string | null } {
   switch (status) {
     case 'on':
-      return { body: '매일 새 챌린지가 올라오면 알려드립니다.', cta: null }
+      return { body: '매일 새로운 초견이 만들어지면 알림으로 알려드립니다.', cta: null }
     case 'off':
-      return { body: '알림을 켜지 않으면 매일 올라오는 챌린지를 모르고 지나갑니다.', cta: '알림 켜기' }
+      return { body: '매일 새로운 초견이 만들어지면 알림으로 알려드립니다.', cta: '알림 켜기' }
     case 'blocked':
       return { body: '기기 설정에서 알림이 꺼져 있습니다. 설정 > 초견챌린지 > 알림에서 켜 주세요.', cta: null }
     case 'needLogin':
@@ -206,6 +206,11 @@ const REASON_LABEL: Record<PushReason, string> = {
   'granted': '앱 · 권한 허용됨',
 }
 
+// 사용자가 버튼 한 번으로 해결할 수 있는 상태(켜기 전·거부·로그인 필요)에서는
+// 진단 문구를 보여주지 않는다. 개발자용 문자열이라 읽는 사람만 어리둥절해진다.
+// 손쓸 수 없는 상태에서만 남겨 둔다 — 그게 원인을 좁히는 유일한 단서다.
+const TECHNICAL_REASONS = new Set<PushReason>(['no-bridge', 'no-plugin', 'timeout', 'error'])
+
 export function PushSettingRow({ user }: { user: SignedIn }) {
   const { status, reason, detail, busy, enable } = usePushStatus(user)
   const on = status === 'on'
@@ -230,7 +235,7 @@ export function PushSettingRow({ user }: { user: SignedIn }) {
           }}>{status === 'checking' ? '확인 중' : on ? '켜짐' : '꺼짐'}</span>
         </div>
         <div style={{ fontSize: 11.5, color: '#807060', lineHeight: 1.55 }}>{body}</div>
-        {reason && (
+        {reason && TECHNICAL_REASONS.has(reason) && (
           <div style={{ fontSize: 10.5, color: '#403830', marginTop: 6, fontWeight: 700, lineHeight: 1.5, wordBreak: 'break-all' }}>
             {REASON_LABEL[reason]}{detail ? ` (${detail})` : ''}
           </div>
