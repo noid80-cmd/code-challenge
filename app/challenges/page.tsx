@@ -5,6 +5,9 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { localDate } from '@/lib/date'
 
+type Tab = 'chord' | 'rhythm' | 'melody'
+const isTab = (v: string | null): v is Tab => v === 'chord' || v === 'rhythm' || v === 'melody'
+
 type ChallengeItem = {
   id: string
   date: string
@@ -16,7 +19,22 @@ type ChallengeItem = {
 export default function ChallengesPage() {
   const [challenges, setChallenges] = useState<ChallengeItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState<'chord' | 'rhythm' | 'melody'>('chord')
+  const [tab, setTab] = useState<Tab>('chord')
+
+  // 탭을 지역 상태로만 두면 상세를 보고 돌아올 때마다 코드 초견으로 되돌아간다.
+  // 주소에 남겨서 뒤로 가기로 돌아와도 보던 탭이 유지되게 한다.
+  // useSearchParams 대신 주소를 직접 읽는다 — 이 페이지를 정적 렌더링으로
+  // 두기 위해서다. 목록이 아직 로딩 중이라 첫 프레임 차이는 보이지 않는다.
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('type')
+    if (isTab(t)) setTab(t)
+  }, [])
+
+  function selectTab(t: Tab) {
+    setTab(t)
+    // replaceState라 뒤로 가기가 탭 전환 이력을 거슬러 올라가지 않는다.
+    window.history.replaceState(null, '', t === 'chord' ? '/challenges' : `/challenges?type=${t}`)
+  }
 
   useEffect(() => {
     async function load() {
@@ -83,7 +101,7 @@ export default function ChallengesPage() {
         {(['chord', 'rhythm', 'melody'] as const).map(t => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => selectTab(t)}
             style={{
               flex: 1, padding: '13px 0', border: 'none', cursor: 'pointer',
               background: 'transparent',
