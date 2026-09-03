@@ -94,15 +94,22 @@ async function loadMessaging(): Promise<Messaging | 'no-bridge' | 'no-plugin'> {
 async function saveToken(token: string): Promise<boolean> {
   const platform =
     /iPad|iPhone|iPod/.test(navigator.userAgent) ? 'ios' : 'android'
+  // 이 요청이 늦어지면 화면이 '확인 중'에 붙잡힌다. 등록이 늦는 것보다
+  // 화면이 안 움직이는 게 나쁘다.
+  const abort = new AbortController()
+  const timer = setTimeout(() => abort.abort(), 8000)
   try {
     const res = await fetch('/api/device-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, platform }),
+      signal: abort.signal,
     })
     return res.ok
   } catch {
     return false
+  } finally {
+    clearTimeout(timer)
   }
 }
 
@@ -113,7 +120,7 @@ export type PushReason =
   | 'denied' | 'prompt' | 'granted'
 // 앱 웹뷰가 옛 JS를 들고 있는지 한눈에 보려고 붙인다. 캐시된 화면인지
 // 새 화면인지 구분이 안 돼 같은 진단을 두 번 돌린 적이 있다.
-const PROBE_TAG = 'p4'
+const PROBE_TAG = 'p5'
 
 export type NativeProbe = {
   state: 'granted' | 'denied' | 'prompt' | 'unsupported'

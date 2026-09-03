@@ -58,7 +58,7 @@ function usePushStatus(user: SignedIn) {
       if (!user) return setStatus('needLogin')
       // 권한이 허용이어도 서버에 토큰이 없으면 알림은 안 온다. 권한이 아니라
       // 등록 성공 여부로 판단한다.
-      if (probe.state === 'granted') return setStatus((await refreshNativeToken()) ? 'on' : 'off')
+      if (probe.state === 'granted') return setStatus((await refreshNativeToken().catch(() => false)) ? 'on' : 'off')
       return setStatus('off')
     }
 
@@ -84,6 +84,15 @@ function usePushStatus(user: SignedIn) {
   }, [user])
 
   useEffect(() => { check() }, [check])
+
+  // 판정이 어떤 이유로든 안 끝나면 화면이 '확인 중'에 영영 머문다. 그 상태로는
+  // 켤 수도, 왜 안 되는지 알 수도 없다. 오래 걸리면 켤 수 있는 상태로 내려놓아
+  // 최소한 버튼은 누를 수 있게 한다(다시 눌러도 해가 없다).
+  useEffect(() => {
+    if (status !== 'checking') return
+    const t = setTimeout(() => setStatus(s => (s === 'checking' ? 'off' : s)), 25000)
+    return () => clearTimeout(t)
+  }, [status])
 
   async function enable() {
     setBusy(true)
