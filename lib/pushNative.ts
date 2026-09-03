@@ -53,15 +53,36 @@ function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
  * iOS 웹뷰에는 PushManager가 없으니 "이 기기는 푸시 미지원"이라는 엉뚱한
  * 결론이 나온다(실제로 1.2를 깔고도 "앱을 업데이트하세요"가 떴다).
  */
-async function loadMessaging(): Promise<Messaging | 'no-bridge' | 'no-plugin' | 'timeout'> {
+/**
+ * 모듈을 받아오지 않고 네이티브가 심어준 통로를 그대로 쓴다.
+ *
+ * 이 앱 웹뷰에서는 동적 import가 끝나지 않았다. `@capacitor-firebase/messaging`
+ * (Firebase 웹 SDK를 끌고 오는 큰 청크)은 물론이고 `@capacitor/core`조차
+ * 6초 안에 안 왔다. 원인은 못 밝혔지만 밝힐 필요도 없다 — Capacitor의
+ * 네이티브 런타임이 `window.Capacitor.registerPlugin`을 이미 꽂아 놓기 때문에
+ * 앱에서는 받아올 모듈이 애초에 없다.
+ */
+function nativeMessaging(): Messaging | null {
+  if (typeof window === 'undefined') return null
+  const cap = (window as unknown as {
+    Capacitor?: {
+      registerPlugin?: <T>(name: string) => T
+      Plugins?: Record<string, unknown>
+    }
+  }).Capacitor
+  if (!cap) return null
+  const already = cap.Plugins?.FirebaseMessaging as Messaging | undefined
+  if (already) return already
+  try {
+    return cap.registerPlugin ? cap.registerPlugin<Messaging>('FirebaseMessaging') : null
+  } catch {
+    return null
+  }
+}
+
+async function loadMessaging(): Promise<Messaging | 'no-bridge' | 'no-plugin'> {
   if (!(await isNativeAppAsync(10, 300))) return 'no-bridge'
-  return withTimeout<Messaging | 'no-plugin' | 'timeout'>(
-    import('@capacitor/core')
-      .then(mod => mod.registerPlugin<Messaging>('FirebaseMessaging') as Messaging | 'no-plugin' | 'timeout')
-      .catch(() => 'no-plugin' as const),
-    6000,
-    'timeout'
-  )
+  return nativeMessaging() ?? 'no-plugin'
 }
 
 /**
@@ -92,7 +113,7 @@ export type PushReason =
   | 'denied' | 'prompt' | 'granted'
 // 앱 웹뷰가 옛 JS를 들고 있는지 한눈에 보려고 붙인다. 캐시된 화면인지
 // 새 화면인지 구분이 안 돼 같은 진단을 두 번 돌린 적이 있다.
-const PROBE_TAG = 'p3'
+const PROBE_TAG = 'p4'
 
 export type NativeProbe = {
   state: 'granted' | 'denied' | 'prompt' | 'unsupported'
