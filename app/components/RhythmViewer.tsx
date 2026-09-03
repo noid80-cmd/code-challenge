@@ -3,43 +3,64 @@ import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 type Pattern = { label: string; abc: string }
 
+// 6연음은 한 박에 16분음표 6개(빔 두 줄)로 적는 게 맞다. 옛 데이터는 8분음표
+// 6개로 저장돼 있어 빔이 한 줄로 그려졌다. (6:4:6 = 16분음표 4개 길이에 6개.
+// 아카이브에 남은 챌린지도 제대로 보이도록 그릴 때 바꿔 준다.
+function normalizeSextuplets(abc: string): string {
+  return abc.replace(/\(6((?:[Bz]){6})(?![0-9/])/g, (_, notes: string) =>
+    '(6:4:6' + [...notes].map(n => n + '/').join('')
+  )
+}
+
+// 잇단음표는 (p 또는 (p:q:r 로 적는다. q가 "몇 개 길이 안에 넣는지"다.
+// 붓점(a>b)은 두 음의 길이 합이 그대로 유지되므로 한 덩어리로 센다.
 function getNoteDur(tok: string): number {
+  if (tok.includes('>') || tok.includes('<')) {
+    return tok.split(/[<>]/).reduce((sum, part) => sum + getNoteDur(part), 0)
+  }
   if (tok.startsWith('(')) {
-    const m = tok.match(/^\((\d+)/)
+    const m = tok.match(/^\((\d+)(?::(\d+))?(?::(\d+))?/)
     const n = m ? parseInt(m[1]) : 3
-    const mDefault = n === 3 ? 2 : n === 2 ? 3 : n === 5 ? 4 : 2
-    // Detect base note duration: (3BBB→1→2, (3B2B2B2→2→4
-    const noteM = tok.match(/\(\d+[Bz](\d*)(\/?)/)
+    const q = m && m[2] ? parseInt(m[2]) : (n === 3 ? 2 : n === 2 ? 3 : n === 5 ? 4 : 2)
+    // Detect base note duration: (3BBB→1→2, (3B2B2B2→2→4, (6:4:6B/…→0.5→2
+    const noteM = tok.match(/\((?:\d+:?){1,3}[Bz](\d*)(\/?)/)
     let baseDur = 1
     if (noteM) {
       if (noteM[1]) baseDur = parseInt(noteM[1])
       else if (noteM[2]) baseDur = 0.5
     }
-    return mDefault * baseDur
+    return q * baseDur
   }
   if (tok.includes('/')) return 0.5
   const m = tok.match(/(\d+)$/)
   return m ? parseInt(m[1]) : 1
 }
 
+// 잇단음표 · 붓점 쌍 · 낱음표 순서로 읽는다. 붓점 쌍을 한 토큰으로 잡아야
+// 박 계산이 맞고, 두 음이 붙어 있으므로 abcjs가 알아서 빔으로 묶는다.
+const NOTE_RE = /\(\d+(?::\d+){0,2}(?:[Bz][0-9]*\/?)+|[Bz][0-9]*\/?[<>][Bz][0-9]*\/?|[Bz][0-9]*\/?/g
+
 function beamBar(bar: string): string {
   // 마디 끝 붙임줄(-)은 토큰 재조립 과정에서 유실되므로 떼어뒀다가 끝에 다시 붙인다
   const tieMatch = bar.match(/-\s*$/)
   if (tieMatch) return beamBar(bar.slice(0, tieMatch.index)) + '-'
 
-  // Preserve broken rhythm notation — abcjs handles > and < directly
-  if (bar.includes('>') || bar.includes('<')) return bar
-
-  const noteRe = /\(\d+(?:[Bz][0-9]*\/?)+|[Bz][0-9]*\/?/g
+  // 붓점이 하나라도 있으면 마디 전체를 건너뛰던 코드가 있었다. 그래서 붓점이
+  // 낀 마디만 박 단위 빔이 적용되지 않아, 첫 박과 둘째 박이 한 빔으로 묶였다.
+  // 붓점 쌍을 토큰으로 잡을 수 있게 됐으니 마디를 통째로 포기할 이유가 없다.
   const notes: Array<{ tok: string; dur: number; pos: number }> = []
   let cumPos = 0
   let m: RegExpExecArray | null
-  while ((m = noteRe.exec(bar)) !== null) {
+  NOTE_RE.lastIndex = 0
+  while ((m = NOTE_RE.exec(bar)) !== null) {
     const dur = getNoteDur(m[0])
     notes.push({ tok: m[0], dur, pos: cumPos })
     cumPos += dur
   }
   if (notes.length === 0) return bar
+  // 토큰을 도로 이어붙여 원본과 다르면 읽지 못한 표기가 있다는 뜻이다.
+  // 재조립 과정에서 조용히 날아가느니 그 마디는 손대지 않는다.
+  if (notes.map(n => n.tok).join('') !== bar.replace(/\s+/g, '')) return bar
 
   // 같은 박(beat) 안에서 8분음표 이하 길이의 음표가 연속되면 전부 하나의
   // 빔으로 묶는다 (쉼표를 만나면 끊음). 특정 조합만 하드코딩해서 놓치는
@@ -158,7 +179,7 @@ export default function RhythmViewer({
   const processedChunks = useMemo(
     () => patterns.map(p => ({
       label: p.label,
-      chunks: splitIntoChunks(p.abc, 2).map(c => fixBeaming(toPercFormat(c))),
+      chunks: splitIntoChunks(normalizeSextuplets(p.abc), 2).map(c => fixBeaming(toPercFormat(c))),
     })),
     [patterns]
   )

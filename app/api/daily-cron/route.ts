@@ -55,11 +55,12 @@ const BAR_PATTERNS: Record<string, string> = {
   X: 'z/ B/ B B/B/B/B/ z B z2',
   Y: 'z/ B/ B B z/ B/ (3BBB z2',
   Z: 'z/ B/ B B z/ B/ (3BzB z2',
-  // 6잇단음표(6연음) 패턴 — (6은 표준 ABC 기본 비율로 "2박자 길이에 6개" (1비트)
-  '45': '(6BBBBBB BB z2 (3BBB',
-  '46': 'BB (6BBBBBB z2 B2',
-  '47': '(6BBBBBB B/B/B/B/ z2 (3BzB',
-  '48': '(6BBBBBB (6BBBBBB BB z2',
+  // 6잇단음표(6연음) 패턴 — 한 박에 16분음표 6개다. (6:4:6 = "16분음표 4개
+  // 길이에 6개". 8분음표 6개로 적으면 길이는 같아도 빔이 한 줄로 그려진다.
+  '45': '(6:4:6B/B/B/B/B/B/ BB z2 (3BBB',
+  '46': 'BB (6:4:6B/B/B/B/B/B/ z2 B2',
+  '47': '(6:4:6B/B/B/B/B/B/ B/B/B/B/ z2 (3BzB',
+  '48': '(6:4:6B/B/B/B/B/B/ (6:4:6B/B/B/B/B/B/ BB z2',
 }
 
 // --- 박자 단위 재조립 (generate-rhythm/route.ts와 동일 로직, 중복 구현 스타일 유지) ---
@@ -76,17 +77,16 @@ function noteDur(sym: string): number {
 }
 
 function tokenDuration(tok: string): number {
-  if (tok.startsWith('(3')) {
-    const inner = tok.slice(2)
+  // 잇단음표는 (p 또는 (p:q:r. q가 "몇 개 길이 안에 넣는지"라 길이는 q/p배다.
+  // 옛 표기 (6BBBBBB 와 새 표기 (6:4:6B/… 가 둘 다 1박으로 계산된다.
+  const tup = tok.match(/^\((\d+)(?::(\d+))?(?::(\d+))?/)
+  if (tup) {
+    const p = parseInt(tup[1], 10)
+    const q = tup[2] ? parseInt(tup[2], 10) : (p === 3 ? 2 : p === 2 ? 3 : p === 5 ? 4 : 2)
+    const inner = tok.slice(tup[0].length)
     const notes = inner.match(/[Bz](?:\/|\d+)?/g) ?? []
     const sum = notes.reduce((s, n) => s + noteDur(n), 0)
-    return sum * (2 / 3)
-  }
-  if (tok.startsWith('(6')) {
-    const inner = tok.slice(2)
-    const notes = inner.match(/[Bz](?:\/|\d+)?/g) ?? []
-    const sum = notes.reduce((s, n) => s + noteDur(n), 0)
-    return sum * (2 / 6)
+    return sum * (q / p)
   }
   if (tok.includes('>') || tok.includes('<')) return 2
   const notes = tok.match(/[Bz](?:\/|\d+)?/g) ?? []
@@ -601,10 +601,10 @@ Y: z/ B/ B B z/ B/ (3BBB z2
 Z: z/ B/ B B z/ B/ (3BzB z2
 
 [매우 복잡: 6잇단음표(6연음) 패턴 45~48 — 고급 전용, 한 챌린지당 최대 1개]
-45: (6BBBBBB BB z2 (3BBB
-46: BB (6BBBBBB z2 B2
-47: (6BBBBBB B/B/B/B/ z2 (3BzB
-48: (6BBBBBB (6BBBBBB BB z2
+45: (6:4:6B/B/B/B/B/B/ BB z2 (3BBB
+46: BB (6:4:6B/B/B/B/B/B/ z2 B2
+47: (6:4:6B/B/B/B/B/B/ B/B/B/B/ z2 (3BzB
+48: (6:4:6B/B/B/B/B/B/ (6:4:6B/B/B/B/B/B/ BB z2
 
 규칙:
 - ${rhythmLevelRule}
