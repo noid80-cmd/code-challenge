@@ -98,6 +98,18 @@ export async function probeNativePush(): Promise<NativeProbe> {
   const info = bridgeInfo()
   if (typeof fm === 'string') return { state: 'unsupported', reason: fm, detail: info }
 
+  // 같은 플러그인의 isSupported()는 내부 객체(implementation) 없이 무조건
+  // 응답한다. checkPermissions()는 `implementation?.` 옵셔널 체이닝이라
+  // 그 객체가 nil이면 resolve도 reject도 하지 않고 그냥 매달린다.
+  // 그래서 이 둘을 비교하면 "다리가 안 통하는 것"과 "플러그인 초기화(load)가
+  // 안 끝난 것"이 갈린다. 맥 없이 웹 배포만으로 확인할 수 있는 유일한 갈림길이다.
+  const supported = await withTimeout(
+    fm.isSupported().then(() => 'ok').catch((e: unknown) => `err:${e instanceof Error ? e.message : String(e)}`),
+    4000,
+    'no-answer'
+  )
+  const info2 = `${info}·isSupported ${supported}`
+
   // 거부와 무응답을 갈라야 한다. 둘을 같은 값으로 뭉뚱그렸더니 "응답 없음"이
   // 사실은 "즉시 에러"인 경우를 구분할 수 없었다.
   type Outcome =
@@ -112,11 +124,11 @@ export async function probeNativePush(): Promise<NativeProbe> {
     { k: 'timeout' }
   )
 
-  if (outcome.k === 'timeout') return { state: 'unsupported', reason: 'timeout', detail: info }
+  if (outcome.k === 'timeout') return { state: 'unsupported', reason: 'timeout', detail: info2 }
   if (outcome.k === 'err') {
-    return { state: 'unsupported', reason: 'error', detail: `${info} · ${outcome.msg}`.slice(0, 120) }
+    return { state: 'unsupported', reason: 'error', detail: `${info2} · ${outcome.msg}`.slice(0, 160) }
   }
-  const detail = info
+  const detail = info2
   if (outcome.receive === 'granted') return { state: 'granted', reason: 'granted', detail }
   if (outcome.receive === 'denied') return { state: 'denied', reason: 'denied', detail }
   return { state: 'prompt', reason: 'prompt', detail }

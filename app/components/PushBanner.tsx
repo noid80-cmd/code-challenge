@@ -228,7 +228,7 @@ export function PushSettingRow({ user }: { user: SignedIn }) {
         </div>
         <div style={{ fontSize: 11.5, color: '#807060', lineHeight: 1.55 }}>{body}</div>
         {reason && (
-          <div style={{ fontSize: 10.5, color: '#403830', marginTop: 6, fontWeight: 700 }}>
+          <div style={{ fontSize: 10.5, color: '#403830', marginTop: 6, fontWeight: 700, lineHeight: 1.5, wordBreak: 'break-all' }}>
             {REASON_LABEL[reason]}{detail ? ` (${detail})` : ''}
           </div>
         )}
