@@ -42,7 +42,10 @@ function usePushStatus(user: SignedIn) {
 
   const check = useCallback(async () => {
     if (user === undefined) return
-    const probe = await probeNativePush()
+    // 진단 중 예외가 나면 화면이 '확인 중'에 영영 멈춘다. 그게 제일 나쁘다.
+    const probe = await probeNativePush().catch(() => ({
+      state: 'unsupported' as const, reason: 'error' as const, detail: 'probe threw',
+    }))
     setReason(probe.reason)
     setDetail(probe.detail ?? null)
 

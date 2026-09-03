@@ -72,6 +72,10 @@ async function saveToken(token: string): Promise<boolean> {
 export type PushReason =
   | 'no-bridge' | 'no-plugin' | 'timeout' | 'error'
   | 'denied' | 'prompt' | 'granted'
+// 앱 웹뷰가 옛 JS를 들고 있는지 한눈에 보려고 붙인다. 캐시된 화면인지
+// 새 화면인지 구분이 안 돼 같은 진단을 두 번 돌린 적이 있다.
+const PROBE_TAG = 'p2'
+
 export type NativeProbe = {
   state: 'granted' | 'denied' | 'prompt' | 'unsupported'
   reason: PushReason
@@ -94,21 +98,27 @@ function bridgeInfo(): string {
 /** 앱의 알림 권한 상태와, 그렇게 판단한 이유 */
 export async function probeNativePush(): Promise<NativeProbe> {
   const fm = await loadMessaging()
-  if (fm === 'no-bridge') return { state: 'unsupported', reason: 'no-bridge' }
+  if (fm === 'no-bridge') return { state: 'unsupported', reason: 'no-bridge', detail: PROBE_TAG }
   const info = bridgeInfo()
-  if (typeof fm === 'string') return { state: 'unsupported', reason: fm, detail: info }
+  if (typeof fm === 'string') return { state: 'unsupported', reason: fm, detail: `${PROBE_TAG}·${info}` }
 
   // 같은 플러그인의 isSupported()는 내부 객체(implementation) 없이 무조건
   // 응답한다. checkPermissions()는 `implementation?.` 옵셔널 체이닝이라
   // 그 객체가 nil이면 resolve도 reject도 하지 않고 그냥 매달린다.
   // 그래서 이 둘을 비교하면 "다리가 안 통하는 것"과 "플러그인 초기화(load)가
   // 안 끝난 것"이 갈린다. 맥 없이 웹 배포만으로 확인할 수 있는 유일한 갈림길이다.
+  // async 즉시실행으로 감싼다. fm.isSupported 자체가 없으면 호출이 그 자리에서
+  // 예외를 던지는데, 그러면 진단이 통째로 죽어 화면이 '확인 중'에 멈춘다.
   const supported = await withTimeout(
-    fm.isSupported().then(() => 'ok').catch((e: unknown) => `err:${e instanceof Error ? e.message : String(e)}`),
+    (async () => {
+      try { await fm.isSupported(); return 'ok' } catch (e) {
+        return `err:${e instanceof Error ? e.message : String(e)}`
+      }
+    })(),
     4000,
     'no-answer'
   )
-  const info2 = `${info}·isSupported ${supported}`
+  const info2 = `${PROBE_TAG}·${info}·isSupported ${supported}`
 
   // 거부와 무응답을 갈라야 한다. 둘을 같은 값으로 뭉뚱그렸더니 "응답 없음"이
   // 사실은 "즉시 에러"인 경우를 구분할 수 없었다.
