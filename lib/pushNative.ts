@@ -105,12 +105,31 @@ async function saveToken(token: string): Promise<boolean> {
       body: JSON.stringify({ token, platform }),
       signal: abort.signal,
     })
+    if (res.ok) markRegistered(token)
     return res.ok
   } catch {
     return false
   } finally {
     clearTimeout(timer)
   }
+}
+
+// 이 기기가 이미 등록됐다는 사실을 남긴다.
+//
+// 예전에는 화면을 열 때마다 토큰을 새로 발급받아 서버에 올려보고 그게 끝나야
+// '켜짐'으로 쳤다. iOS의 getToken()은 느릴 때가 있어서, 켜 놓고도 화면을
+// 옮길 때마다 "알림을 켜세요"가 다시 떴다(실제로 겪음).
+//
+// 켠 적이 있으면 바로 '켜짐'을 보여주고, 토큰 갱신은 뒤에서 조용히 한다.
+// 서버 행이 사라졌더라도 그 갱신이 다시 채워 넣으므로 스스로 복구된다.
+const REGISTERED_KEY = 'cc-push-registered'
+
+function markRegistered(token: string) {
+  try { localStorage.setItem(REGISTERED_KEY, token) } catch { /* non-critical */ }
+}
+
+export function wasRegistered(): boolean {
+  try { return !!localStorage.getItem(REGISTERED_KEY) } catch { return false }
 }
 
 // 왜 그렇게 판단했는지를 화면에 그대로 보여주려고 이유를 함께 돌려준다.
@@ -120,7 +139,7 @@ export type PushReason =
   | 'denied' | 'prompt' | 'granted'
 // 앱 웹뷰가 옛 JS를 들고 있는지 한눈에 보려고 붙인다. 캐시된 화면인지
 // 새 화면인지 구분이 안 돼 같은 진단을 두 번 돌린 적이 있다.
-const PROBE_TAG = 'p5'
+const PROBE_TAG = 'p6'
 
 export type NativeProbe = {
   state: 'granted' | 'denied' | 'prompt' | 'unsupported'

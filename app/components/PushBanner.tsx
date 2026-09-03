@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { probeNativePush, enableNativeNotifications, refreshNativeToken, type PushReason } from '@/lib/pushNative'
+import { probeNativePush, enableNativeNotifications, refreshNativeToken, wasRegistered, type PushReason } from '@/lib/pushNative'
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!
 
@@ -58,7 +58,16 @@ function usePushStatus(user: SignedIn) {
       if (!user) return setStatus('needLogin')
       // 권한이 허용이어도 서버에 토큰이 없으면 알림은 안 온다. 권한이 아니라
       // 등록 성공 여부로 판단한다.
-      if (probe.state === 'granted') return setStatus((await refreshNativeToken().catch(() => false)) ? 'on' : 'off')
+      if (probe.state === 'granted') {
+        // 한 번 등록한 기기면 기다리지 않고 바로 '켜짐'을 보여준다. 토큰 갱신은
+        // 뒤에서 돌린다 — 서버 행이 사라졌더라도 그게 다시 채워 넣는다.
+        if (wasRegistered()) {
+          setStatus('on')
+          refreshNativeToken().catch(() => {})
+          return
+        }
+        return setStatus((await refreshNativeToken().catch(() => false)) ? 'on' : 'off')
+      }
       return setStatus('off')
     }
 
