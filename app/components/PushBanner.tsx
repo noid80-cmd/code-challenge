@@ -163,9 +163,10 @@ export default function PushBanner({ user }: { user: SignedIn }) {
       width: '100%', maxWidth: 640,
     }}>
       {/* 제목("매일 알림 받기")은 본문과 같은 말을 두 번 하는 것이라 뺐다.
-          한 줄만 남았으니 그 줄이 무게를 받아야 한다. */}
+          글자를 키웠더니 두 줄로 넘어가서 원래 크기로 되돌렸다 — 한 줄로
+          끝나는 게 이 배너의 값이다. */}
       <div style={{ minWidth: 0 }}>
-        <div style={{ fontSize: 13, color: '#e0d9cb', lineHeight: 1.5, fontWeight: 600 }}>{body}</div>
+        <div style={{ fontSize: 11.5, color: '#a0988c', lineHeight: 1.55 }}>{body}</div>
       </div>
       {cta && (
         <button
