@@ -6,7 +6,25 @@ import { isNativeAppAsync } from './capacitor'
 // 알림을 켤 방법 자체가 없었다. 앱에서는 FCM 토큰을 받아 서버에 저장하고,
 // 크론이 그 토큰으로 직접 보낸다. 웹/PWA는 기존 웹 푸시를 그대로 쓴다.
 
-type Messaging = typeof import('@capacitor-firebase/messaging')['FirebaseMessaging']
+// 네이티브 플러그인에 직접 붙는다.
+//
+// 예전에는 `@capacitor-firebase/messaging`을 통째로 동적 import 했는데, 그
+// 패키지의 진입점이 웹 구현을 거쳐 `firebase/messaging`(웹 SDK)을 정적으로
+// 끌고 온다. 앱에서는 쓰지도 않는 덩어리다. 실기기에서 그 청크가 6초 안에
+// 안 내려와 플러그인 호출까지 가지도 못했다.
+//
+// 앱에서 필요한 건 네이티브 플러그인뿐이고, Capacitor는 그걸 붙이는 얇은
+// 통로를 제공한다. 웹/PWA 푸시는 애초에 다른 경로(web-push)라 영향 없다.
+type Messaging = {
+  checkPermissions(): Promise<{ receive: string }>
+  requestPermissions(): Promise<{ receive: string }>
+  getToken(): Promise<{ token: string }>
+  isSupported(): Promise<{ isSupported: boolean }>
+  addListener(
+    event: 'tokenReceived',
+    cb: (e: { token: string }) => void
+  ): Promise<{ remove: () => Promise<void> }>
+}
 
 /**
  * 네이티브 다리는 대답을 안 할 수도 있다.
@@ -38,8 +56,8 @@ function withTimeout<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
 async function loadMessaging(): Promise<Messaging | 'no-bridge' | 'no-plugin' | 'timeout'> {
   if (!(await isNativeAppAsync(10, 300))) return 'no-bridge'
   return withTimeout<Messaging | 'no-plugin' | 'timeout'>(
-    import('@capacitor-firebase/messaging')
-      .then(mod => mod.FirebaseMessaging as Messaging | 'no-plugin' | 'timeout')
+    import('@capacitor/core')
+      .then(mod => mod.registerPlugin<Messaging>('FirebaseMessaging') as Messaging | 'no-plugin' | 'timeout')
       .catch(() => 'no-plugin' as const),
     6000,
     'timeout'
@@ -74,7 +92,7 @@ export type PushReason =
   | 'denied' | 'prompt' | 'granted'
 // 앱 웹뷰가 옛 JS를 들고 있는지 한눈에 보려고 붙인다. 캐시된 화면인지
 // 새 화면인지 구분이 안 돼 같은 진단을 두 번 돌린 적이 있다.
-const PROBE_TAG = 'p2'
+const PROBE_TAG = 'p3'
 
 export type NativeProbe = {
   state: 'granted' | 'denied' | 'prompt' | 'unsupported'
