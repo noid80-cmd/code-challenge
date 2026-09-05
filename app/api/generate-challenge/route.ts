@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/adminGuard'
 import Anthropic from '@anthropic-ai/sdk'
 
 export async function POST() {
+  const denied = await requireAdmin()
+  if (denied) return denied
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY가 설정되지 않았어요.' }, { status: 500 })
   }

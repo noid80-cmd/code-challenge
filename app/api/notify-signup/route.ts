@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
+import { notifyTelegram } from '@/lib/telegram'
 
-const BOT_TOKEN = '8844510756:AAEmttbeJQTNvy-HOWd77F4lvN0Cy4pi2xA'
-const CHAT_ID = '8940756620'
 
 export async function POST(req: Request) {
   const { name, email } = await req.json()
@@ -14,11 +13,7 @@ export async function POST(req: Request) {
     `시간: ${time} KST`,
   ].join('\n')
 
-  await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: CHAT_ID, text }),
-  })
+  await notifyTelegram(text)
 
   return NextResponse.json({ ok: true })
 }

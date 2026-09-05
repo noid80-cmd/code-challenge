@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/adminGuard'
 import Anthropic from '@anthropic-ai/sdk'
 
 export const maxDuration = 120
@@ -389,6 +390,9 @@ function extractJsonObject(text: string): string | null {
 }
 
 export async function POST() {
+  const denied = await requireAdmin()
+  if (denied) return denied
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: 'ANTHROPIC_API_KEY가 없어요.' }, { status: 500 })
   }
