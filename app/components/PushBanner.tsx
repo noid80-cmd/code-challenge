@@ -145,7 +145,19 @@ function storeName(): string {
   return /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) ? 'App Store' : 'Play 스토어'
 }
 
-function copyFor(status: Exclude<PushStatus, 'checking'>): { body: string; cta: string | null } {
+// iOS는 홈 화면에 추가한 PWA에서만 Push API를 준다. 사파리 탭에는
+// PushManager 자체가 없어서 webOnly로 떨어지는데, 여기에 "이 브라우저는
+// 알림을 지원하지 않습니다"라고 쓰면 사실이 아니다 — 홈 화면에 추가하면
+// 받을 수 있다. 못 한다고 단정하면 시도조차 안 하게 된다.
+function isIosLike(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+}
+
+const APP_STORE_URL = 'https://apps.apple.com/kr/app/id6800208649'
+
+function copyFor(status: Exclude<PushStatus, 'checking'>): { body: string; cta: string | null; href?: string } {
   switch (status) {
     case 'on':
       return { body: '매일 새로운 초견이 만들어지면 알림으로 알려드립니다.', cta: null }
@@ -156,7 +168,10 @@ function copyFor(status: Exclude<PushStatus, 'checking'>): { body: string; cta: 
     case 'needLogin':
       return { body: '로그인하면 매일 새 챌린지를 알림으로 받을 수 있습니다.', cta: '로그인' }
     case 'webOnly':
-      return { body: '이 브라우저는 알림을 지원하지 않습니다. 앱에서 켜 주세요.', cta: null }
+      // 배너는 한 줄로 끝나는 게 값이라 문구를 짧게 유지한다.
+      return isIosLike()
+        ? { body: '홈 화면에 추가하거나 앱을 설치하면 알림을 받을 수 있습니다.', cta: '앱 설치', href: APP_STORE_URL }
+        : { body: '이 브라우저는 알림을 지원하지 않습니다. 앱에서 켜 주세요.', cta: null }
     case 'outdated':
       // 알림 기능은 iOS 1.2 / 안드로이드 versionCode 2부터 들어갔다. 그 이전
       // 빌드에는 알림을 켜는 방법 자체가 없다.
@@ -170,7 +185,7 @@ export default function PushBanner({ user }: { user: SignedIn }) {
   // 켜져 있으면 조용히 사라진다. 이미 한 사람을 계속 붙잡지 않는다.
   if (status === 'checking' || status === 'on') return null
 
-  const { body, cta } = copyFor(status)
+  const { body, cta, href } = copyFor(status)
 
   return (
     <div style={{
@@ -186,7 +201,21 @@ export default function PushBanner({ user }: { user: SignedIn }) {
       <div style={{ minWidth: 0 }}>
         <div style={{ fontSize: 11.5, color: '#a0988c', lineHeight: 1.55 }}>{body}</div>
       </div>
-      {cta && (
+      {cta && (href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            padding: '9px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+            color: '#0a0a08', fontSize: 12.5, fontWeight: 800, textDecoration: 'none',
+            flexShrink: 0, whiteSpace: 'nowrap',
+          }}
+        >
+          {cta}
+        </a>
+      ) : (
         <button
           onClick={status === 'needLogin' ? () => { window.location.href = '/login' } : enable}
           disabled={busy}
@@ -199,7 +228,7 @@ export default function PushBanner({ user }: { user: SignedIn }) {
         >
           {busy ? '설정 중...' : cta}
         </button>
-      )}
+      ))}
     </div>
   )
 }
@@ -232,8 +261,8 @@ const TECHNICAL_REASONS = new Set<PushReason>(['no-bridge', 'no-plugin', 'timeou
 export function PushSettingRow({ user }: { user: SignedIn }) {
   const { status, reason, detail, busy, enable } = usePushStatus(user)
   const on = status === 'on'
-  const { body, cta } = status === 'checking'
-    ? { body: '확인 중...', cta: null }
+  const { body, cta, href } = status === 'checking'
+    ? { body: '확인 중...', cta: null, href: undefined as string | undefined }
     : copyFor(status)
 
   return (
@@ -259,7 +288,21 @@ export function PushSettingRow({ user }: { user: SignedIn }) {
           </div>
         )}
       </div>
-      {cta && (
+      {cta && (href ? (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            padding: '9px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
+            background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+            color: '#0a0a08', fontSize: 12.5, fontWeight: 800, textDecoration: 'none',
+            flexShrink: 0, whiteSpace: 'nowrap',
+          }}
+        >
+          {cta}
+        </a>
+      ) : (
         <button
           onClick={status === 'needLogin' ? () => { window.location.href = '/login' } : enable}
           disabled={busy}
@@ -272,7 +315,7 @@ export function PushSettingRow({ user }: { user: SignedIn }) {
         >
           {busy ? '설정 중...' : cta}
         </button>
-      )}
+      ))}
     </div>
   )
 }
