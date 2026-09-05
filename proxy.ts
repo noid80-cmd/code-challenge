@@ -60,5 +60,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  // manifest.json 과 sw.js 가 빠져 있어서 로그아웃 상태에서 로그인으로
+  // 튕겼다. 처음 방문한 사람은 매니페스트를 못 읽어 홈 화면에 추가할 때
+  // 앱 이름·아이콘이 제대로 안 잡힌다 — 아이폰에서는 그 경로가 곧 알림
+  // 경로라 그냥 넘길 문제가 아니다.
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|manifest.json|manifest.webmanifest|sw.js|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)'],
 }
