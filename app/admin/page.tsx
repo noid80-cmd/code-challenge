@@ -99,7 +99,12 @@ export default function AdminPage() {
   async function generateRhythm() {
     setGeneratingRhythm(true); setError(''); setRhythmDraft(null)
     try {
-      const res = await fetch('/api/generate-rhythm', { method: 'POST' })
+      const { data: sess } = await createClient().auth.getSession()
+      const tok = sess.session?.access_token
+      const res = await fetch('/api/generate-rhythm', {
+        method: 'POST',
+        headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '생성 실패')
       const ch = data.challenge
@@ -144,7 +149,12 @@ export default function AdminPage() {
   async function generateMelody() {
     setGeneratingMelody(true); setError(''); setMelodyDraft(null)
     try {
-      const res = await fetch('/api/generate-melody', { method: 'POST' })
+      const { data: sess } = await createClient().auth.getSession()
+      const tok = sess.session?.access_token
+      const res = await fetch('/api/generate-melody', {
+        method: 'POST',
+        headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '생성 실패')
       const ch = data.challenge
@@ -189,7 +199,12 @@ export default function AdminPage() {
   async function generate() {
     setGenerating(true); setError(''); setDraft(null); setEditingId(null)
     try {
-      const res = await fetch('/api/generate-challenge', { method: 'POST' })
+      const { data: sess } = await createClient().auth.getSession()
+      const tok = sess.session?.access_token
+      const res = await fetch('/api/generate-challenge', {
+        method: 'POST',
+        headers: tok ? { Authorization: `Bearer ${tok}` } : {},
+      })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || '생성 실패')
       setDraft({

@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/adminGuard'
 import Anthropic from '@anthropic-ai/sdk'
 
-export async function POST() {
-  const denied = await requireAdmin()
+export async function POST(req: Request) {
+  const denied = await requireAdmin(req)
   if (denied) return denied
 
   if (!process.env.ANTHROPIC_API_KEY) {

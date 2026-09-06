@@ -444,8 +444,8 @@ function extractJsonObject(text: string): string | null {
   return null
 }
 
-export async function POST() {
-  const denied = await requireAdmin()
+export async function POST(req: Request) {
+  const denied = await requireAdmin(req)
   if (denied) return denied
 
   if (!process.env.ANTHROPIC_API_KEY) {
