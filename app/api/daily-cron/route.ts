@@ -7,6 +7,23 @@ import { sendFcm } from '@/lib/fcm'
 
 export const maxDuration = 300
 
+// PostgREST는 한 번에 1000행까지만 준다. 초과분은 에러 없이 빠지므로
+// "일부에게만 알림이 갔다"가 아무 흔적 없이 벌어진다. 지금은 구독이 적어
+// 안 드러나지만, 사람이 늘면 바로 그때 터진다. 끝까지 읽는다.
+const PAGE = 1000
+
+async function collectAll<T>(
+  build: (from: number, to: number) => PromiseLike<{ data: T[] | null }>,
+): Promise<T[]> {
+  const out: T[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data } = await build(from, from + PAGE - 1)
+    const rows = data ?? []
+    out.push(...rows)
+    if (rows.length < PAGE) return out
+  }
+}
+
 function extractJsonObject(text: string): string | null {
   const start = text.indexOf('{')
   if (start === -1) return null
@@ -1098,8 +1115,9 @@ JSON 객체로만 응답:
     })
   }
 
-  const { data: subs } = await supabase
-    .from('push_subscriptions').select('subscription, endpoint')
+  const subs = await collectAll<{ subscription: webpush.PushSubscription; endpoint: string }>((from, to) =>
+    supabase.from('push_subscriptions').select('subscription, endpoint')
+      .order('endpoint').range(from, to))
 
   const notifTitle = 'PlayDaily — 오늘의 챌린지'
   const notifBody = [
@@ -1110,7 +1128,7 @@ JSON 객체로만 응답:
 
   const deadEndpoints: string[] = []
   const results = await Promise.allSettled(
-    (subs ?? []).map(async ({ subscription, endpoint }) => {
+    subs.map(async ({ subscription, endpoint }) => {
       try {
         await webpush.sendNotification(subscription, JSON.stringify({ title: notifTitle, body: notifBody, url: '/' }))
       } catch (err: unknown) {
@@ -1131,8 +1149,9 @@ JSON 객체로만 응답:
 
   // ── 앱(FCM) 알림 ───────────────────────────────────────
   // 스토어에서 받은 앱은 웹뷰라 웹 푸시를 받을 수 없다. 앱은 여기로 보낸다.
-  const { data: devices } = await supabase.from('device_tokens').select('token')
-  const tokens = (devices ?? []).map(d => d.token as string)
+  const devices = await collectAll<{ token: string }>((from, to) =>
+    supabase.from('device_tokens').select('token').order('token').range(from, to))
+  const tokens = devices.map(d => d.token)
   const fcm = await sendFcm(tokens, { title: notifTitle, body: notifBody, url: '/' })
   if (fcm.deadTokens.length > 0) {
     await supabase.from('device_tokens').delete().in('token', fcm.deadTokens)
