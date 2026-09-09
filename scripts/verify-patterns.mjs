@@ -101,20 +101,19 @@ for (const [kind, header] of [['rhythm', RH_H], ['melody', ML_H]]) {
       if (dangling) { console.log(`  ✗ ${id.padEnd(4)} 붙임줄이 박 셀 경계에서 끊김: "${dangling.text}"`); failed++; continue }
     }
   }
-  // daily-cron 복제본 대조.
-  // cron은 리듬에서 A~Z만 쓰는 더 작은 세트라 "개수가 적은 것"은 정상이다.
-  // 같은 ID인데 값이 다르면 두 경로가 다른 악보를 내므로 실패로 본다.
+  // daily-cron 복제본 대조. 두 경로가 같은 악보를 내야 하므로 완전히 같아야 한다.
+  // 한쪽에만 패턴을 추가하면 매일 자동 생성이 어드민 생성보다 좁아진다(실제로 그랬다).
   const cron = CRON[kind]
   const conflict = Object.keys(cron).filter(k => pats[k] !== undefined && cron[k] !== pats[k])
   const orphan = Object.keys(cron).filter(k => pats[k] === undefined)
-  if (conflict.length || orphan.length) {
+  const missing = Object.keys(pats).filter(k => cron[k] === undefined)
+  if (conflict.length || orphan.length || missing.length) {
     if (conflict.length) console.log(`  ✗ daily-cron 값 불일치: ${conflict.join(', ')}`)
     if (orphan.length) console.log(`  ✗ daily-cron에만 있는 ID: ${orphan.join(', ')}`)
+    if (missing.length) console.log(`  ✗ daily-cron에 빠진 ID: ${missing.join(', ')}`)
     failed++
   } else {
-    const missing = Object.keys(pats).filter(k => cron[k] === undefined)
-    console.log(`  · daily-cron 복제본 값 일치 (${Object.keys(cron).length}개)` +
-      (missing.length ? `  — cron에 없는 ID ${missing.length}개: ${missing.join(', ')}` : ''))
+    console.log(`  · daily-cron 복제본 완전 일치 (${Object.keys(cron).length}개)`)
   }
 }
 console.log(`\n검사 ${checked}개, 실패 ${failed}개`)
