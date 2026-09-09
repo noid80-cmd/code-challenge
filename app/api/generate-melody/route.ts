@@ -104,6 +104,15 @@ const BAR_PATTERNS: Record<string, string> = {
   '42': 'CE/G/ F2 D2 C2',
   '43': 'C/EG/ G2 F2 D2',
   '44': 'C/E/G G2 E2 C2',
+  // 마디 안 붙임줄 45~50 — 고급 전용. 26~27(마디를 넘어가는 타이)과 달리
+  // 한 마디 안에서 박 경계를 타이로 넘는다. 타이는 반드시 같은 음끼리만 잇는다
+  // (다른 음을 이으면 이음줄이 되어 뜻이 달라진다).
+  '45': 'C2 D-D2 E2 D',
+  '46': 'E2 F-F2 G2 F',
+  '47': 'G2-G2 E2 C2',
+  '48': 'C D E-E2 G2 F',
+  '49': 'c2-c2 G2 E2',
+  '50': 'D2 F2-F2 A2',
 }
 
 // 카테고리 소속 — 복합 패턴은 여러 카테고리에 동시에 속해서, 8마디 예산 안에서도
@@ -113,36 +122,38 @@ const CATEGORY = {
   leap: ['E', 'F', 'G', 'H', 'P', 'Q', 'R', 'S', 'T', '1', '2', '3', '4', '18', '20', '22', '32', '33', '34', '38', '39'],
   bigLeap: ['1', '2', '3', '4', '20', '22', '34', '38', '39'],
   chromatic: ['U', 'V', 'W', '30', '31', '32', '33', '34'],
-  rhythm: ['X', 'Y', 'Z', '12', '13', '15', '16', '17', '18', '19', '20', '22', '23', '24', '25', '26', '27', '28', '29', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44'],
-  syncopation: ['8', '9', '11', '14', '26', '27'],
+  rhythm: ['X', 'Y', 'Z', '12', '13', '15', '16', '17', '18', '19', '20', '22', '23', '24', '25', '26', '27', '28', '29', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49', '50'],
+  syncopation: ['8', '9', '11', '14', '26', '27', '45', '46', '48'],
   rest: ['5', '6', '7', '10', '15', '17', '19', '20'],
+  // 마디 안 붙임줄 — 고급에서만 요구한다(중급은 need.tie=0)
+  tie: ['45', '46', '47', '48', '49', '50'],
 } as const
 
 // 매일 같은 5개 카테고리를 전부 채우게 하면(도약+반음+리듬+당김음+쉼표) 매번
 // "같은 레시피"로 만든 것처럼 비슷하게 들림. 오늘은 어떤 카테고리에 집중할지
 // 매번 랜덤으로 골라서, 날마다 확실히 다른 색깔이 나오게 함.
-type RecipeNeed = { leap: number; bigLeap: number; chromatic: number; rhythm: number; syncopation: number; rest: number }
+type RecipeNeed = { leap: number; bigLeap: number; chromatic: number; rhythm: number; syncopation: number; rest: number; tie: number }
 // chromaticCap: 반음은 대부분의 날에 1~2개가 적당하다는 피드백이 있었지만,
 // "반음 위주" 레시피는 규칙 텍스트 자체가 반음을 강조하므로 획일적으로 2로
 // 묶으면 실시간 검증 통과율이 0%에 가깝게 떨어짐(실측). 레시피별로 다르게 둠.
 const RECIPES: { name: string; need: (level: string) => RecipeNeed; neighborCap: (level: string) => number; chromaticCap: (level: string) => number; ruleText: string }[] = [
   {
     name: '도약·리듬 집중',
-    need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 1, rhythm: level === 'advanced' ? 7 : 6, syncopation: 1, rest: 0 }),
+    need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 1, rhythm: level === 'advanced' ? 7 : 6, syncopation: 1, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
     neighborCap: () => 2,
     chromaticCap: () => 2,
     ruleText: '오늘은 도약과 리듬 심화 위주로 몰아서 만드세요. 쉼표 패턴은 아예 안 써도 되지만, 반음은 최소 1개는 넣으세요.',
   },
   {
     name: '반음·당김음 집중',
-    need: level => ({ leap: 1, bigLeap: 1, chromatic: 2, rhythm: 2, syncopation: level === 'advanced' ? 5 : 4, rest: 0 }),
+    need: level => ({ leap: 1, bigLeap: 1, chromatic: 2, rhythm: 2, syncopation: level === 'advanced' ? 5 : 4, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
     neighborCap: () => 3,
     chromaticCap: () => 3,
     ruleText: '오늘은 당김음 위주로 몰아서 만드세요. 반음(크로매틱)도 다른 날보다 조금 더 쓰되, 과하게 넣지 말고 딱 필요한 개수만 쓰세요.',
   },
   {
     name: '쉼표·리듬 집중',
-    need: level => ({ leap: 2, bigLeap: 1, chromatic: 1, rhythm: level === 'advanced' ? 8 : 7, syncopation: 1, rest: level === 'advanced' ? 5 : 4 }),
+    need: level => ({ leap: 2, bigLeap: 1, chromatic: 1, rhythm: level === 'advanced' ? 8 : 7, syncopation: 1, rest: level === 'advanced' ? 5 : 4, tie: level === 'advanced' ? 2 : 0 }),
     neighborCap: () => 3,
     chromaticCap: () => 2,
     ruleText: '오늘은 쉼표와 리듬 심화 위주로 몰아서 만드세요. 반음은 최소 1개는 넣으세요.',
@@ -150,8 +161,8 @@ const RECIPES: { name: string; need: (level: string) => RecipeNeed; neighborCap:
   {
     name: '균형',
     need: level => level === 'advanced'
-      ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 5, syncopation: 2, rest: 1 }
-      : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 5, syncopation: 2, rest: 1 },
+      ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 5, syncopation: 2, rest: 1, tie: 2 }
+      : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 5, syncopation: 2, rest: 1, tie: 0 },
     neighborCap: level => level === 'advanced' ? 2 : 4,
     chromaticCap: () => 3,
     ruleText: '오늘은 도약·반음·리듬·당김음·쉼표를 골고루 섞어서 만드세요. 단, 반음은 넣더라도 최소한으로만 곁들이세요.',
@@ -212,6 +223,7 @@ function validateCombined(allBars: string[], level: string, recipe: typeof RECIP
   if (countCategory(allBars, CATEGORY.rhythm) < need.rhythm) return `rhythm count < ${need.rhythm}`
   if (countCategory(allBars, CATEGORY.syncopation) < need.syncopation) return `syncopation count < ${need.syncopation}`
   if (countCategory(allBars, CATEGORY.rest) < need.rest) return `rest count < ${need.rest}`
+  if (countCategory(allBars, CATEGORY.tie) < need.tie) return `tie count < ${need.tie}`
   // 2:1:1 리듬이 여태 한 번도 안 나왔다는 피드백 → 강제. 나온 뒤에도 항상
   // 도레미 순차진행(23~25)이라는 피드백 → 도약 버전(42~44)을 강제 대상으로 함
   // (23~25는 여전히 선택 가능하지만 별도로 강제하지 않음)
@@ -255,7 +267,7 @@ function buildPrompt(level: string, recentTitles: string[] = [], recipe: typeof 
   const need = recipe.need(level)
   const neighborCap = recipe.neighborCap(level)
   const chromaticCap = recipe.chromaticCap(level)
-  const levelRule = `${recipe.ruleText} 두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 ${need.leap}개(이 중 4도 이상 큰 도약 최소 ${need.bigLeap}개 포함), 반음 패턴(U,V,W,30~34) 최소 ${need.chromatic}개~최대 ${chromaticCap}개(반드시 ${chromaticCap}개를 넘기지 말 것), 리듬 심화 패턴(리듬 카테고리 전체) 최소 ${need.rhythm}개, 당김음 패턴(당김음 카테고리 전체) 최소 ${need.syncopation}개, 쉼표 패턴(쉼표 카테고리 전체) 최소 ${need.rest}개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 ${neighborCap}개로 제한`
+  const levelRule = `${recipe.ruleText} 두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 ${need.leap}개(이 중 4도 이상 큰 도약 최소 ${need.bigLeap}개 포함), 반음 패턴(U,V,W,30~34) 최소 ${need.chromatic}개~최대 ${chromaticCap}개(반드시 ${chromaticCap}개를 넘기지 말 것), 리듬 심화 패턴(리듬 카테고리 전체) 최소 ${need.rhythm}개, 당김음 패턴(당김음 카테고리 전체) 최소 ${need.syncopation}개, 쉼표 패턴(쉼표 카테고리 전체) 최소 ${need.rest}개, 마디 안 붙임줄 패턴(45~50) 최소 ${need.tie}개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 ${neighborCap}개로 제한`
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -367,6 +379,14 @@ Z: C/D/E/F/ G2 F2 E2 (16분음표 상행 런)
 42: CE/G/ F2 D2 C2 (8분음표가 앞: 도-미-솔)
 43: C/EG/ G2 F2 D2 (8분음표가 중간: 도-미-솔)
 44: C/E/G G2 E2 C2 (8분음표가 뒤: 도-미-솔)
+
+[마디 안 붙임줄 45~50 — 고급 전용. 26~27과 달리 한 마디 안에서 박 경계를 타이로 넘음]
+45: C2 D-D2 E2 D (레가 박 경계를 넘어 이어짐)
+46: E2 F-F2 G2 F (파가 박 경계를 넘어 이어짐)
+47: G2-G2 E2 C2 (솔을 2박 길이로 이어 침)
+48: C D E-E2 G2 F (미가 박 경계를 넘어 이어짐)
+49: c2-c2 G2 E2 (높은 도를 2박 길이로 이어 침)
+50: D2 F2-F2 A2 (파를 2박 길이로 이어 침)
 
 [마디를 넘어가는 붙임줄 26~27 — 반드시 짝으로만 사용. 26 바로 다음 마디에
 27이 와야 하고, 27은 26 없이 단독으로 쓸 수 없음. 26의 마지막 음(솔)이

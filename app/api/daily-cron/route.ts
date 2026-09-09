@@ -78,6 +78,19 @@ const BAR_PATTERNS: Record<string, string> = {
   '46': 'BB (6:4:6B/B/B/B/B/B/ z2 B2',
   '47': '(6:4:6B/B/B/B/B/B/ B/B/B/B/ z2 (3BzB',
   '48': '(6:4:6B/B/B/B/B/B/ (6:4:6B/B/B/B/B/B/ BB z2',
+  // 5잇단음표(5연음) 패턴 49~52 — 고급 전용. 한 박(4분음표) 안에 16분음표 5개.
+  // (5만 쓰면 abcjs가 5:2로 해석해 반 박이 되어 마디가 깨진다. 반드시 (5:4:5로 쓴다.
+  '49': '(5:4:5B/B/B/B/B/ BB z2 (3BBB',
+  '50': 'BB (5:4:5B/B/B/B/B/ z2 B2',
+  '51': '(5:4:5B/B/B/B/B/ B/B/B/B/ z2 (3BzB',
+  '52': '(5:4:5B/B/B/B/B/ (5:4:5B/B/B/B/B/ BB z2',
+  // 마디 안 붙임줄 패턴 53~56 — 고급 전용.
+  // 타이는 반드시 공백 없는 한 토큰으로 적는다. 박 단위로 쪼개 섞는
+  // shuffleBeatsAcrossBars가 셀 경계에서 타이를 끊으면 엉뚱한 음표에 붙는다.
+  '53': 'B2-B2 BB z2',
+  '54': 'BB B2-B2 BB',
+  '55': 'B-B z2 B3-B',
+  '56': 'B/-B/B/B/ B2 B-B z2',
 }
 
 // --- 박자 단위 재조립 (generate-rhythm/route.ts와 동일 로직, 중복 구현 스타일 유지) ---
@@ -577,8 +590,8 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
     const rhythmLevel = level
 
     const rhythmLevelRule = rhythmLevel === 'advanced'
-      ? '각 패턴에 P~Z 중 최소 4개 포함 (나머지는 A~O). 45~48(6잇단음표)은 최대 1개까지만 선택적으로 포함 가능'
-      : '각 패턴에 P~Z 중 2~3개 포함 (나머지는 A~O). 45~48은 사용하지 않음'
+      ? '각 패턴에 P~Z 중 최소 4개 포함 (나머지는 A~O). 45~48(6잇단음표)과 49~52(5잇단음표)는 각각 최대 1개까지만, 53~56(붙임줄)은 최대 2개까지 선택적으로 포함 가능'
+      : '각 패턴에 P~Z 중 2~3개 포함 (나머지는 A~O). 45~56은 사용하지 않음'
 
     const rhythmPrompt = `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
@@ -622,6 +635,18 @@ Z: z/ B/ B B z/ B/ (3BzB z2
 46: BB (6:4:6B/B/B/B/B/B/ z2 B2
 47: (6:4:6B/B/B/B/B/B/ B/B/B/B/ z2 (3BzB
 48: (6:4:6B/B/B/B/B/B/ (6:4:6B/B/B/B/B/B/ BB z2
+
+[매우 복잡: 5잇단음표(5연음) 패턴 49~52 — 고급 전용, 한 챌린지당 최대 1개]
+49: (5:4:5B/B/B/B/B/ BB z2 (3BBB
+50: BB (5:4:5B/B/B/B/B/ z2 B2
+51: (5:4:5B/B/B/B/B/ B/B/B/B/ z2 (3BzB
+52: (5:4:5B/B/B/B/B/ (5:4:5B/B/B/B/B/ BB z2
+
+[복잡: 붙임줄(타이) 패턴 53~56 — 고급 전용, 한 챌린지당 최대 2개]
+53: B2-B2 BB z2
+54: BB B2-B2 BB
+55: B-B z2 B3-B
+56: B/-B/B/B/ B2 B-B z2
 
 규칙:
 - ${rhythmLevelRule}
@@ -719,6 +744,9 @@ JSON 객체로만 응답:
     '38': 'C>G F>D G2 E2', '39': 'C<G F<D G2 E2',
     '40': '(3CEG F2 G2 F2', '41': '(3GAG F2 E2 D2',
     '42': 'CE/G/ F2 D2 C2', '43': 'C/EG/ G2 F2 D2', '44': 'C/E/G G2 E2 C2',
+    // 마디 안 붙임줄 45~50 — 고급 전용. 타이는 같은 음끼리만 잇는다.
+    '45': 'C2 D-D2 E2 D', '46': 'E2 F-F2 G2 F', '47': 'G2-G2 E2 C2',
+    '48': 'C D E-E2 G2 F', '49': 'c2-c2 G2 E2', '50': 'D2 F2-F2 A2',
   }
 
   const MELODY_CATEGORY = {
@@ -726,33 +754,34 @@ JSON 객체로만 응답:
     leap: ['E', 'F', 'G', 'H', 'P', 'Q', 'R', 'S', 'T', '1', '2', '3', '4', '18', '20', '22', '32', '33', '34', '38', '39'],
     bigLeap: ['1', '2', '3', '4', '20', '22', '34', '38', '39'],
     chromatic: ['U', 'V', 'W', '30', '31', '32', '33', '34'],
-    rhythm: ['X', 'Y', 'Z', '12', '13', '15', '16', '17', '18', '19', '20', '22', '23', '24', '25', '26', '27', '28', '29', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44'],
-    syncopation: ['8', '9', '11', '14', '26', '27'],
+    rhythm: ['X', 'Y', 'Z', '12', '13', '15', '16', '17', '18', '19', '20', '22', '23', '24', '25', '26', '27', '28', '29', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49', '50'],
+    syncopation: ['8', '9', '11', '14', '26', '27', '45', '46', '48'],
     rest: ['5', '6', '7', '10', '15', '17', '19', '20'],
+    tie: ['45', '46', '47', '48', '49', '50'],
   } as const
 
-  type MelodyRecipeNeed = { leap: number; bigLeap: number; chromatic: number; rhythm: number; syncopation: number; rest: number }
+  type MelodyRecipeNeed = { leap: number; bigLeap: number; chromatic: number; rhythm: number; syncopation: number; rest: number; tie: number }
   // chromaticCap: 반음은 대부분의 날에 1~2개가 적당하다는 피드백이 있었지만,
   // "반음 위주" 레시피는 규칙 텍스트 자체가 반음을 강조하므로 획일적으로 2로
   // 묶으면 실시간 검증 통과율이 0%에 가깝게 떨어짐(실측). 레시피별로 다르게 둠.
   const MELODY_RECIPES: { name: string; need: (level: string) => MelodyRecipeNeed; neighborCap: (level: string) => number; chromaticCap: (level: string) => number; ruleText: string }[] = [
     {
       name: '도약·리듬 집중',
-      need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 1, rhythm: level === 'advanced' ? 7 : 6, syncopation: 1, rest: 0 }),
+      need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 1, rhythm: level === 'advanced' ? 7 : 6, syncopation: 1, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
       neighborCap: () => 2,
       chromaticCap: () => 2,
       ruleText: '오늘은 도약과 리듬 심화 위주로 몰아서 만드세요. 쉼표 패턴은 아예 안 써도 되지만, 반음은 최소 1개는 넣으세요.',
     },
     {
       name: '반음·당김음 집중',
-      need: level => ({ leap: 1, bigLeap: 1, chromatic: 2, rhythm: 2, syncopation: level === 'advanced' ? 5 : 4, rest: 0 }),
+      need: level => ({ leap: 1, bigLeap: 1, chromatic: 2, rhythm: 2, syncopation: level === 'advanced' ? 5 : 4, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
       neighborCap: () => 3,
       chromaticCap: () => 3,
       ruleText: '오늘은 당김음 위주로 몰아서 만드세요. 반음(크로매틱)도 다른 날보다 조금 더 쓰되, 과하게 넣지 말고 딱 필요한 개수만 쓰세요.',
     },
     {
       name: '쉼표·리듬 집중',
-      need: level => ({ leap: 2, bigLeap: 1, chromatic: 1, rhythm: level === 'advanced' ? 8 : 7, syncopation: 1, rest: level === 'advanced' ? 5 : 4 }),
+      need: level => ({ leap: 2, bigLeap: 1, chromatic: 1, rhythm: level === 'advanced' ? 8 : 7, syncopation: 1, rest: level === 'advanced' ? 5 : 4, tie: level === 'advanced' ? 2 : 0 }),
       neighborCap: () => 3,
       chromaticCap: () => 2,
       ruleText: '오늘은 쉼표와 리듬 심화 위주로 몰아서 만드세요. 반음은 최소 1개는 넣으세요.',
@@ -760,8 +789,8 @@ JSON 객체로만 응답:
     {
       name: '균형',
       need: level => level === 'advanced'
-        ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 5, syncopation: 2, rest: 1 }
-        : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 5, syncopation: 2, rest: 1 },
+        ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 5, syncopation: 2, rest: 1, tie: 2 }
+        : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 5, syncopation: 2, rest: 1, tie: 0 },
       neighborCap: level => level === 'advanced' ? 2 : 4,
       chromaticCap: () => 3,
       ruleText: '오늘은 도약·반음·리듬·당김음·쉼표를 골고루 섞어서 만드세요. 단, 반음은 넣더라도 최소한으로만 곁들이세요.',
@@ -816,6 +845,7 @@ JSON 객체로만 응답:
     if (countMelodyCategory(allBars, MELODY_CATEGORY.rhythm) < need.rhythm) return `rhythm count < ${need.rhythm}`
     if (countMelodyCategory(allBars, MELODY_CATEGORY.syncopation) < need.syncopation) return `syncopation count < ${need.syncopation}`
     if (countMelodyCategory(allBars, MELODY_CATEGORY.rest) < need.rest) return `rest count < ${need.rest}`
+    if (countMelodyCategory(allBars, MELODY_CATEGORY.tie) < need.tie) return `tie count < ${need.tie}`
     if (!allBars.some(b => b === '42' || b === '43' || b === '44')) return `missing 2:1:1 rhythm with leap (42/43/44)`
     if (!allBars.some(b => b === '35' || b === '36' || b === '37')) return `missing non-scalar 16th run (35/36/37)`
     if (!allBars.some(b => b === '40' || b === '41')) return `missing non-scalar triplet (40/41)`
@@ -981,6 +1011,14 @@ Z: C/D/E/F/ G2 F2 E2 (16분음표 상행 런)
 42: CE/G/ F2 D2 C2 (8분음표가 앞: 도-미-솔)
 43: C/EG/ G2 F2 D2 (8분음표가 중간: 도-미-솔)
 44: C/E/G G2 E2 C2 (8분음표가 뒤: 도-미-솔)
+
+[마디 안 붙임줄 45~50 — 고급 전용. 한 마디 안에서 박 경계를 타이로 넘음]
+45: C2 D-D2 E2 D
+46: E2 F-F2 G2 F
+47: G2-G2 E2 C2
+48: C D E-E2 G2 F
+49: c2-c2 G2 E2
+50: D2 F2-F2 A2
 
 [마디를 넘어가는 붙임줄 26~27 — 반드시 짝으로만 사용. 26 바로 다음 마디에
 27이 와야 하고, 27은 26 없이 단독으로 쓸 수 없음]

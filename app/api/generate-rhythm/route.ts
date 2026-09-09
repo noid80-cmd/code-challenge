@@ -92,6 +92,19 @@ const BAR_PATTERNS: Record<string, string> = {
   '46': 'BB (6:4:6B/B/B/B/B/B/ z2 B2',
   '47': '(6:4:6B/B/B/B/B/B/ B/B/B/B/ z2 (3BzB',
   '48': '(6:4:6B/B/B/B/B/B/ (6:4:6B/B/B/B/B/B/ BB z2',
+  // 5잇단음표(5연음) 패턴 49~52 — 고급 전용. 한 박(4분음표) 안에 16분음표 5개.
+  // (5만 쓰면 abcjs가 5:2로 해석해 반 박이 되어 마디가 깨진다. 반드시 (5:4:5로 쓴다.
+  '49': '(5:4:5B/B/B/B/B/ BB z2 (3BBB',
+  '50': 'BB (5:4:5B/B/B/B/B/ z2 B2',
+  '51': '(5:4:5B/B/B/B/B/ B/B/B/B/ z2 (3BzB',
+  '52': '(5:4:5B/B/B/B/B/ (5:4:5B/B/B/B/B/ BB z2',
+  // 마디 안 붙임줄 패턴 53~56 — 고급 전용.
+  // 타이는 반드시 공백 없는 한 토큰으로 적는다. 박 단위로 쪼개 섞는
+  // shuffleBeatsAcrossBars가 셀 경계에서 타이를 끊으면 엉뚱한 음표에 붙는다.
+  '53': 'B2-B2 BB z2',
+  '54': 'BB B2-B2 BB',
+  '55': 'B-B z2 B3-B',
+  '56': 'B/-B/B/B/ B2 B-B z2',
 }
 
 // Bars that contain (3BzB — triplet with rest (syncopated feel)
@@ -235,8 +248,8 @@ function assemblePatternsABC(
 function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
-    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 4개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~48(6잇단음표)은 최대 1개까지만 선택적으로 포함 가능'
-    : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~48은 사용하지 않음'
+    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 4개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~48(6잇단음표)과 49~52(5잇단음표)는 각각 최대 1개까지만 선택적으로 포함 가능. 53~56(붙임줄)은 최대 2개까지 포함 가능'
+    : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~56은 사용하지 않음'
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -347,6 +360,18 @@ Z: z/ B/ B B z/ B/ (3BzB z2
 46: BB (6:4:6B/B/B/B/B/B/ z2 B2
 47: (6:4:6B/B/B/B/B/B/ B/B/B/B/ z2 (3BzB
 48: (6:4:6B/B/B/B/B/B/ (6:4:6B/B/B/B/B/B/ BB z2
+
+[매우 복잡: 5잇단음표(5연음) 패턴 49~52 — 고급 전용, 한 챌린지당 최대 1개]
+49: (5:4:5B/B/B/B/B/ BB z2 (3BBB
+50: BB (5:4:5B/B/B/B/B/ z2 B2
+51: (5:4:5B/B/B/B/B/ B/B/B/B/ z2 (3BzB
+52: (5:4:5B/B/B/B/B/ (5:4:5B/B/B/B/B/ BB z2
+
+[복잡: 붙임줄(타이) 패턴 53~56 — 고급 전용, 한 챌린지당 최대 2개]
+53: B2-B2 BB z2
+54: BB B2-B2 BB
+55: B-B z2 B3-B
+56: B/-B/B/B/ B2 B-B z2
 
 규칙:
 - ${levelRule}
