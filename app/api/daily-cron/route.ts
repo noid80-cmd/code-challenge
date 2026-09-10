@@ -1272,7 +1272,10 @@ JSON 객체로만 응답:
     supabase.from('push_subscriptions').select('subscription, endpoint')
       .order('endpoint').range(from, to))
 
-  const notifTitle = 'PlayDaily — 오늘의 챌린지'
+  // 앱 이름은 어디에도 'PlayDaily'로 나오지 않는다(매니페스트·타이틀 모두 '초견챌린지').
+  // 알림에만 남아 있던 옛 이름이라, 처음 받는 사람에겐 모르는 앱이 말을 거는 꼴이었다.
+  // iOS·안드로이드 모두 알림 위에 앱 이름을 따로 보여주므로 제목에는 내용만 쓴다.
+  const notifTitle = '오늘의 초견챌린지'
   const notifBody = [
     pushChord ? `🎵 ${pushChord}` : null,
     pushRhythm ? `🥁 ${pushRhythm}` : null,
