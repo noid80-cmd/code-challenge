@@ -12,7 +12,15 @@ type DraftChallenge = { title: string; description: string; progressions: Progre
 type ExistingChallenge = { id: string; date: string; title: string; level: string; type?: string }
 type RhythmDraft = { title: string; description: string; level: string; patterns: { label: string; abc: string }[] }
 type MelodyDraft = { title: string; description: string; level: string; patterns: { label: string; abc: string }[] }
-type Member = { id: string; name: string; avatar_url: string | null; created_at: string; submissionCount: number; lastSubmission: string | null }
+type Member = { id: string; name: string; avatar_url: string | null; created_at: string; submissionCount: number; lastSubmission: string | null; suspended_at: string | null }
+type AdminSubmission = {
+  id: string; user_id: string; created_at: string; hidden_at: string | null
+  caption: string | null; group_id: string | null; userName: string; challengeTitle: string
+}
+type AdminGroup = {
+  id: string; name: string; invite_code: string; created_at: string
+  ownerName: string; memberCount: number; videoCount: number
+}
 
 const LEVEL_LABELS: Record<string, string> = { beginner: '초급', intermediate: '중급', advanced: '고급' }
 const LEVEL_COLORS: Record<string, string> = { beginner: '#34d399', intermediate: '#818cf8', advanced: '#f87171' }
@@ -59,7 +67,7 @@ const emptyDraft = (): DraftChallenge => ({
 export default function AdminPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [adminTab, setAdminTab] = useState<'challenges' | 'members'>('challenges')
+  const [adminTab, setAdminTab] = useState<'challenges' | 'members' | 'videos' | 'groups'>('challenges')
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [draft, setDraft] = useState<DraftChallenge | null>(null)
@@ -71,6 +79,11 @@ export default function AdminPage() {
   const [deleting, setDeleting] = useState<string | null>(null)
   const [members, setMembers] = useState<Member[]>([])
   const [membersLoaded, setMembersLoaded] = useState(false)
+  const [subs, setSubs] = useState<AdminSubmission[]>([])
+  const [subsLoaded, setSubsLoaded] = useState(false)
+  const [adminGroups, setAdminGroups] = useState<AdminGroup[]>([])
+  const [groupsLoaded, setGroupsLoaded] = useState(false)
+  const [busyId, setBusyId] = useState('')
   const [challengeTypeForNew, setChallengeTypeForNew] = useState<'chord' | 'rhythm' | 'melody'>('chord')
   const [rhythmDraft, setRhythmDraft] = useState<RhythmDraft | null>(null)
   const [generatingRhythm, setGeneratingRhythm] = useState(false)
@@ -275,10 +288,98 @@ export default function AdminPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  // 쓰기 결과를 반드시 확인한다. RLS가 막으면 Supabase는 에러 없이 0행을
+  // 처리하고 끝나서, 확인하지 않으면 화면만 바뀌고 서버는 그대로다.
+  async function applyUpdate(table: string, id: string, patch: Record<string, unknown>) {
+    const supabase = createClient()
+    const { data, error } = await supabase.from(table).update(patch).eq('id', id).select('id')
+    if (error) { setError(`실패: ${error.message}`); return false }
+    if (!data?.length) { setError('반영되지 않았습니다. 권한 정책을 확인해주세요.'); return false }
+    setError(''); return true
+  }
+
+  async function toggleHidden(sub: AdminSubmission) {
+    setBusyId(sub.id)
+    const next = sub.hidden_at ? null : new Date().toISOString()
+    const ok = await applyUpdate('submissions', sub.id, { hidden_at: next })
+    if (ok) {
+      setSubs(prev => prev.map(x => x.id === sub.id ? { ...x, hidden_at: next } : x))
+      setSuccess(next ? '영상을 내렸어요' : '영상을 다시 공개했어요')
+      setTimeout(() => setSuccess(''), 2500)
+    }
+    setBusyId('')
+  }
+
+  async function toggleSuspend(m: Member) {
+    if (!m.suspended_at && !confirm(`${m.name ?? '이 회원'}을 정지할까요? 업로드와 댓글이 막힙니다.`)) return
+    setBusyId(m.id)
+    const next = m.suspended_at ? null : new Date().toISOString()
+    const ok = await applyUpdate('profiles', m.id, { suspended_at: next })
+    if (ok) {
+      setMembers(prev => prev.map(x => x.id === m.id ? { ...x, suspended_at: next } : x))
+      setSuccess(next ? '정지했어요' : '정지를 풀었어요')
+      setTimeout(() => setSuccess(''), 2500)
+    }
+    setBusyId('')
+  }
+
+  async function loadSubs() {
+    if (subsLoaded) return
+    const supabase = createClient()
+    const { data } = await supabase.from('submissions')
+      .select('id, user_id, challenge_id, caption, created_at, hidden_at, group_id')
+      .order('created_at', { ascending: false }).limit(100)
+    const rows = data ?? []
+    const userIds = [...new Set(rows.map(r => r.user_id))]
+    const chIds = [...new Set(rows.map(r => r.challenge_id))]
+    const [{ data: profs }, { data: chs }] = await Promise.all([
+      userIds.length ? supabase.from('profiles').select('id, name').in('id', userIds) : Promise.resolve({ data: [] }),
+      chIds.length ? supabase.from('challenges').select('id, title').in('id', chIds) : Promise.resolve({ data: [] }),
+    ])
+    const nameOf: Record<string, string> = {}
+    ;(profs ?? []).forEach((x: { id: string; name: string }) => { nameOf[x.id] = x.name })
+    const titleOf: Record<string, string> = {}
+    ;(chs ?? []).forEach((x: { id: string; title: string }) => { titleOf[x.id] = x.title })
+    setSubs(rows.map(r => ({
+      id: r.id, user_id: r.user_id, created_at: r.created_at, hidden_at: r.hidden_at,
+      caption: r.caption, group_id: r.group_id,
+      userName: nameOf[r.user_id] ?? '이름없음',
+      challengeTitle: titleOf[r.challenge_id] ?? '(삭제된 챌린지)',
+    })))
+    setSubsLoaded(true)
+  }
+
+  async function loadGroups() {
+    if (groupsLoaded) return
+    const supabase = createClient()
+    const { data: gs } = await supabase.from('groups')
+      .select('id, name, owner_id, invite_code, created_at').order('created_at', { ascending: false })
+    const rows = gs ?? []
+    const ownerIds = [...new Set(rows.map(g => g.owner_id))]
+    const [{ data: ms }, { data: gsubs }, { data: profs }] = await Promise.all([
+      supabase.from('group_members').select('group_id'),
+      supabase.from('submissions').select('group_id').not('group_id', 'is', null),
+      ownerIds.length ? supabase.from('profiles').select('id, name').in('id', ownerIds) : Promise.resolve({ data: [] }),
+    ])
+    const memberCount: Record<string, number> = {}
+    ;(ms ?? []).forEach((m: { group_id: string }) => { memberCount[m.group_id] = (memberCount[m.group_id] ?? 0) + 1 })
+    const videoCount: Record<string, number> = {}
+    ;(gsubs ?? []).forEach((v: { group_id: string }) => { videoCount[v.group_id] = (videoCount[v.group_id] ?? 0) + 1 })
+    const nameOf: Record<string, string> = {}
+    ;(profs ?? []).forEach((x: { id: string; name: string }) => { nameOf[x.id] = x.name })
+    setAdminGroups(rows.map(g => ({
+      id: g.id, name: g.name, invite_code: g.invite_code, created_at: g.created_at,
+      ownerName: nameOf[g.owner_id] ?? '이름없음',
+      memberCount: memberCount[g.id] ?? 0,
+      videoCount: videoCount[g.id] ?? 0,
+    })))
+    setGroupsLoaded(true)
+  }
+
   async function loadMembers() {
     if (membersLoaded) return
     const supabase = createClient()
-    const { data: profiles } = await supabase.from('profiles').select('id, name, avatar_url, created_at').order('created_at', { ascending: false })
+    const { data: profiles } = await supabase.from('profiles').select('id, name, avatar_url, created_at, suspended_at').order('created_at', { ascending: false })
     const { data: subs } = await supabase.from('submissions').select('user_id, created_at').order('created_at', { ascending: false })
     const countMap: Record<string, number> = {}
     const lastMap: Record<string, string> = {}
@@ -398,17 +499,95 @@ export default function AdminPage() {
       <main style={{ maxWidth: 560, margin: '0 auto', padding: '24px 16px 80px' }}>
         {/* 탭 */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
-          {(['challenges', 'members'] as const).map(tab => (
-            <button key={tab} onClick={() => { setAdminTab(tab); if (tab === 'members') loadMembers() }} style={{
-              flex: 1, padding: '8px', borderRadius: 9, border: 'none', cursor: 'pointer',
+          {(['challenges', 'videos', 'members', 'groups'] as const).map(tab => (
+            <button key={tab} onClick={() => {
+              setAdminTab(tab)
+              if (tab === 'members') loadMembers()
+              if (tab === 'videos') loadSubs()
+              if (tab === 'groups') loadGroups()
+            }} style={{
+              flex: 1, padding: '8px 4px', borderRadius: 9, border: 'none', cursor: 'pointer',
               background: adminTab === tab ? 'rgba(99,102,241,0.2)' : 'transparent',
-              color: adminTab === tab ? '#a5b4fc' : '#555570',
-              fontSize: 13, fontWeight: 800,
+              color: adminTab === tab ? '#a5b4fc' : '#8a8ab5',
+              fontSize: 12.5, fontWeight: 800,
             }}>
-              {tab === 'challenges' ? '챌린지' : '회원 명단'}
+              {tab === 'challenges' ? '챌린지' : tab === 'videos' ? '영상' : tab === 'members' ? '회원' : '그룹'}
             </button>
           ))}
         </div>
+
+        {/* ── 영상 관리 ── */}
+        {adminTab === 'videos' && (
+          <div>
+            <div style={{ fontSize: 12, color: '#9a9ac8', fontWeight: 600, marginBottom: 14 }}>
+              최근 {subs.length}개 · 내려간 영상 {subs.filter(x => x.hidden_at).length}개
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {subs.map(sub => (
+                <div key={sub.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '14px 16px', opacity: sub.hidden_at ? 0.55 : 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                        <span style={{ fontSize: 14, fontWeight: 800, color: '#ccccee' }}>{sub.userName}</span>
+                        {sub.hidden_at && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: '#e07060', background: 'rgba(224,112,96,0.15)', padding: '2px 6px', borderRadius: 5 }}>내려감</span>
+                        )}
+                        {sub.group_id && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: '#9a9ac8', background: 'rgba(255,255,255,0.07)', padding: '2px 6px', borderRadius: 5 }}>그룹</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#9a9ac8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {sub.challengeTitle}{sub.caption ? ` · ${sub.caption}` : ''}
+                      </div>
+                      <div style={{ fontSize: 11, color: '#8a8ab5', marginTop: 3 }}>
+                        {new Date(sub.created_at).toLocaleDateString('ko-KR')}
+                      </div>
+                    </div>
+                    <button disabled={busyId === sub.id} onClick={() => toggleHidden(sub)} style={{
+                      flexShrink: 0, padding: '7px 11px', borderRadius: 9, cursor: 'pointer',
+                      border: `1px solid ${sub.hidden_at ? 'rgba(165,180,252,0.35)' : 'rgba(224,112,96,0.4)'}`,
+                      background: 'transparent', color: sub.hidden_at ? '#a5b4fc' : '#e07060',
+                      fontSize: 12, fontWeight: 800,
+                    }}>{sub.hidden_at ? '되돌리기' : '내리기'}</button>
+                  </div>
+                </div>
+              ))}
+              {subs.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#8a8ab5', fontSize: 14 }}>영상이 없어요</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── 그룹 현황 ── */}
+        {adminTab === 'groups' && (
+          <div>
+            <div style={{ fontSize: 12, color: '#9a9ac8', fontWeight: 600, marginBottom: 14 }}>
+              총 {adminGroups.length}개
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {adminGroups.map(g => (
+                <div key={g.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '14px 16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 14, fontWeight: 800, color: '#ccccee', marginBottom: 3 }}>{g.name}</div>
+                      <div style={{ fontSize: 12, color: '#9a9ac8' }}>
+                        방장 {g.ownerName} · {new Date(g.created_at).toLocaleDateString('ko-KR')}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 800, color: '#a5b4fc' }}>멤버 {g.memberCount}</div>
+                      <div style={{ fontSize: 12, color: '#9a9ac8', marginTop: 2 }}>영상 {g.videoCount}</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {adminGroups.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#8a8ab5', fontSize: 14 }}>그룹이 없어요</div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ── 회원 명단 ── */}
         {adminTab === 'members' && (
@@ -434,7 +613,12 @@ export default function AdminPage() {
                       : (m.name ?? '?').slice(0, 1).toUpperCase()}
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#ccccee', marginBottom: 2 }}>{m.name ?? '이름없음'}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: '#ccccee' }}>{m.name ?? '이름없음'}</span>
+                      {m.suspended_at && (
+                        <span style={{ fontSize: 10, fontWeight: 800, color: '#e07060', background: 'rgba(224,112,96,0.15)', padding: '2px 6px', borderRadius: 5 }}>정지됨</span>
+                      )}
+                    </div>
                     <div style={{ fontSize: 11, color: '#9494c0' }}>
                       가입 {new Date(m.created_at).toLocaleDateString('ko-KR')}
                       {m.lastSubmission && (
@@ -445,9 +629,15 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: m.submissionCount > 0 ? '#818cf8' : '#333355' }}>{m.submissionCount}</div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: m.submissionCount > 0 ? '#818cf8' : '#8a8ab5' }}>{m.submissionCount}</div>
                     <div style={{ fontSize: 10, color: '#8a8ab5', fontWeight: 600 }}>영상</div>
                   </div>
+                  <button disabled={busyId === m.id} onClick={() => toggleSuspend(m)} style={{
+                    flexShrink: 0, padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
+                    border: `1px solid ${m.suspended_at ? 'rgba(165,180,252,0.35)' : 'rgba(224,112,96,0.4)'}`,
+                    background: 'transparent', color: m.suspended_at ? '#a5b4fc' : '#e07060',
+                    fontSize: 11.5, fontWeight: 800,
+                  }}>{m.suspended_at ? '해제' : '정지'}</button>
                 </div>
               ))}
               {members.length === 0 && (
@@ -475,7 +665,7 @@ export default function AdminPage() {
               <button key={t} onClick={() => { setChallengeTypeForNew(t); setDraft(null); setRhythmDraft(null); setMelodyDraft(null); setError(''); setSuccess('') }} style={{
                 flex: 1, padding: '9px', borderRadius: 9, border: 'none', cursor: 'pointer',
                 background: challengeTypeForNew === t ? 'rgba(99,102,241,0.2)' : 'transparent',
-                color: challengeTypeForNew === t ? '#a5b4fc' : '#555570',
+                color: challengeTypeForNew === t ? '#a5b4fc' : '#9a9ac2',
                 fontSize: 13, fontWeight: 800,
               }}>
                 {t === 'chord' ? '🎵 코드챌린지' : t === 'rhythm' ? '🥁 리듬챌린지' : '🎼 멜로디챌린지'}

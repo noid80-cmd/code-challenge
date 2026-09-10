@@ -383,7 +383,7 @@ ${window.location.origin}/groups?code=${group.invite_code}
             <button key={tab} onClick={() => setActiveTab(tab)} style={{
               flex: 1, padding: '8px', borderRadius: 9, border: 'none', cursor: 'pointer',
               background: activeTab === tab ? 'rgba(240,236,224,0.12)' : 'transparent',
-              color: activeTab === tab ? '#f0ece0' : '#605850',
+              color: activeTab === tab ? '#f0ece0' : '#a8a296',
               fontSize: 13, fontWeight: 800, transition: 'all 0.15s',
             }}>
               {tab === 'feed' ? '피드' : '채팅'}
@@ -556,7 +556,7 @@ ${window.location.origin}/groups?code=${group.invite_code}
               <button onClick={sendMessage} disabled={sending || !messageText.trim()} style={{
                 width: 44, height: 44, borderRadius: '50%', border: 'none', flexShrink: 0,
                 background: messageText.trim() ? 'linear-gradient(135deg, #f8f4ec, #c8c4b0)' : 'rgba(240,236,224,0.08)',
-                color: messageText.trim() ? '#0a0a08' : '#303028',
+                color: messageText.trim() ? '#0a0a08' : '#8f8a7e',
                 fontSize: 18, cursor: messageText.trim() ? 'pointer' : 'default',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s',
@@ -658,7 +658,7 @@ function SubmissionCard({
               border: liked ? '1px solid rgba(240,236,224,0.4)' : '1px solid rgba(255,255,255,0.06)',
               borderRadius: 10, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
-              color: liked ? '#f0ece0' : '#303028',
+              color: liked ? '#f0ece0' : '#8f8a7e',
               fontSize: 14, fontWeight: 800, padding: '7px 12px',
             }}>
               {liked ? '♥' : '♡'}
@@ -697,7 +697,7 @@ function SubmissionCard({
                       <div style={{ display: 'flex', gap: 10, marginTop: 5 }}>
                         <button onClick={() => startReply(replyToId === c.id ? null : c.id)} style={{
                           background: 'none', border: 'none', cursor: 'pointer',
-                          color: replyToId === c.id ? '#a0988c' : '#484640', fontSize: 11, fontWeight: 600, padding: 0,
+                          color: replyToId === c.id ? '#a0988c' : '#98948a', fontSize: 11, fontWeight: 600, padding: 0,
                         }}>답글</button>
                         {c.user_id === currentUserId && (
                           <button onClick={() => onDeleteComment(c.id)} style={{

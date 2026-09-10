@@ -249,7 +249,7 @@ export default function RhythmViewer({
                 flex: 1, padding: '5px 6px', borderRadius: 9, border: 'none', cursor: 'pointer',
                 background: activeTab === pi ? 'rgba(240,236,224,0.15)' : 'rgba(240,236,224,0.04)',
                 outline: activeTab === pi ? '1px solid rgba(240,236,224,0.3)' : '1px solid rgba(240,236,224,0.08)',
-                color: activeTab === pi ? '#f0ece0' : '#605850',
+                color: activeTab === pi ? '#f0ece0' : '#a8a296',
                 fontSize: 10, fontWeight: 700, letterSpacing: '0.02em',
                 transition: 'all 0.15s', textAlign: 'center',
                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',

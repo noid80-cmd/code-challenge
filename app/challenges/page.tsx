@@ -106,7 +106,7 @@ export default function ChallengesPage() {
               flex: 1, padding: '13px 0', border: 'none', cursor: 'pointer',
               background: 'transparent',
               fontSize: 13, fontWeight: 800, letterSpacing: '-0.01em',
-              color: tab === t ? '#f0ece0' : '#403830',
+              color: tab === t ? '#f0ece0' : '#948b7d',
               borderBottom: tab === t ? '2px solid #f0ece0' : '2px solid transparent',
               transition: 'color 0.15s, border-color 0.15s',
             }}

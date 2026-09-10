@@ -212,13 +212,13 @@ export default function ChallengePage() {
             <button onClick={() => setSortBy('newest')} style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
               fontSize: 12, fontWeight: 700,
-              color: sortBy === 'newest' ? '#f8f4ec' : '#303028',
+              color: sortBy === 'newest' ? '#f8f4ec' : '#8f8a7e',
             }}>최신</button>
             <span style={{ color: '#8b857a', fontSize: 11 }}>|</span>
             <button onClick={() => setSortBy('popular')} style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
               fontSize: 12, fontWeight: 700,
-              color: sortBy === 'popular' ? '#f8f4ec' : '#303028',
+              color: sortBy === 'popular' ? '#f8f4ec' : '#8f8a7e',
             }}>인기</button>
           </div>
         </div>
@@ -310,7 +310,7 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
               border: sub.user_liked ? '1px solid rgba(240,236,224,0.4)' : '1px solid rgba(255,255,255,0.06)',
               borderRadius: 10, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
-              color: sub.user_liked ? '#f0ece0' : '#303028',
+              color: sub.user_liked ? '#f0ece0' : '#8f8a7e',
               fontSize: 14, fontWeight: 800, padding: '7px 13px',
             }}>
               {sub.user_liked ? '♥' : '♡'}

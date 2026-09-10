@@ -541,7 +541,7 @@ export default function UploadPage() {
                   padding: '11px 14px', borderRadius: 12,
                   background: selectedProgression === i ? 'rgba(240,236,224,0.1)' : 'rgba(240,236,224,0.03)',
                   border: selectedProgression === i ? '1px solid rgba(240,236,224,0.35)' : '1px solid rgba(240,236,224,0.08)',
-                  color: selectedProgression === i ? '#f0ece0' : '#605850',
+                  color: selectedProgression === i ? '#f0ece0' : '#a8a296',
                   fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left',
                   display: 'flex', alignItems: 'center', gap: 10,
                 }}>
@@ -574,7 +574,7 @@ export default function UploadPage() {
                   padding: '11px 14px', borderRadius: 12,
                   background: selectedProgression === i ? 'rgba(240,236,224,0.1)' : 'rgba(240,236,224,0.03)',
                   border: selectedProgression === i ? '1px solid rgba(240,236,224,0.35)' : '1px solid rgba(240,236,224,0.08)',
-                  color: selectedProgression === i ? '#f0ece0' : '#605850',
+                  color: selectedProgression === i ? '#f0ece0' : '#a8a296',
                   fontSize: 13, fontWeight: 700, cursor: 'pointer', textAlign: 'left',
                   display: 'flex', alignItems: 'center', gap: 10,
                 }}>
@@ -694,7 +694,7 @@ export default function UploadPage() {
                       }} onClick={() => setSelectedDestinations(prev =>
                         checked ? prev.filter(d => d !== g.id) : [...prev, g.id]
                       )}>
-                        <span style={{ fontSize: 13, fontWeight: 700, color: checked ? '#f8f4ec' : '#303028' }}>
+                        <span style={{ fontSize: 13, fontWeight: 700, color: checked ? '#f8f4ec' : '#8f8a7e' }}>
                           {g.name}
                         </span>
                         {g.sub && (
@@ -717,7 +717,7 @@ export default function UploadPage() {
           <button type="submit" disabled={uploading || !file || !challenge} style={{
             width: '100%', padding: '15px', borderRadius: 13, border: 'none',
             background: uploading || !file || !challenge ? 'rgba(240,236,224,0.08)' : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-            color: uploading || !file || !challenge ? '#303028' : '#0a0a08',
+            color: uploading || !file || !challenge ? '#8f8a7e' : '#0a0a08',
             fontSize: 15, fontWeight: 800,
             cursor: uploading || !file || !challenge ? 'default' : 'pointer',
             boxShadow: uploading || !file || !challenge ? 'none' : '0 6px 24px rgba(240,236,224,0.4)',

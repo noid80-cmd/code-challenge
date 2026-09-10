@@ -352,7 +352,7 @@ export default function LoginPage() {
               <button type="submit" disabled={loading} style={{
                 width: '100%', padding: '14px', borderRadius: 13, border: 'none', marginTop: 4,
                 background: loading ? 'rgba(240,236,224,0.12)' : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-                color: loading ? '#303028' : '#0a0a08',
+                color: loading ? '#8f8a7e' : '#0a0a08',
                 fontSize: 15, fontWeight: 800, cursor: loading ? 'default' : 'pointer',
                 boxShadow: loading ? 'none' : '0 6px 24px rgba(240,236,224,0.4)',
               }}>

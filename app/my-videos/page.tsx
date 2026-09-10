@@ -77,7 +77,7 @@ function CalendarView({ submittedDates }: { submittedDates: Set<string> }) {
               background: submitted ? 'rgba(240,236,224,0.15)' : 'transparent',
               border: isToday ? '1.5px solid rgba(240,236,224,0.4)' : 'none',
             }}>
-              <span style={{ fontSize: 12, fontWeight: submitted ? 800 : 500, color: submitted ? '#f0ece0' : '#807060' }}>
+              <span style={{ fontSize: 12, fontWeight: submitted ? 800 : 500, color: submitted ? '#f0ece0' : '#b0a493' }}>
                 {day}
               </span>
               {submitted && (
@@ -259,10 +259,10 @@ export default function MyVideosPage() {
                 boxShadow: streak > 0 ? '0 8px 32px rgba(240,236,224,0.1)' : 'none',
               }}>
                 <div style={{ fontSize: 10, color: '#a0988c', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>연속 참여</div>
-                <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.04em', color: streak > 0 ? '#f8f4ec' : '#807060' }}>
+                <div style={{ fontSize: 36, fontWeight: 900, lineHeight: 1, letterSpacing: '-0.04em', color: streak > 0 ? '#f8f4ec' : '#b0a493' }}>
                   {streak}
                 </div>
-                <div style={{ fontSize: 11, color: streak > 0 ? '#a0988c' : '#807060', marginTop: 5 }}>일 연속</div>
+                <div style={{ fontSize: 11, color: streak > 0 ? '#a0988c' : '#b0a493', marginTop: 5 }}>일 연속</div>
               </div>
 
               <div style={{ flex: 1, background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: '18px' }}>
@@ -470,7 +470,7 @@ function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
               </div>
             )}
             {sub.challenges?.title && (
-              <div style={{ fontSize: 11, color: sub.caption ? '#807060' : '#e0dcd0', fontWeight: sub.caption ? 600 : 800, lineHeight: 1.3, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+              <div style={{ fontSize: 11, color: sub.caption ? '#b0a493' : '#e0dcd0', fontWeight: sub.caption ? 600 : 800, lineHeight: 1.3, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                 {sub.challenges.title}
               </div>
             )}
@@ -478,7 +478,7 @@ function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
               <span style={{ fontSize: 11, color: '#b0a493' }}>{date.getMonth() + 1}/{date.getDate()}</span>
               <button type="button" onClick={e => { e.stopPropagation(); handleToggle() }} disabled={toggling} style={{
                 background: 'none', border: 'none', cursor: toggling ? 'default' : 'pointer',
-                fontSize: 13, padding: 0, color: sub.is_private ? '#a0988c' : '#807060',
+                fontSize: 13, padding: 0, color: sub.is_private ? '#a0988c' : '#b0a493',
               }}>
                 {toggling ? '...' : sub.is_private ? '🔒' : '🔓'}
               </button>
