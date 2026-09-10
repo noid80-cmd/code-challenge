@@ -45,6 +45,12 @@ export default function UploadPage() {
   const cameraRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const recorderRef = useRef<MediaRecorder | null>(null)
+  // 누르자마자 찍히면 폰을 세우는 동안이 그대로 녹화된다. 앞부분이 늘
+  // 천장이거나 허둥대는 장면이던 이유다.
+  const [countdown, setCountdown] = useState<number | null>(null)
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // 마이크 원음을 그대로 담으면 악기가 멀어서 소리가 아주 작다.
+  const audioCtxRef = useRef<AudioContext | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -123,7 +129,32 @@ export default function UploadPage() {
     setRecording(false)
     setRecordSecs(0)
     if (timerRef.current) clearInterval(timerRef.current)
+    if (countdownRef.current) clearInterval(countdownRef.current)
   }, [])
+
+  // 셋을 세고 시작한다. 그 사이에 폰을 세우고 손을 올린다.
+  function startCountdown() {
+    if (countdownRef.current) clearInterval(countdownRef.current)
+    setCountdown(3)
+    countdownRef.current = setInterval(() => {
+      setCountdown(n => {
+        if (n === null) return null
+        if (n <= 1) {
+          if (countdownRef.current) clearInterval(countdownRef.current)
+          countdownRef.current = null
+          startRecording()
+          return null
+        }
+        return n - 1
+      })
+    }, 1000)
+  }
+
+  function cancelCountdown() {
+    if (countdownRef.current) clearInterval(countdownRef.current)
+    countdownRef.current = null
+    setCountdown(null)
+  }
 
   // 녹화 시작
   function startRecording() {
@@ -135,7 +166,39 @@ export default function UploadPage() {
     const mimeType = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4',
       'video/webm;codecs=vp8,opus', 'video/webm']
       .find(t => MediaRecorder.isTypeSupported(t)) ?? ''
-    const recorder = new MediaRecorder(streamRef.current, {
+    // 자동 증폭(autoGainControl)을 꺼둔 건 소리가 펌핑되지 않게 하려는
+    // 선택이었지만, 그 대가로 폰이 악기에서 떨어진 만큼 작게 담긴다.
+    // 원음을 키우고 봉우리만 눌러서 담는다 — 자동 증폭과 달리 연주 중에
+    // 음량이 오르내리지 않는다.
+    let recordStream: MediaStream = streamRef.current
+    try {
+      const audioTracks = streamRef.current.getAudioTracks()
+      if (audioTracks.length > 0) {
+        const ctx = new AudioContext()
+        const src = ctx.createMediaStreamSource(new MediaStream(audioTracks))
+        const gain = ctx.createGain()
+        gain.gain.value = 3.2
+        const comp = ctx.createDynamicsCompressor()
+        comp.threshold.value = -18
+        comp.knee.value = 12
+        comp.ratio.value = 4
+        comp.attack.value = 0.005
+        comp.release.value = 0.25
+        const dest = ctx.createMediaStreamDestination()
+        src.connect(gain); gain.connect(comp); comp.connect(dest)
+        recordStream = new MediaStream([
+          ...streamRef.current.getVideoTracks(),
+          ...dest.stream.getAudioTracks(),
+        ])
+        audioCtxRef.current = ctx
+      }
+    } catch {
+      // 이 처리가 안 되는 기기에서는 원음 그대로 담는다. 작게 담길지언정
+      // 소리가 통째로 사라지면 안 된다.
+      recordStream = streamRef.current
+    }
+
+    const recorder = new MediaRecorder(recordStream, {
       ...(mimeType ? { mimeType } : {}),
       videoBitsPerSecond: 1_800_000,
       audioBitsPerSecond: 192_000,
@@ -147,6 +210,8 @@ export default function UploadPage() {
       const f = new File([blob], `recording.${ext}`, { type: blob.type })
       setFile(f)
       setPreview(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(blob) })
+      audioCtxRef.current?.close().catch(() => {})
+      audioCtxRef.current = null
       stopCamera()
     }
     recorder.start()
@@ -222,9 +287,10 @@ export default function UploadPage() {
 
       video.onloadeddata = () => {
         // 첫 프레임을 쓰면 대부분 까맣거나 흐리다 — 그 순간 카메라는 아직
-        // 노출과 초점을 잡는 중이고, 연주는 시작도 안 했다. 목록이 검은
-        // 네모로 덮여 있던 이유다. 1초쯤 지난 지점을 잡는다.
-        const at = Math.min(1.2, (video.duration || 2) * 0.25) || 0.1
+        // 노출과 초점을 잡는 중이고, 사람은 폰을 세우는 중이다. 목록이 검은
+        // 네모로 덮여 있던 이유다. 실제 연주 장면은 한가운데에 있다.
+        const dur = video.duration
+        const at = Number.isFinite(dur) && dur > 0 ? dur / 2 : 1.2
 
         // Muted videos can play() without user gesture on iOS Safari
         // This is the only reliable way to get onseeked/frames on iOS
@@ -416,6 +482,24 @@ export default function UploadPage() {
           )}
         </div>
 
+        {/* 얼굴이 아니라 손을 찍는 게 기본이라고 알려준다. 몰라서 천장을
+            찍는 사람도, 얼굴이 부담스러운 사람도 여기서 답을 얻는다. */}
+        {!recording && (
+          <div style={{
+            position: 'absolute', left: 0, right: 0, bottom: 150, zIndex: 10,
+            textAlign: 'center', padding: '0 24px', pointerEvents: 'none',
+          }}>
+            <span style={{
+              display: 'inline-block', fontSize: 12.5, fontWeight: 700, color: '#fff',
+              background: 'rgba(0,0,0,0.55)', borderRadius: 10, padding: '7px 12px', lineHeight: 1.5,
+            }}>
+              {countdown !== null
+                ? '폰을 세우고 손이 보이게 두세요'
+                : '얼굴은 안 나와도 괜찮아요 — 손이나 악기가 보이게 세워두세요'}
+            </span>
+          </div>
+        )}
+
         {/* 카메라 프리뷰 */}
         <video
           ref={cameraRef}
@@ -448,7 +532,7 @@ export default function UploadPage() {
               </div>
             )}
             <button
-              onClick={recording ? stopRecording : startRecording}
+              onClick={recording ? stopRecording : (countdown !== null ? cancelCountdown : startCountdown)}
               style={{
                 width: 72, height: 72, borderRadius: '50%', border: 'none', cursor: 'pointer',
                 background: recording ? '#ff4444' : '#fff',
@@ -459,12 +543,14 @@ export default function UploadPage() {
             >
               {recording ? (
                 <div style={{ width: 22, height: 22, borderRadius: 4, background: '#fff' }} />
+              ) : countdown !== null ? (
+                <span style={{ fontSize: 30, fontWeight: 900, color: '#ff4444' }}>{countdown}</span>
               ) : (
                 <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#ff4444' }} />
               )}
             </button>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
-              {recording ? '탭하면 중지' : '탭하면 녹화'}
+              {recording ? '탭하면 중지' : countdown !== null ? '탭하면 취소' : '탭하면 녹화'}
             </div>
           </div>
 
