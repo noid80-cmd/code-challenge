@@ -87,7 +87,7 @@ export default function ProfilePage({ params }: { params: Promise<{ user_id: str
         {currentUserId && currentUserId !== user_id && (
           <div style={{ position: 'relative' }}>
             <button onClick={() => setMenuOpen(v => !v)} style={{
-              background: 'none', border: 'none', color: '#605850',
+              background: 'none', border: 'none', color: '#a8a296',
               fontSize: 20, cursor: 'pointer', padding: 0, lineHeight: 1,
             }}>⋯</button>
             {menuOpen && (
@@ -112,7 +112,7 @@ export default function ProfilePage({ params }: { params: Promise<{ user_id: str
 
       <main style={{ maxWidth: 560, margin: '0 auto', padding: '32px 16px 100px' }}>
         {loading ? (
-          <div style={{ textAlign: 'center', color: '#303028', paddingTop: 60 }}>불러오는 중...</div>
+          <div style={{ textAlign: 'center', color: '#8f8a7e', paddingTop: 60 }}>불러오는 중...</div>
         ) : (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 36 }}>
@@ -131,14 +131,14 @@ export default function ProfilePage({ params }: { params: Promise<{ user_id: str
                 <div style={{ fontSize: 20, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em' }}>
                   {profile?.name ?? '익명'}
                 </div>
-                <div style={{ fontSize: 13, color: '#504840', marginTop: 4 }}>
+                <div style={{ fontSize: 13, color: '#9c9384', marginTop: 4 }}>
                   영상 {submissions.length}개
                 </div>
               </div>
             </div>
 
             {submissions.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#303028', paddingTop: 40, fontSize: 14 }}>
+              <div style={{ textAlign: 'center', color: '#8f8a7e', paddingTop: 40, fontSize: 14 }}>
                 아직 올린 영상이 없어요
               </div>
             ) : (
@@ -158,16 +158,16 @@ export default function ProfilePage({ params }: { params: Promise<{ user_id: str
                     />
                     <div style={{ padding: '12px 16px 14px' }}>
                       {sub.challenges?.[0] && (
-                        <div style={{ fontSize: 11, color: '#504840', fontWeight: 700, marginBottom: 4 }}>
+                        <div style={{ fontSize: 11, color: '#9c9384', fontWeight: 700, marginBottom: 4 }}>
                           {sub.challenges[0].date} · {sub.challenges[0].title}
                         </div>
                       )}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: 11, color: '#303028' }}>{timeAgo(sub.created_at)}</span>
-                        <span style={{ fontSize: 13, color: '#504840', fontWeight: 700 }}>♥ {sub.likes_count}</span>
+                        <span style={{ fontSize: 11, color: '#8f8a7e' }}>{timeAgo(sub.created_at)}</span>
+                        <span style={{ fontSize: 13, color: '#9c9384', fontWeight: 700 }}>♥ {sub.likes_count}</span>
                       </div>
                       {sub.caption && (
-                        <p style={{ fontSize: 13, color: '#7a6020', marginTop: 8, lineHeight: 1.6 }}>{sub.caption}</p>
+                        <p style={{ fontSize: 13, color: '#c9a23f', marginTop: 8, lineHeight: 1.6 }}>{sub.caption}</p>
                       )}
                     </div>
                   </div>

@@ -78,17 +78,17 @@ export default function ResetPasswordPage() {
             </svg>
           </div>
           <h1 style={{ fontSize: 24, fontWeight: 900, color: '#f0ece0', marginBottom: 8 }}>새 비밀번호 설정</h1>
-          <p style={{ color: '#807060', fontSize: 14 }}>새로 사용할 비밀번호를 입력해주세요</p>
+          <p style={{ color: '#b0a493', fontSize: 14 }}>새로 사용할 비밀번호를 입력해주세요</p>
         </div>
 
         {done ? (
           <div style={{ textAlign: 'center', color: '#f0ece0' }}>
             <div style={{ fontSize: 36, marginBottom: 16 }}>✓</div>
             <p style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>비밀번호가 변경됐어요!</p>
-            <p style={{ color: '#807060', fontSize: 14 }}>잠시 후 이동합니다...</p>
+            <p style={{ color: '#b0a493', fontSize: 14 }}>잠시 후 이동합니다...</p>
           </div>
         ) : !ready ? (
-          <p style={{ textAlign: 'center', color: '#807060', fontSize: 14 }}>확인 중...</p>
+          <p style={{ textAlign: 'center', color: '#b0a493', fontSize: 14 }}>확인 중...</p>
         ) : (
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)}

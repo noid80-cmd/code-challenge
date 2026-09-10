@@ -72,7 +72,7 @@ export default function ChallengesPage() {
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0a0a08', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
       <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f0ece0', opacity: 0.7 }} />
-      <span style={{ color: '#303028', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
+      <span style={{ color: '#8f8a7e', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
     </div>
   )
 
@@ -84,7 +84,7 @@ export default function ChallengesPage() {
         padding: '0 20px', height: 54, paddingTop: 'calc(env(safe-area-inset-top) + 24px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/" style={{ color: '#605850', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+        <Link href="/" style={{ color: '#a8a296', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
           <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
           홈
         </Link>
@@ -119,7 +119,7 @@ export default function ChallengesPage() {
       <main style={{ maxWidth: 560, margin: '0 auto', padding: '24px 16px 100px' }}>
         {filtered.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <p style={{ color: '#303028', fontSize: 14 }}>아직 챌린지가 없어요</p>
+            <p style={{ color: '#8f8a7e', fontSize: 14 }}>아직 챌린지가 없어요</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -137,7 +137,7 @@ export default function ChallengesPage() {
                   }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 5 }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: '#403830', letterSpacing: '0.04em' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#948b7d', letterSpacing: '0.04em' }}>
                           {ch.date}
                         </span>
                         {isToday && (
@@ -160,10 +160,10 @@ export default function ChallengesPage() {
                       {count > 0 && (
                         <div>
                           <span style={{ fontSize: 13, fontWeight: 800, color: '#a0988c' }}>{count}</span>
-                          <span style={{ fontSize: 10, color: '#403830', marginLeft: 3, fontWeight: 600 }}>연주</span>
+                          <span style={{ fontSize: 10, color: '#948b7d', marginLeft: 3, fontWeight: 600 }}>연주</span>
                         </div>
                       )}
-                      <span style={{ color: '#303028', fontSize: 16 }}>›</span>
+                      <span style={{ color: '#8f8a7e', fontSize: 16 }}>›</span>
                     </div>
                   </div>
                 </Link>

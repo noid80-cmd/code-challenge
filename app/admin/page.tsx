@@ -375,7 +375,7 @@ export default function AdminPage() {
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#09090f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: '#6366f1' }}>로딩 중...</div>
+      <div style={{ color: '#8286f5' }}>로딩 중...</div>
     </div>
   )
 
@@ -413,7 +413,7 @@ export default function AdminPage() {
         {/* ── 회원 명단 ── */}
         {adminTab === 'members' && (
           <div>
-            <div style={{ fontSize: 12, color: '#555577', fontWeight: 600, marginBottom: 14 }}>
+            <div style={{ fontSize: 12, color: '#9a9ac8', fontWeight: 600, marginBottom: 14 }}>
               총 {members.length}명
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -435,7 +435,7 @@ export default function AdminPage() {
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: '#ccccee', marginBottom: 2 }}>{m.name ?? '이름없음'}</div>
-                    <div style={{ fontSize: 11, color: '#444466' }}>
+                    <div style={{ fontSize: 11, color: '#9494c0' }}>
                       가입 {new Date(m.created_at).toLocaleDateString('ko-KR')}
                       {m.lastSubmission && (
                         <span style={{ marginLeft: 8 }}>
@@ -446,12 +446,12 @@ export default function AdminPage() {
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
                     <div style={{ fontSize: 18, fontWeight: 900, color: m.submissionCount > 0 ? '#818cf8' : '#333355' }}>{m.submissionCount}</div>
-                    <div style={{ fontSize: 10, color: '#333355', fontWeight: 600 }}>영상</div>
+                    <div style={{ fontSize: 10, color: '#8a8ab5', fontWeight: 600 }}>영상</div>
                   </div>
                 </div>
               ))}
               {members.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#333355', fontSize: 14 }}>회원이 없어요</div>
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#8a8ab5', fontSize: 14 }}>회원이 없어요</div>
               )}
             </div>
           </div>
@@ -495,18 +495,18 @@ export default function AdminPage() {
             {rhythmDraft && (
               <div style={{ background: '#0e0e1a', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
                 <div style={{ marginBottom: 10 }}>
-                  <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>제목</label>
+                  <label style={{ fontSize: 12, color: '#a5a5dd', fontWeight: 600, display: 'block', marginBottom: 6 }}>제목</label>
                   <input value={rhythmDraft.title} onChange={e => setRhythmDraft({ ...rhythmDraft, title: e.target.value })}
                     style={inputStyle} />
                 </div>
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>설명 (선택)</label>
+                  <label style={{ fontSize: 12, color: '#a5a5dd', fontWeight: 600, display: 'block', marginBottom: 6 }}>설명 (선택)</label>
                   <textarea value={rhythmDraft.description} onChange={e => setRhythmDraft({ ...rhythmDraft, description: e.target.value })}
                     rows={2} style={{ ...inputStyle, resize: 'none' }} />
                 </div>
                 {rhythmDraft.patterns.map((p, pi) => (
                   <div key={pi} style={{ marginBottom: 8, padding: 10, background: 'rgba(99,102,241,0.07)', borderRadius: 10 }}>
-                    <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 700, marginBottom: 6 }}>
+                    <div style={{ fontSize: 11, color: '#8286f5', fontWeight: 700, marginBottom: 6 }}>
                       {p.label || `패턴 ${pi + 1}`}
                     </div>
                     <textarea value={p.abc} onChange={e => setRhythmDraft({ ...rhythmDraft, patterns: rhythmDraft.patterns.map((pp, k) => k === pi ? { ...pp, abc: e.target.value } : pp) })}
@@ -533,18 +533,18 @@ export default function AdminPage() {
             {melodyDraft && (
               <div style={{ background: '#0e0e1a', border: '1px solid rgba(99,102,241,0.25)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
                 <div style={{ marginBottom: 10 }}>
-                  <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>제목</label>
+                  <label style={{ fontSize: 12, color: '#a5a5dd', fontWeight: 600, display: 'block', marginBottom: 6 }}>제목</label>
                   <input value={melodyDraft.title} onChange={e => setMelodyDraft({ ...melodyDraft, title: e.target.value })}
                     style={inputStyle} />
                 </div>
                 <div style={{ marginBottom: 14 }}>
-                  <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>설명 (선택)</label>
+                  <label style={{ fontSize: 12, color: '#a5a5dd', fontWeight: 600, display: 'block', marginBottom: 6 }}>설명 (선택)</label>
                   <textarea value={melodyDraft.description} onChange={e => setMelodyDraft({ ...melodyDraft, description: e.target.value })}
                     rows={2} style={{ ...inputStyle, resize: 'none' }} />
                 </div>
                 {melodyDraft.patterns.map((p, pi) => (
                   <div key={pi} style={{ marginBottom: 8, padding: 10, background: 'rgba(99,102,241,0.07)', borderRadius: 10 }}>
-                    <div style={{ fontSize: 11, color: '#6366f1', fontWeight: 700, marginBottom: 6 }}>
+                    <div style={{ fontSize: 11, color: '#8286f5', fontWeight: 700, marginBottom: 6 }}>
                       {p.label || `프레이즈 ${pi + 1}`}
                     </div>
                     <textarea value={p.abc} onChange={e => setMelodyDraft({ ...melodyDraft, patterns: melodyDraft.patterns.map((pp, k) => k === pi ? { ...pp, abc: e.target.value } : pp) })}
@@ -577,18 +577,18 @@ export default function AdminPage() {
               </div>
               {editingId && (
                 <button onClick={() => { setDraft(null); setEditingId(null); setError('') }}
-                  style={{ background: 'none', border: 'none', color: '#555570', fontSize: 12, cursor: 'pointer' }}>취소</button>
+                  style={{ background: 'none', border: 'none', color: '#9a9ac2', fontSize: 12, cursor: 'pointer' }}>취소</button>
               )}
             </div>
 
             <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>제목</label>
+              <label style={{ fontSize: 12, color: '#a5a5dd', fontWeight: 600, display: 'block', marginBottom: 6 }}>제목</label>
               <input value={draft.title} onChange={e => setDraft({ ...draft, title: e.target.value })}
                 placeholder="예: 재즈 스윙 코드 챌린지" style={inputStyle} />
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 12, color: '#6666aa', fontWeight: 600, display: 'block', marginBottom: 6 }}>설명 (선택)</label>
+              <label style={{ fontSize: 12, color: '#a5a5dd', fontWeight: 600, display: 'block', marginBottom: 6 }}>설명 (선택)</label>
               <textarea value={draft.description} onChange={e => setDraft({ ...draft, description: e.target.value })}
                 placeholder="간단한 설명을 입력하세요" rows={2} style={{ ...inputStyle, resize: 'none' }} />
             </div>
@@ -633,10 +633,10 @@ export default function AdminPage() {
                     }}>
                       {/* 마디 헤더 */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <span style={{ fontSize: 10, color: '#555577', fontWeight: 700 }}>{mi + 1}마디</span>
+                        <span style={{ fontSize: 10, color: '#9a9ac8', fontWeight: 700 }}>{mi + 1}마디</span>
                         {prog.chords.length > 1 && (
                           <button onClick={() => removeMeasure(pi, mi)}
-                            style={{ background: 'none', border: 'none', color: '#444466', fontSize: 13, cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
+                            style={{ background: 'none', border: 'none', color: '#9494c0', fontSize: 13, cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
                         )}
                       </div>
                       {/* 코드 인풋 */}
@@ -663,7 +663,7 @@ export default function AdminPage() {
                         ))}
                         {measure.length < 4 && (
                           <button onClick={() => addChordToMeasure(pi, mi)}
-                            style={{ width: 26, padding: '5px 3px', borderRadius: 7, background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.12)', fontSize: 13, color: '#333355', cursor: 'pointer' }}>+</button>
+                            style={{ width: 26, padding: '5px 3px', borderRadius: 7, background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.12)', fontSize: 13, color: '#8a8ab5', cursor: 'pointer' }}>+</button>
                         )}
                       </div>
                     </div>
@@ -671,7 +671,7 @@ export default function AdminPage() {
 
                   {/* 마디 추가 카드 */}
                   <button onClick={() => addMeasure(pi)}
-                    style={{ padding: '16px 8px', borderRadius: 10, border: '1px dashed rgba(99,102,241,0.2)', background: 'none', color: '#444466', fontSize: 20, cursor: 'pointer' }}>
+                    style={{ padding: '16px 8px', borderRadius: 10, border: '1px dashed rgba(99,102,241,0.2)', background: 'none', color: '#9494c0', fontSize: 20, cursor: 'pointer' }}>
                     +
                   </button>
                 </div>
@@ -679,7 +679,7 @@ export default function AdminPage() {
             ))}
 
             <button onClick={addProgression}
-              style={{ width: '100%', padding: '10px', borderRadius: 10, border: '1px dashed rgba(99,102,241,0.3)', background: 'none', color: '#6366f1', fontSize: 13, fontWeight: 700, cursor: 'pointer', marginBottom: 14 }}>
+              style={{ width: '100%', padding: '10px', borderRadius: 10, border: '1px dashed rgba(99,102,241,0.3)', background: 'none', color: '#8286f5', fontSize: 13, fontWeight: 700, cursor: 'pointer', marginBottom: 14 }}>
               + 진행 추가
             </button>
 
@@ -704,7 +704,7 @@ export default function AdminPage() {
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
                 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11, color: '#5555aa', fontWeight: 700, marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <div style={{ fontSize: 11, color: '#9a9ae0', fontWeight: 700, marginBottom: 2, display: 'flex', alignItems: 'center', gap: 6 }}>
                       {ch.date}
                       <span style={{ color: LEVEL_COLORS[ch.level || 'intermediate'], fontSize: 10 }}>
                         {LEVEL_LABELS[ch.level || 'intermediate']}

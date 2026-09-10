@@ -34,11 +34,11 @@ export default function ChartPage() {
         padding: '14px 20px',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/upload" style={{ fontSize: 13, fontWeight: 700, color: '#605850', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
+        <Link href="/upload" style={{ fontSize: 13, fontWeight: 700, color: '#a8a296', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 3 }}>
           <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
           업로드
         </Link>
-        <span style={{ fontSize: 11, color: '#303028', fontWeight: 600, letterSpacing: '0.08em' }}>
+        <span style={{ fontSize: 11, color: '#8f8a7e', fontWeight: 600, letterSpacing: '0.08em' }}>
           악보 보기
         </span>
         <div style={{ width: 48 }} />
@@ -61,7 +61,7 @@ export default function ChartPage() {
                 {challenge.title}
               </div>
               {challenge.description && (
-                <div style={{ fontSize: 13, color: '#605850', marginTop: 10, lineHeight: 1.6 }}>
+                <div style={{ fontSize: 13, color: '#a8a296', marginTop: 10, lineHeight: 1.6 }}>
                   {challenge.description}
                 </div>
               )}
@@ -86,7 +86,7 @@ export default function ChartPage() {
               {challenge.chords.progressions.map((prog, i) => (
                 <div key={i} style={{ marginBottom: 12 }}>
                   {challenge.chords.progressions.length > 1 && (
-                    <div style={{ fontSize: 10, color: '#605850', fontWeight: 700, marginBottom: 7, letterSpacing: '0.08em' }}>
+                    <div style={{ fontSize: 10, color: '#a8a296', fontWeight: 700, marginBottom: 7, letterSpacing: '0.08em' }}>
                       {prog.label}
                     </div>
                   )}
@@ -112,14 +112,14 @@ export default function ChartPage() {
               border: '1px solid rgba(240,236,224,0.08)',
               borderRadius: 14, textAlign: 'center',
             }}>
-              <p style={{ fontSize: 12, color: '#303028', fontWeight: 600, lineHeight: 1.8, margin: 0 }}>
+              <p style={{ fontSize: 12, color: '#8f8a7e', fontWeight: 600, lineHeight: 1.8, margin: 0 }}>
                 이 화면을 보며 연주를 녹화하세요<br />
                 화면 꺼짐 방지는 기기 설정에서 조정하세요
               </p>
             </div>
           </div>
         ) : (
-          <div style={{ textAlign: 'center', color: '#303028', fontSize: 14 }}>
+          <div style={{ textAlign: 'center', color: '#8f8a7e', fontSize: 14 }}>
             오늘의 챌린지를 불러오는 중...
           </div>
         )}

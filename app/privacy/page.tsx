@@ -55,7 +55,7 @@ export default function PrivacyPage() {
 
       <section style={{ marginBottom: 40 }}>
         <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 12 }}>7. 문의 / Contact</h2>
-        <p>개인정보 관련 문의: <a href="mailto:noid80@hanmail.net" style={{ color: '#4f46e5' }}>noid80@hanmail.net</a></p>
+        <p>개인정보 관련 문의: <a href="mailto:noid80@hanmail.net" style={{ color: '#8b85f0' }}>noid80@hanmail.net</a></p>
       </section>
     </div>
   )

@@ -15,6 +15,7 @@ export default function GroupsPage() {
   const [newDesc, setNewDesc] = useState('')
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
+  const [copiedId, setCopiedId] = useState('')
   const [userId, setUserId] = useState('')
 
   useEffect(() => { load() }, [])
@@ -67,6 +68,12 @@ export default function GroupsPage() {
     setJoinCode(''); setError(''); flash('그룹에 참가했어요!'); load()
   }
 
+  function copyCode(e: React.MouseEvent, code: string, id: string) {
+    e.preventDefault(); e.stopPropagation()   // 카드 전체가 Link라 이동을 막는다
+    navigator.clipboard?.writeText(code)
+    setCopiedId(id); setTimeout(() => setCopiedId(''), 1500)
+  }
+
   function flash(text: string) { setMsg(text); setTimeout(() => setMsg(''), 2500) }
 
   const inputStyle: React.CSSProperties = {
@@ -83,12 +90,15 @@ export default function GroupsPage() {
         padding: '0 20px', height: 54, paddingTop: 'calc(env(safe-area-inset-top) + 24px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/chord" style={{ color: '#605850', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
+        <Link href="/chord" style={{ color: '#a8a296', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
         <span style={{ fontWeight: 800, fontSize: 16, color: '#f0ece0', letterSpacing: '-0.02em' }}>내 그룹</span>
         <div style={{ width: 48 }} />
       </header>
 
       <main style={{ maxWidth: 560, margin: '0 auto', padding: '28px 16px 100px' }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: '#8f8a7e', marginBottom: 8, letterSpacing: '-0.01em' }}>
+          다른 사람에게 받은 초대 코드로 참가
+        </div>
         <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
           <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
             placeholder="초대 코드 입력"
@@ -105,7 +115,7 @@ export default function GroupsPage() {
         <button onClick={() => { setShowCreate(!showCreate); setError('') }} style={{
           width: '100%', padding: '12px', borderRadius: 12, marginBottom: showCreate ? 0 : 24,
           background: 'transparent', border: '1px dashed rgba(240,236,224,0.2)',
-          color: '#605850', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+          color: '#a8a296', fontSize: 14, fontWeight: 700, cursor: 'pointer',
         }}>
           {showCreate ? '취소' : '+ 그룹 만들기'}
         </button>
@@ -134,7 +144,7 @@ export default function GroupsPage() {
         {msg && <p style={{ color: '#f8f4ec', fontSize: 13, textAlign: 'center', marginBottom: 12, fontWeight: 700 }}>{msg}</p>}
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#1a1a18', fontSize: 14 }}>불러오는 중</div>
+          <div style={{ textAlign: 'center', padding: 60, color: '#a5a096', fontSize: 14 }}>불러오는 중</div>
         ) : groups.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '52px 0' }}>
             <div style={{
@@ -143,14 +153,14 @@ export default function GroupsPage() {
               display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px',
             }}>
               <svg width="26" height="22" viewBox="0 0 26 22" fill="none">
-                <circle cx="9" cy="7" r="4" stroke="#303028" strokeWidth="1.5"/>
-                <circle cx="19" cy="8" r="3" stroke="#303028" strokeWidth="1.5"/>
-                <path d="M1 20c0-3.866 3.582-7 8-7s8 3.134 8 7" stroke="#303028" strokeWidth="1.5" strokeLinecap="round"/>
-                <path d="M18 16c2.761 0 5 1.567 5 3.5" stroke="#303028" strokeWidth="1.5" strokeLinecap="round"/>
+                <circle cx="9" cy="7" r="4" stroke="#6e6a60" strokeWidth="1.5"/>
+                <circle cx="19" cy="8" r="3" stroke="#6e6a60" strokeWidth="1.5"/>
+                <path d="M1 20c0-3.866 3.582-7 8-7s8 3.134 8 7" stroke="#6e6a60" strokeWidth="1.5" strokeLinecap="round"/>
+                <path d="M18 16c2.761 0 5 1.567 5 3.5" stroke="#6e6a60" strokeWidth="1.5" strokeLinecap="round"/>
               </svg>
             </div>
-            <p style={{ color: '#303028', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>참가한 그룹이 없어요</p>
-            <p style={{ color: '#1a1a18', fontSize: 13 }}>그룹을 만들거나 초대 코드로 참가해보세요</p>
+            <p style={{ color: '#8f8a7e', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>참가한 그룹이 없어요</p>
+            <p style={{ color: '#a5a096', fontSize: 13 }}>그룹을 만들거나 초대 코드로 참가해보세요</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -164,7 +174,7 @@ export default function GroupsPage() {
                 }}>
                   <div>
                     <div style={{ fontSize: 16, fontWeight: 800, color: '#e0dcd0', marginBottom: 4 }}>{g.name}</div>
-                    {g.description && <div style={{ fontSize: 13, color: '#303028' }}>{g.description}</div>}
+                    {g.description && <div style={{ fontSize: 13, color: '#8f8a7e' }}>{g.description}</div>}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                     {g.owner_id === userId && (
@@ -172,7 +182,20 @@ export default function GroupsPage() {
                         방장
                       </span>
                     )}
-                    <span style={{ fontSize: 11, color: '#303028', fontWeight: 700, letterSpacing: '0.1em' }}>{g.invite_code}</span>
+                    <button onClick={e => copyCode(e, g.invite_code, g.id)} style={{
+                      display: 'flex', alignItems: 'center', gap: 7,
+                      background: 'rgba(240,236,224,0.07)', border: '1px solid rgba(240,236,224,0.18)',
+                      borderRadius: 9, padding: '5px 9px', cursor: 'pointer',
+                    }}>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: '#a8a296', letterSpacing: '0.06em' }}>초대코드</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: '#f0ece0', letterSpacing: '0.12em' }}>
+                        {copiedId === g.id ? '복사됨' : g.invite_code}
+                      </span>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a8a296" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="9" y="9" width="12" height="12" rx="2" />
+                        <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </Link>

@@ -298,7 +298,7 @@ export default function UploadPage() {
             </svg>
           </div>
           <h2 style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 10, color: '#f0ece0' }}>업로드 완료!</h2>
-          <p style={{ color: '#605850', fontSize: 14, marginBottom: 36, lineHeight: 1.8 }}>
+          <p style={{ color: '#a8a296', fontSize: 14, marginBottom: 36, lineHeight: 1.8 }}>
             {[hasPublic && '전체 피드', ...selectedGroups.map(g => g.name)].filter(Boolean).join(', ')}에 올라갔어요.
           </p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
@@ -488,7 +488,7 @@ export default function UploadPage() {
         padding: '0 20px', height: 54, paddingTop: 'calc(env(safe-area-inset-top) + 24px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/" style={{ color: '#605850', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+        <Link href="/" style={{ color: '#a8a296', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
           <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
           피드
         </Link>
@@ -525,7 +525,7 @@ export default function UploadPage() {
           </div>
         ) : (
           <div style={{ background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: 20, marginBottom: 20, textAlign: 'center' }}>
-            <p style={{ color: '#303028', fontSize: 14 }}>오늘의 챌린지가 아직 없어요.</p>
+            <p style={{ color: '#8f8a7e', fontSize: 14 }}>오늘의 챌린지가 아직 없어요.</p>
           </div>
         )}
 
@@ -606,16 +606,16 @@ export default function UploadPage() {
                 <button type="button" onClick={startCamera} style={{
                   flex: 1, padding: '11px', background: 'transparent', border: 'none',
                   borderRight: '1px solid rgba(240,236,224,0.08)',
-                  color: '#605850', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  color: '#a8a296', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                 }}>다시 촬영</button>
                 <button type="button" onClick={() => fileRef.current?.click()} style={{
                   flex: 1, padding: '11px', background: 'transparent', border: 'none',
                   borderRight: '1px solid rgba(240,236,224,0.08)',
-                  color: '#605850', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  color: '#a8a296', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                 }}>파일 선택</button>
                 <button type="button" onClick={() => { setFile(null); setPreview(prev => { if (prev) URL.revokeObjectURL(prev); return null }) }} style={{
                   flex: 1, padding: '11px', background: 'transparent', border: 'none',
-                  color: '#604040', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  color: '#c08a8a', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                 }}>취소</button>
               </div>
             </div>
@@ -640,7 +640,7 @@ export default function UploadPage() {
                   </svg>
                 </div>
                 지금 촬영하기
-                <span style={{ fontSize: 10, color: '#605850', fontWeight: 600 }}>코드 보면서 녹화</span>
+                <span style={{ fontSize: 10, color: '#a8a296', fontWeight: 600 }}>코드 보면서 녹화</span>
               </button>
 
               {/* 파일 선택 */}
@@ -648,7 +648,7 @@ export default function UploadPage() {
                 flex: 1, padding: '32px 12px', borderRadius: 18,
                 border: '1px dashed rgba(240,236,224,0.15)',
                 background: 'transparent',
-                color: '#605850', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                color: '#a8a296', fontSize: 13, fontWeight: 700, cursor: 'pointer',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
               }}>
                 <div style={{
@@ -662,7 +662,7 @@ export default function UploadPage() {
                   </svg>
                 </div>
                 파일 선택
-                <span style={{ fontSize: 10, color: '#303028', fontWeight: 600 }}>갤러리에서 올리기</span>
+                <span style={{ fontSize: 10, color: '#8f8a7e', fontWeight: 600 }}>갤러리에서 올리기</span>
               </button>
             </div>
           )}
@@ -698,7 +698,7 @@ export default function UploadPage() {
                           {g.name}
                         </span>
                         {g.sub && (
-                          <span style={{ fontSize: 11, color: '#1a1a18', marginLeft: 8 }}>{g.sub}</span>
+                          <span style={{ fontSize: 11, color: '#8b857a', marginLeft: 8 }}>{g.sub}</span>
                         )}
                       </div>
                     </label>

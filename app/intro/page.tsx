@@ -32,7 +32,7 @@ export default function IntroPage() {
         </div>
 
         {/* 태그라인 */}
-        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.16em', color: '#605850', marginBottom: 16, textTransform: 'uppercase' }}>
+        <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.16em', color: '#a8a296', marginBottom: 16, textTransform: 'uppercase' }}>
           Daily Chord Challenge
         </div>
 
@@ -43,7 +43,7 @@ export default function IntroPage() {
           매일 코드,<br />매일 성장
         </h1>
 
-        <p style={{ fontSize: 15, color: '#605850', lineHeight: 1.8, maxWidth: 300, marginBottom: 48 }}>
+        <p style={{ fontSize: 15, color: '#a8a296', lineHeight: 1.8, maxWidth: 300, marginBottom: 48 }}>
           AI가 매일 코드 진행을 내고<br />
           연주 영상을 올려 함께 연습해요
         </p>
@@ -64,7 +64,7 @@ export default function IntroPage() {
             display: 'block', padding: '14px', borderRadius: 14, textAlign: 'center',
             background: 'transparent',
             border: '1px solid rgba(240,236,224,0.15)',
-            color: '#605850', fontSize: 14, fontWeight: 700,
+            color: '#a8a296', fontSize: 14, fontWeight: 700,
             textDecoration: 'none',
           }}>
             피드 구경하기
@@ -91,7 +91,7 @@ export default function IntroPage() {
               <span style={{ fontSize: 22, flexShrink: 0 }}>{item.icon}</span>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#e0dcd0', marginBottom: 4 }}>{item.title}</div>
-                <div style={{ fontSize: 13, color: '#403830', lineHeight: 1.6 }}>{item.desc}</div>
+                <div style={{ fontSize: 13, color: '#948b7d', lineHeight: 1.6 }}>{item.desc}</div>
               </div>
             </div>
           ))}

@@ -281,9 +281,9 @@ export function PushSettingRow({ user }: { user: SignedIn }) {
             color: on ? '#8fd08f' : '#e0b45c',
           }}>{status === 'checking' ? '확인 중' : on ? '켜짐' : '꺼짐'}</span>
         </div>
-        <div style={{ fontSize: 11.5, color: '#807060', lineHeight: 1.55 }}>{body}</div>
+        <div style={{ fontSize: 11.5, color: '#b0a493', lineHeight: 1.55 }}>{body}</div>
         {reason && TECHNICAL_REASONS.has(reason) && (
-          <div style={{ fontSize: 10.5, color: '#403830', marginTop: 6, fontWeight: 700, lineHeight: 1.5, wordBreak: 'break-all' }}>
+          <div style={{ fontSize: 10.5, color: '#948b7d', marginTop: 6, fontWeight: 700, lineHeight: 1.5, wordBreak: 'break-all' }}>
             {REASON_LABEL[reason]}{detail ? ` (${detail})` : ''}
           </div>
         )}

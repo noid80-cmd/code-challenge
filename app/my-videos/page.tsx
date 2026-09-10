@@ -59,7 +59,7 @@ function CalendarView({ submittedDates }: { submittedDates: Set<string> }) {
       {/* 요일 헤더 */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', marginBottom: 6 }}>
         {DAY_LABELS.map(d => (
-          <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#807060', padding: '4px 0' }}>{d}</div>
+          <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, color: '#b0a493', padding: '4px 0' }}>{d}</div>
         ))}
       </div>
 
@@ -205,7 +205,7 @@ export default function MyVideosPage() {
           const supabase = createClient()
           await supabase.auth.signOut()
           window.location.href = '/'
-        }} style={{ background: 'none', border: 'none', color: '#403830', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+        }} style={{ background: 'none', border: 'none', color: '#948b7d', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}>
           로그아웃
         </button>
       </header>
@@ -243,7 +243,7 @@ export default function MyVideosPage() {
                 <div style={{ fontSize: 17, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em' }}>
                   {profile?.name ?? ''}
                 </div>
-                <div style={{ fontSize: 12, color: '#807060', marginTop: 3 }}>사진을 탭하면 변경할 수 있어요</div>
+                <div style={{ fontSize: 12, color: '#b0a493', marginTop: 3 }}>사진을 탭하면 변경할 수 있어요</div>
               </div>
             </div>
 
@@ -268,13 +268,13 @@ export default function MyVideosPage() {
               <div style={{ flex: 1, background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: '18px' }}>
                 <div style={{ fontSize: 10, color: '#a0988c', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>총 참여</div>
                 <div style={{ fontSize: 36, fontWeight: 900, color: '#e0dcd0', lineHeight: 1, letterSpacing: '-0.04em' }}>{submissions.length}</div>
-                <div style={{ fontSize: 11, color: '#807060', marginTop: 5 }}>회 업로드</div>
+                <div style={{ fontSize: 11, color: '#b0a493', marginTop: 5 }}>회 업로드</div>
               </div>
 
               <div style={{ flex: 1, background: 'linear-gradient(145deg, #111110, #0d0d0c)', border: '1px solid rgba(240,236,224,0.08)', borderRadius: 18, padding: '18px' }}>
                 <div style={{ fontSize: 10, color: '#a0988c', fontWeight: 800, marginBottom: 8, letterSpacing: '0.1em', textTransform: 'uppercase' }}>받은 좋아요</div>
                 <div style={{ fontSize: 36, fontWeight: 900, color: '#f0ece0', lineHeight: 1, letterSpacing: '-0.04em' }}>{totalLikes}</div>
-                <div style={{ fontSize: 11, color: '#807060', marginTop: 5 }}>개</div>
+                <div style={{ fontSize: 11, color: '#b0a493', marginTop: 5 }}>개</div>
               </div>
             </div>
 
@@ -304,10 +304,10 @@ export default function MyVideosPage() {
         )}
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#1a1a18', fontSize: 14 }}>불러오는 중</div>
+          <div style={{ textAlign: 'center', padding: 60, color: '#8b857a', fontSize: 14 }}>불러오는 중</div>
         ) : submissions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '52px 0' }}>
-            <p style={{ color: '#807060', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>아직 업로드한 영상이 없어요</p>
+            <p style={{ color: '#b0a493', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>아직 업로드한 영상이 없어요</p>
             <Link href="/upload" style={{
               display: 'inline-block', marginTop: 16, padding: '11px 24px', borderRadius: 12,
               background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
@@ -342,7 +342,7 @@ export default function MyVideosPage() {
         {!loading && (
           <div style={{ marginTop: 40, textAlign: 'center' }}>
             <button onClick={handleDeleteAccount} disabled={deletingAccount} style={{
-              background: 'none', border: 'none', color: '#4a4038', fontSize: 11, fontWeight: 600,
+              background: 'none', border: 'none', color: '#9a9083', fontSize: 11, fontWeight: 600,
               cursor: 'pointer', padding: 8, textDecoration: 'underline',
             }}>
               {deletingAccount ? '삭제 중...' : '계정 삭제'}
@@ -429,7 +429,7 @@ function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
           <button type="button" onClick={() => setExpanded(false)} style={{
             width: '100%', padding: '9px', background: 'rgba(240,236,224,0.05)',
             border: 'none', borderTop: '1px solid rgba(240,236,224,0.08)',
-            color: '#807060', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            color: '#b0a493', fontSize: 12, fontWeight: 700, cursor: 'pointer',
           }}>접기 ▲</button>
         </>
       ) : (
@@ -475,7 +475,7 @@ function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
               </div>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 11, color: '#807060' }}>{date.getMonth() + 1}/{date.getDate()}</span>
+              <span style={{ fontSize: 11, color: '#b0a493' }}>{date.getMonth() + 1}/{date.getDate()}</span>
               <button type="button" onClick={e => { e.stopPropagation(); handleToggle() }} disabled={toggling} style={{
                 background: 'none', border: 'none', cursor: toggling ? 'default' : 'pointer',
                 fontSize: 13, padding: 0, color: sub.is_private ? '#a0988c' : '#807060',
@@ -484,7 +484,7 @@ function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
               </button>
               <span style={{ fontSize: 12, color: '#a0988c', fontWeight: 700 }}>♥ {sub.likes_count}</span>
               <button type="button" onClick={e => { e.stopPropagation(); handleDelete() }} disabled={deleting} style={{
-                background: 'none', border: 'none', color: '#604040', fontSize: 12, fontWeight: 700,
+                background: 'none', border: 'none', color: '#c08a8a', fontSize: 12, fontWeight: 700,
                 cursor: deleting ? 'default' : 'pointer', padding: 0, marginLeft: 'auto',
               }}>
                 {deleting ? '...' : '삭제'}

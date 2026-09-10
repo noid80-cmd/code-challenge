@@ -113,13 +113,13 @@ export default function ChallengePage() {
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0a0a08', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
       <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f0ece0', opacity: 0.7 }} />
-      <span style={{ color: '#303028', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
+      <span style={{ color: '#8f8a7e', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
     </div>
   )
 
   if (!challenge) return (
     <div style={{ minHeight: '100vh', background: '#0a0a08', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ color: '#303028', fontSize: 14 }}>챌린지를 찾을 수 없어요</p>
+      <p style={{ color: '#8f8a7e', fontSize: 14 }}>챌린지를 찾을 수 없어요</p>
     </div>
   )
 
@@ -144,11 +144,11 @@ export default function ChallengePage() {
         padding: '0 20px', height: 54, paddingTop: 'calc(env(safe-area-inset-top) + 24px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href={challenge.type && challenge.type !== 'chord' ? `/challenges?type=${challenge.type}` : '/challenges'} style={{ color: '#605850', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+        <Link href={challenge.type && challenge.type !== 'chord' ? `/challenges?type=${challenge.type}` : '/challenges'} style={{ color: '#a8a296', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
           <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
           아카이브
         </Link>
-        <span style={{ fontSize: 11, fontWeight: 700, color: '#403830', letterSpacing: '0.04em' }}>{challenge.date}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: '#948b7d', letterSpacing: '0.04em' }}>{challenge.date}</span>
         <div style={{ width: 60 }} />
       </header>
 
@@ -166,7 +166,7 @@ export default function ChallengePage() {
             {challenge.title}
           </h2>
           {challenge.description && challenge.description !== challenge.title && (
-            <p style={{ fontSize: 13, color: '#605850', lineHeight: 1.7, marginBottom: 18 }}>
+            <p style={{ fontSize: 13, color: '#a8a296', lineHeight: 1.7, marginBottom: 18 }}>
               {challenge.description}
             </p>
           )}
@@ -214,7 +214,7 @@ export default function ChallengePage() {
               fontSize: 12, fontWeight: 700,
               color: sortBy === 'newest' ? '#f8f4ec' : '#303028',
             }}>최신</button>
-            <span style={{ color: '#1a1a18', fontSize: 11 }}>|</span>
+            <span style={{ color: '#8b857a', fontSize: 11 }}>|</span>
             <button onClick={() => setSortBy('popular')} style={{
               background: 'none', border: 'none', cursor: 'pointer', padding: 0,
               fontSize: 12, fontWeight: 700,
@@ -225,8 +225,8 @@ export default function ChallengePage() {
 
         {submissions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <p style={{ color: '#303028', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>아직 연주가 없어요</p>
-            {isToday && <p style={{ color: '#1a1a18', fontSize: 13 }}>첫 번째로 올려보세요</p>}
+            <p style={{ color: '#8f8a7e', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>아직 연주가 없어요</p>
+            {isToday && <p style={{ color: '#8b857a', fontSize: 13 }}>첫 번째로 올려보세요</p>}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -300,7 +300,7 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
               <div style={{ fontSize: 14, fontWeight: 800, color: '#f0ece0', lineHeight: 1.2 }}>
                 {sub.profiles?.name ?? '익명'}
               </div>
-              <div style={{ fontSize: 11, color: '#303028', marginTop: 2 }}>{timeAgo(sub.created_at)}</div>
+              <div style={{ fontSize: 11, color: '#8f8a7e', marginTop: 2 }}>{timeAgo(sub.created_at)}</div>
             </div>
           </div>
 
@@ -320,7 +320,7 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
               <div style={{ position: 'relative' }}>
                 <button onClick={() => setMenuOpen(v => !v)} style={{
                   background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: 10, cursor: 'pointer', color: '#605850',
+                  borderRadius: 10, cursor: 'pointer', color: '#a8a296',
                   fontSize: 14, fontWeight: 800, padding: '7px 10px', lineHeight: 1,
                 }}>⋯</button>
                 {menuOpen && (
@@ -350,7 +350,7 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
         </div>
 
         {sub.caption && (
-          <p style={{ fontSize: 13, color: '#7a6020', marginTop: 10, lineHeight: 1.6 }}>{sub.caption}</p>
+          <p style={{ fontSize: 13, color: '#c9a23f', marginTop: 10, lineHeight: 1.6 }}>{sub.caption}</p>
         )}
       </div>
     </div>

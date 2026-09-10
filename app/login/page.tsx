@@ -199,7 +199,7 @@ export default function LoginPage() {
   if (recovering) {
     return (
       <div style={{ minHeight: '100vh', background: '#0a0a08', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ color: '#303028', fontSize: 14, fontWeight: 600 }}>잠시만요...</span>
+        <span style={{ color: '#8f8a7e', fontSize: 14, fontWeight: 600 }}>잠시만요...</span>
       </div>
     )
   }
@@ -244,7 +244,7 @@ export default function LoginPage() {
           <h1 style={{ fontSize: 26, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 8, color: '#f0ece0' }}>
             {resetMode ? '비밀번호 찾기' : '초견챌린지'}
           </h1>
-          <p style={{ color: '#807060', fontSize: 14, fontWeight: 500 }}>
+          <p style={{ color: '#b0a493', fontSize: 14, fontWeight: 500 }}>
             {resetMode ? '가입한 이메일로 재설정 링크를 보내드려요' : '매일 새로 배달되는 초견'}
           </p>
         </div>
@@ -254,10 +254,10 @@ export default function LoginPage() {
             <div style={{ textAlign: 'center' }}>
               <p style={{ color: '#f0ece0', fontSize: 15, lineHeight: 1.7, marginBottom: 24 }}>
                 ✉️ 이메일을 확인해주세요<br />
-                <span style={{ color: '#807060', fontSize: 13 }}>재설정 링크를 보냈어요.</span>
+                <span style={{ color: '#b0a493', fontSize: 13 }}>재설정 링크를 보냈어요.</span>
               </p>
               <button onClick={() => { setResetMode(false); setResetSent(false); setResetEmail('') }}
-                style={{ color: '#807060', background: 'none', border: 'none', fontSize: 14, cursor: 'pointer', fontWeight: 600 }}>
+                style={{ color: '#b0a493', background: 'none', border: 'none', fontSize: 14, cursor: 'pointer', fontWeight: 600 }}>
                 ← 로그인으로 돌아가기
               </button>
             </div>
@@ -274,7 +274,7 @@ export default function LoginPage() {
                 {resetLoading ? '전송 중...' : '재설정 링크 보내기'}
               </button>
               <button type="button" onClick={() => { setResetMode(false); setResetEmail('') }}
-                style={{ color: '#807060', background: 'none', border: 'none', fontSize: 13, cursor: 'pointer', marginTop: 4 }}>
+                style={{ color: '#b0a493', background: 'none', border: 'none', fontSize: 13, cursor: 'pointer', marginTop: 4 }}>
                 ← 로그인으로 돌아가기
               </button>
             </form>
@@ -303,7 +303,7 @@ export default function LoginPage() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
               <div style={{ flex: 1, height: 1, background: 'rgba(240,236,224,0.1)' }} />
-              <span style={{ color: '#807060', fontSize: 12, fontWeight: 600 }}>또는</span>
+              <span style={{ color: '#b0a493', fontSize: 12, fontWeight: 600 }}>또는</span>
               <div style={{ flex: 1, height: 1, background: 'rgba(240,236,224,0.1)' }} />
             </div>
 
@@ -326,12 +326,12 @@ export default function LoginPage() {
 
             <div style={{ textAlign: 'center', marginTop: 14 }}>
               <button onClick={() => setResetMode(true)}
-                style={{ color: '#807060', background: 'none', border: 'none', fontSize: 13, cursor: 'pointer' }}>
+                style={{ color: '#b0a493', background: 'none', border: 'none', fontSize: 13, cursor: 'pointer' }}>
                 비밀번호를 잊으셨나요?
               </button>
             </div>
 
-            <p style={{ textAlign: 'center', color: '#807060', fontSize: 14, marginTop: 14 }}>
+            <p style={{ textAlign: 'center', color: '#b0a493', fontSize: 14, marginTop: 14 }}>
               계정이 없으신가요?{' '}
               <Link href="/signup" style={{ fontWeight: 800, color: '#f0ece0' }}>회원가입</Link>
             </p>

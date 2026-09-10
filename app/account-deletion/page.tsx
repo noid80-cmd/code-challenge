@@ -17,7 +17,7 @@ export default function AccountDeletionPage() {
           If you can&rsquo;t access the app, please email us at the address below with the email address associated with your account.
         </p>
         <p style={{ marginTop: 16 }}>
-          <a href="mailto:noid80@hanmail.net?subject=계정%20삭제%20요청" style={{ color: '#4f46e5', fontWeight: 700 }}>
+          <a href="mailto:noid80@hanmail.net?subject=계정%20삭제%20요청" style={{ color: '#8b85f0', fontWeight: 700 }}>
             noid80@hanmail.net
           </a>
         </p>

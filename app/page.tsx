@@ -81,13 +81,13 @@ export default function LandingPage() {
       {/* 메인 */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', padding: '15vh 20px 20px' }}>
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.15em', color: '#403830', marginBottom: 12, textTransform: 'uppercase' }}>
+          <p style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.15em', color: '#948b7d', marginBottom: 12, textTransform: 'uppercase' }}>
             {dateStr}
           </p>
           <h1 style={{ fontSize: 36, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.04em', margin: 0, lineHeight: 1.1 }}>
             오늘의 챌린지
           </h1>
-          <p style={{ fontSize: 14, color: '#504840', marginTop: 10, fontWeight: 500 }}>
+          <p style={{ fontSize: 14, color: '#9c9384', marginTop: 10, fontWeight: 500 }}>
             매일 새로 배달되는 초견
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14 }}>
@@ -136,11 +136,11 @@ export default function LandingPage() {
                 <div style={{ fontSize: 19, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em', marginBottom: 4 }}>
                   코드챌린지
                 </div>
-                <div style={{ fontSize: 13, color: '#605850', fontWeight: 500 }}>
+                <div style={{ fontSize: 13, color: '#a8a296', fontWeight: 500 }}>
                   매일 새로운 코드 진행을 초견하세요
                 </div>
               </div>
-              <span style={{ fontSize: 16, color: '#403830' }}>→</span>
+              <span style={{ fontSize: 16, color: '#948b7d' }}>→</span>
             </div>
           </Link>
 
@@ -170,11 +170,11 @@ export default function LandingPage() {
                 <div style={{ fontSize: 19, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em', marginBottom: 4 }}>
                   리듬챌린지
                 </div>
-                <div style={{ fontSize: 13, color: '#605850', fontWeight: 500 }}>
+                <div style={{ fontSize: 13, color: '#a8a296', fontWeight: 500 }}>
                   매일 새로운 리듬 패턴을 연주하세요
                 </div>
               </div>
-              <span style={{ fontSize: 16, color: '#403830' }}>→</span>
+              <span style={{ fontSize: 16, color: '#948b7d' }}>→</span>
             </div>
           </Link>
 
@@ -205,11 +205,11 @@ export default function LandingPage() {
                 <div style={{ fontSize: 19, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em', marginBottom: 4 }}>
                   멜로디챌린지
                 </div>
-                <div style={{ fontSize: 13, color: '#605850', fontWeight: 500 }}>
+                <div style={{ fontSize: 13, color: '#a8a296', fontWeight: 500 }}>
                   매일 새로운 멜로디를 계이름으로 초견하세요
                 </div>
               </div>
-              <span style={{ fontSize: 16, color: '#403830' }}>→</span>
+              <span style={{ fontSize: 16, color: '#948b7d' }}>→</span>
             </div>
           </Link>
         </div>

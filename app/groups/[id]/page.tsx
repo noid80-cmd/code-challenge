@@ -316,7 +316,7 @@ export default function GroupPage() {
   if (loading) return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
       <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f0ece0', opacity: 0.7 }} />
-      <span style={{ color: '#303028', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
+      <span style={{ color: '#8f8a7e', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
     </div>
   )
 
@@ -328,7 +328,7 @@ export default function GroupPage() {
         padding: '0 20px', height: 54, paddingTop: 'calc(env(safe-area-inset-top) + 24px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/groups" style={{ color: '#605850', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+        <Link href="/groups" style={{ color: '#a8a296', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
           <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
           그룹
         </Link>
@@ -356,11 +356,11 @@ export default function GroupPage() {
         }}>
           <div>
             {group?.description && <div style={{ fontSize: 13, color: '#a0988c', marginBottom: 4 }}>{group.description}</div>}
-            <div style={{ fontSize: 12, color: '#303028', fontWeight: 600 }}>멤버 {memberCount}명</div>
+            <div style={{ fontSize: 12, color: '#8f8a7e', fontWeight: 600 }}>멤버 {memberCount}명</div>
             {isOwner && (
               <button onClick={deleteGroup} style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: '#484640', fontSize: 11, fontWeight: 600, padding: 0, marginTop: 6,
+                color: '#98948a', fontSize: 11, fontWeight: 600, padding: 0, marginTop: 6,
               }}>그룹 삭제</button>
             )}
           </div>
@@ -407,11 +407,11 @@ export default function GroupPage() {
                       {isOwner && (
                         <button onClick={() => deleteAnnouncement(a.id)} style={{
                           background: 'none', border: 'none', cursor: 'pointer',
-                          color: '#303028', fontSize: 11, padding: 0, flexShrink: 0,
+                          color: '#8f8a7e', fontSize: 11, padding: 0, flexShrink: 0,
                         }}>삭제</button>
                       )}
                     </div>
-                    <div style={{ fontSize: 10, color: '#303028', marginTop: 6 }}>{timeAgo(a.created_at)}</div>
+                    <div style={{ fontSize: 10, color: '#8f8a7e', marginTop: 6 }}>{timeAgo(a.created_at)}</div>
                   </div>
                 ))}
 
@@ -439,7 +439,7 @@ export default function GroupPage() {
                         <button onClick={() => { setShowAnnounceInput(false); setAnnouncementText('') }} style={{
                           padding: '9px 14px', borderRadius: 9,
                           background: 'transparent', border: '1px solid rgba(240,236,224,0.15)',
-                          color: '#303028', fontSize: 13, cursor: 'pointer',
+                          color: '#8f8a7e', fontSize: 13, cursor: 'pointer',
                         }}>취소</button>
                       </div>
                     </div>
@@ -447,7 +447,7 @@ export default function GroupPage() {
                     <button onClick={() => setShowAnnounceInput(true)} style={{
                       width: '100%', padding: '9px', borderRadius: 10,
                       background: 'transparent', border: '1px dashed rgba(240,236,224,0.15)',
-                      color: '#484640', fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                      color: '#98948a', fontSize: 12, fontWeight: 700, cursor: 'pointer',
                     }}>+ 공지 올리기</button>
                   )
                 )}
@@ -462,8 +462,8 @@ export default function GroupPage() {
             )}
             {submissions.length === 0 && !feedError ? (
               <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                <p style={{ color: '#303028', fontSize: 14, fontWeight: 700 }}>아직 연주가 없어요</p>
-                <p style={{ color: '#1a1a18', fontSize: 13, marginTop: 5 }}>첫 번째로 올려보세요</p>
+                <p style={{ color: '#8f8a7e', fontSize: 14, fontWeight: 700 }}>아직 연주가 없어요</p>
+                <p style={{ color: '#8b857a', fontSize: 13, marginTop: 5 }}>첫 번째로 올려보세요</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -489,7 +489,7 @@ export default function GroupPage() {
             {/* 메시지 목록 */}
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 8 }}>
               {messages.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '60px 0', color: '#303028', fontSize: 14 }}>
+                <div style={{ textAlign: 'center', padding: '60px 0', color: '#8f8a7e', fontSize: 14 }}>
                   첫 메시지를 보내보세요
                 </div>
               )}
@@ -503,7 +503,7 @@ export default function GroupPage() {
                     {!isMine && <Avatar profile={msg.profiles} size={28} />}
                     <div style={{ maxWidth: '72%' }}>
                       {!isMine && (
-                        <div style={{ fontSize: 11, fontWeight: 700, color: '#605850', marginBottom: 4, paddingLeft: 2 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#a8a296', marginBottom: 4, paddingLeft: 2 }}>
                           {msg.profiles?.name ?? '익명'}
                         </div>
                       )}
@@ -519,7 +519,7 @@ export default function GroupPage() {
                         {msg.content}
                       </div>
                       <div style={{
-                        fontSize: 10, color: '#303028', marginTop: 3,
+                        fontSize: 10, color: '#8f8a7e', marginTop: 3,
                         textAlign: isMine ? 'right' : 'left',
                         paddingLeft: isMine ? 0 : 2, paddingRight: isMine ? 2 : 0,
                       }}>
@@ -635,7 +635,7 @@ function SubmissionCard({
             <Avatar profile={sub.profiles} size={34} />
             <div>
               <div style={{ fontSize: 13, fontWeight: 800, color: '#f0ece0', lineHeight: 1.2 }}>{sub.profiles?.name ?? '익명'}</div>
-              <div style={{ fontSize: 11, color: '#303028', marginTop: 1 }}>
+              <div style={{ fontSize: 11, color: '#8f8a7e', marginTop: 1 }}>
                 {challengeDate && <span style={{ marginRight: 4 }}>{challengeDate} ·</span>}
                 {timeAgo(sub.created_at)}
               </div>
@@ -645,7 +645,7 @@ function SubmissionCard({
             {sub.user_id === currentUserId && (
               <button onClick={handleDelete} disabled={deleting} style={{
                 background: 'none', border: 'none', cursor: deleting ? 'default' : 'pointer',
-                color: '#484640', fontSize: 12, fontWeight: 600, padding: '4px 6px',
+                color: '#98948a', fontSize: 12, fontWeight: 600, padding: '4px 6px',
               }}>{deleting ? '...' : '삭제'}</button>
             )}
             <button onClick={onLike} style={{
@@ -662,7 +662,7 @@ function SubmissionCard({
           </div>
         </div>
 
-        {sub.caption && <p style={{ fontSize: 13, color: '#605850', marginBottom: 10, lineHeight: 1.6 }}>{sub.caption}</p>}
+        {sub.caption && <p style={{ fontSize: 13, color: '#a8a296', marginBottom: 10, lineHeight: 1.6 }}>{sub.caption}</p>}
         {sub.challenges?.title && (
           <div style={{
             fontSize: 11, color: '#a0988c', fontWeight: 700,
@@ -686,9 +686,9 @@ function SubmissionCard({
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 2 }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#f8f4ec' }}>{c.profiles?.name ?? '익명'}</span>
-                        <span style={{ fontSize: 10, color: '#1a1a18' }}>{timeAgo(c.created_at)}</span>
+                        <span style={{ fontSize: 10, color: '#8b857a' }}>{timeAgo(c.created_at)}</span>
                       </div>
-                      <p style={{ fontSize: 13, color: '#7a7060', lineHeight: 1.5, margin: 0 }}>{c.content}</p>
+                      <p style={{ fontSize: 13, color: '#aca291', lineHeight: 1.5, margin: 0 }}>{c.content}</p>
                       <div style={{ display: 'flex', gap: 10, marginTop: 5 }}>
                         <button onClick={() => startReply(replyToId === c.id ? null : c.id)} style={{
                           background: 'none', border: 'none', cursor: 'pointer',
@@ -697,7 +697,7 @@ function SubmissionCard({
                         {c.user_id === currentUserId && (
                           <button onClick={() => onDeleteComment(c.id)} style={{
                             background: 'none', border: 'none', cursor: 'pointer',
-                            color: '#2a2a28', fontSize: 11, padding: 0,
+                            color: '#8a847a', fontSize: 11, padding: 0,
                           }}>삭제</button>
                         )}
                       </div>
@@ -713,14 +713,14 @@ function SubmissionCard({
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 2 }}>
                               <span style={{ fontSize: 11, fontWeight: 700, color: '#d0ccc0' }}>{r.profiles?.name ?? '익명'}</span>
-                              <span style={{ fontSize: 10, color: '#1a1a18' }}>{timeAgo(r.created_at)}</span>
+                              <span style={{ fontSize: 10, color: '#8b857a' }}>{timeAgo(r.created_at)}</span>
                             </div>
-                            <p style={{ fontSize: 12, color: '#605850', lineHeight: 1.5, margin: 0 }}>{r.content}</p>
+                            <p style={{ fontSize: 12, color: '#a8a296', lineHeight: 1.5, margin: 0 }}>{r.content}</p>
                           </div>
                           {r.user_id === currentUserId && (
                             <button onClick={() => onDeleteComment(r.id)} style={{
                               background: 'none', border: 'none', cursor: 'pointer',
-                              color: '#2a2a28', fontSize: 11, padding: 0, flexShrink: 0,
+                              color: '#8a847a', fontSize: 11, padding: 0, flexShrink: 0,
                             }}>삭제</button>
                           )}
                         </div>
@@ -750,7 +750,7 @@ function SubmissionCard({
                           <button onClick={() => { setReplyToId(null); setReplyText('') }} style={{
                             padding: '7px 8px', borderRadius: 8,
                             background: 'transparent', border: '1px solid rgba(240,236,224,0.1)',
-                            color: '#303028', fontSize: 12, cursor: 'pointer',
+                            color: '#8f8a7e', fontSize: 12, cursor: 'pointer',
                           }}>✕</button>
                         </div>
                       )}
@@ -765,7 +765,7 @@ function SubmissionCard({
         {!showInput ? (
           <button onClick={() => { setShowInput(true); setTimeout(() => inputRef.current?.focus(), 50) }} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            color: '#303028', fontSize: 13, fontWeight: 600, padding: 0,
+            color: '#8f8a7e', fontSize: 13, fontWeight: 600, padding: 0,
             display: 'flex', alignItems: 'center', gap: 5,
           }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -793,7 +793,7 @@ function SubmissionCard({
             <button onClick={() => setShowInput(false)} style={{
               padding: '9px 10px', borderRadius: 9,
               background: 'transparent', border: '1px solid rgba(240,236,224,0.15)',
-              color: '#303028', fontSize: 13, cursor: 'pointer',
+              color: '#8f8a7e', fontSize: 13, cursor: 'pointer',
             }}>✕</button>
           </div>
         )}

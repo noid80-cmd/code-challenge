@@ -77,7 +77,7 @@ export default function RankingPage() {
         padding: '0 20px', height: 54, paddingTop: 'calc(env(safe-area-inset-top) + 24px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/" style={{ color: '#605850', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+        <Link href="/" style={{ color: '#a8a296', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
           <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
           피드
         </Link>
@@ -97,11 +97,11 @@ export default function RankingPage() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#1a1a18', fontSize: 14 }}>불러오는 중</div>
+          <div style={{ textAlign: 'center', padding: 60, color: '#8b857a', fontSize: 14 }}>불러오는 중</div>
         ) : weekly.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '60px 0' }}>
-            <p style={{ color: '#303028', fontSize: 14, fontWeight: 700 }}>이번 주 데이터가 없어요</p>
-            <p style={{ color: '#1a1a18', fontSize: 13, marginTop: 5 }}>챌린지에 참여하고 첫 번째가 되어보세요</p>
+            <p style={{ color: '#8f8a7e', fontSize: 14, fontWeight: 700 }}>이번 주 데이터가 없어요</p>
+            <p style={{ color: '#8b857a', fontSize: 13, marginTop: 5 }}>챌린지에 참여하고 첫 번째가 되어보세요</p>
           </div>
         ) : (
           <>
@@ -131,7 +131,7 @@ export default function RankingPage() {
                         {medalLabels[idx]}
                       </div>
                       <div style={{ fontSize: isFirst ? 13 : 12, fontWeight: 800, color: '#e0dcd0' }}>{u.name}</div>
-                      <div style={{ fontSize: 11, color: '#605850', marginTop: 2 }}>♥ {u.total_likes}</div>
+                      <div style={{ fontSize: 11, color: '#a8a296', marginTop: 2 }}>♥ {u.total_likes}</div>
                     </div>
                     <div style={{
                       width: '100%', height: podiumHeights[idx],
@@ -155,7 +155,7 @@ export default function RankingPage() {
                   background: 'linear-gradient(145deg, #111110, #0d0d0c)',
                   border: '1px solid rgba(240,236,224,0.08)', borderRadius: 16,
                 }}>
-                  <span style={{ fontSize: 14, fontWeight: 900, color: '#1a1a18', width: 22, textAlign: 'center' }}>
+                  <span style={{ fontSize: 14, fontWeight: 900, color: '#8b857a', width: 22, textAlign: 'center' }}>
                     {i + 4}
                   </span>
                   <div style={{
@@ -170,11 +170,11 @@ export default function RankingPage() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 800, color: '#e0dcd0' }}>{u.name}</div>
-                    <div style={{ fontSize: 11, color: '#303028', marginTop: 2 }}>{u.submission_count}회 참여</div>
+                    <div style={{ fontSize: 11, color: '#8f8a7e', marginTop: 2 }}>{u.submission_count}회 참여</div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: 16, fontWeight: 900, color: '#f0ece0' }}>{u.total_likes}</div>
-                    <div style={{ fontSize: 10, color: '#1a1a18' }}>likes</div>
+                    <div style={{ fontSize: 10, color: '#8b857a' }}>likes</div>
                   </div>
                 </div>
               ))}

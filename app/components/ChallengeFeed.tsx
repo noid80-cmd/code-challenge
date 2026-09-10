@@ -226,7 +226,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0a0a08', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
       <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f0ece0', opacity: 0.7 }} />
-      <span style={{ color: '#303028', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
+      <span style={{ color: '#8f8a7e', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
     </div>
   )
 
@@ -384,7 +384,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
             <span style={{ fontSize: 15 }}>🌅</span>
             <div>
               <span style={{ fontSize: 13, fontWeight: 700, color: '#a0988c' }}>오늘의 챌린지는 낮 12시에 올라와요</span>
-              <span style={{ fontSize: 12, color: '#484640', marginLeft: 8 }}>지금은 어제 챌린지예요</span>
+              <span style={{ fontSize: 12, color: '#98948a', marginLeft: 8 }}>지금은 어제 챌린지예요</span>
             </div>
           </div>
         )}
@@ -418,7 +418,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                   })()}
                   <button onClick={() => setChallengeOpen(o => !o)} style={{
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: '#504840', fontSize: 12, padding: '4px 2px', lineHeight: 1,
+                    color: '#9c9384', fontSize: 12, padding: '4px 2px', lineHeight: 1,
                   }}>
                     {challengeOpen ? '▴' : '▾'}
                   </button>
@@ -427,7 +427,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
               {challengeOpen && (
                 <>
                   {challenge.description && challenge.description !== challenge.title && (
-                    <p style={{ fontSize: 13, color: '#605850', lineHeight: 1.7, marginBottom: 18 }}>
+                    <p style={{ fontSize: 13, color: '#a8a296', lineHeight: 1.7, marginBottom: 18 }}>
                       {challenge.description}
                     </p>
                   )}
@@ -469,8 +469,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
               border: '1px solid rgba(240,236,224,0.08)',
               borderRadius: 22, padding: '48px 20px', textAlign: 'center',
             }}>
-              <p style={{ color: '#605850', fontSize: 15, fontWeight: 700, marginBottom: 5 }}>오늘의 챌린지를 준비 중이에요</p>
-              <p style={{ color: '#303028', fontSize: 13 }}>매일 낮 12시에 새로운 {type === 'rhythm' ? '리듬 패턴' : type === 'melody' ? '멜로디 프레이즈' : '코드 진행'}이 올라와요</p>
+              <p style={{ color: '#a8a296', fontSize: 15, fontWeight: 700, marginBottom: 5 }}>오늘의 챌린지를 준비 중이에요</p>
+              <p style={{ color: '#8f8a7e', fontSize: 13 }}>매일 낮 12시에 새로운 {type === 'rhythm' ? '리듬 패턴' : type === 'melody' ? '멜로디 프레이즈' : '코드 진행'}이 올라와요</p>
               {isAdmin && (
                 <Link href="/admin" style={{
                   display: 'inline-block', marginTop: 22, padding: '9px 20px', borderRadius: 10,
@@ -502,7 +502,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                 })()}
               </div>
               {ec.description && ec.description !== ec.title && (
-                <p style={{ fontSize: 13, color: '#605850', lineHeight: 1.7, marginBottom: 18 }}>{ec.description}</p>
+                <p style={{ fontSize: 13, color: '#a8a296', lineHeight: 1.7, marginBottom: 18 }}>{ec.description}</p>
               )}
               <ZoomableNotation>
                 {type === 'melody'
@@ -524,7 +524,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
 
         {otherLevels.length > 0 && (
           <section style={{ marginTop: -24, marginBottom: 36 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#605850', marginBottom: 10 }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#a8a296', marginBottom: 10 }}>
               다른 난이도도 해보기
             </div>
             {otherLevels.map(oc => {
@@ -554,7 +554,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                       flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 700, color: '#a0988c',
                       overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     }}>{oc.title}</span>
-                    <span style={{ flexShrink: 0, color: '#504840', fontSize: 12 }}>{isOpen ? '▴' : '▾'}</span>
+                    <span style={{ flexShrink: 0, color: '#9c9384', fontSize: 12 }}>{isOpen ? '▴' : '▾'}</span>
                   </button>
                   {isOpen && (
                     <div style={{ padding: '0 15px 15px' }}>
@@ -608,7 +608,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                   <span style={{ fontSize: 14, fontWeight: 800, color: '#f8f4ec' }}>
                     {streak > 0 ? `${streak}일 연속 달성!` : '오늘 참여 완료!'}
                   </span>
-                  <p style={{ fontSize: 12, color: '#605850', margin: 0, marginTop: 1 }}>
+                  <p style={{ fontSize: 12, color: '#a8a296', margin: 0, marginTop: 1 }}>
                     {streak > 1 ? '내일도 이어가면 더 길어져요' : '내일도 올리면 2일 연속이에요'}
                   </p>
                 </>
@@ -620,7 +620,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
               ) : (
                 <>
                   <span style={{ fontSize: 14, fontWeight: 800, color: '#f8f4ec' }}>오늘 첫 연주를 올려보세요</span>
-                  <p style={{ fontSize: 12, color: '#605850', margin: 0, marginTop: 1 }}>매일 올리면 연속 기록이 쌓여요</p>
+                  <p style={{ fontSize: 12, color: '#a8a296', margin: 0, marginTop: 1 }}>매일 올리면 연속 기록이 쌓여요</p>
                 </>
               )}
             </div>
@@ -649,16 +649,16 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                   background: c.grad,
                   color: '#fff', padding: '2px 9px', borderRadius: 20,
                 }}>{submissions.length}</span>
-                <span style={{ color: '#504840', fontSize: 12 }}>{feedOpen ? '▴' : '▾'}</span>
+                <span style={{ color: '#9c9384', fontSize: 12 }}>{feedOpen ? '▴' : '▾'}</span>
               </button>
             ) : <span />}
-            <Link href="/ranking" style={{ fontSize: 12, color: '#303028', fontWeight: 700 }}>주간랭킹</Link>
+            <Link href="/ranking" style={{ fontSize: 12, color: '#8f8a7e', fontWeight: 700 }}>주간랭킹</Link>
           </div>
 
           {submissions.length > 0 && feedOpen && (
             <>
           {totalCount > submissions.length && (
-            <p style={{ fontSize: 12, color: '#504840', marginBottom: 10, marginTop: 0 }}>
+            <p style={{ fontSize: 12, color: '#9c9384', marginBottom: 10, marginTop: 0 }}>
               오늘 {totalCount}명이 참여했어요
             </p>
           )}
@@ -684,7 +684,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                   fontSize: 12, fontWeight: 700, color: sortBy === 'newest' ? '#f8f4ec' : '#303028',
                 }}>최신</button>
-                <span style={{ color: '#1a1a18', fontSize: 11 }}>|</span>
+                <span style={{ color: '#8b857a', fontSize: 11 }}>|</span>
                 <button onClick={() => setSortBy('popular')} style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                   fontSize: 12, fontWeight: 700, color: sortBy === 'popular' ? '#f8f4ec' : '#303028',
@@ -700,7 +700,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                   fontSize: 12, fontWeight: 700, color: sortBy === 'newest' ? '#f8f4ec' : '#303028',
                 }}>최신</button>
-                <span style={{ color: '#1a1a18', fontSize: 11 }}>|</span>
+                <span style={{ color: '#8b857a', fontSize: 11 }}>|</span>
                 <button onClick={() => setSortBy('popular')} style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                   fontSize: 12, fontWeight: 700, color: sortBy === 'popular' ? '#f8f4ec' : '#303028',
@@ -800,7 +800,7 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
               <div style={{ fontSize: 14, fontWeight: 800, color: '#f0ece0', lineHeight: 1.2 }}>
                 {sub.profiles?.name ?? '익명'}
               </div>
-              <div style={{ fontSize: 11, color: '#303028', marginTop: 2 }}>{timeAgo(sub.created_at)}</div>
+              <div style={{ fontSize: 11, color: '#8f8a7e', marginTop: 2 }}>{timeAgo(sub.created_at)}</div>
             </div>
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -819,7 +819,7 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
               <div style={{ position: 'relative' }}>
                 <button onClick={() => setMenuOpen(v => !v)} style={{
                   background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: 10, cursor: 'pointer', color: '#605850',
+                  borderRadius: 10, cursor: 'pointer', color: '#a8a296',
                   fontSize: 14, fontWeight: 800, padding: '7px 10px', lineHeight: 1,
                 }}>⋯</button>
                 {menuOpen && (
@@ -848,7 +848,7 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
           </div>
         </div>
         {sub.caption && (
-          <p style={{ fontSize: 13, color: '#7a6020', marginTop: 10, lineHeight: 1.6 }}>{sub.caption}</p>
+          <p style={{ fontSize: 13, color: '#c9a23f', marginTop: 10, lineHeight: 1.6 }}>{sub.caption}</p>
         )}
       </div>
     </div>
