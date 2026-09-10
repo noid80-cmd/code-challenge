@@ -68,8 +68,11 @@ export async function GET(req: NextRequest) {
     supabase.from('device_tokens').select('user_id, token').in('user_id', ids),
   ])
 
-  // 문구는 연속 일수에 따라 달라진다. 어제 처음 올린 사람에게 "기록이
-  // 끊긴다"고 하면 겁만 주고 끝난다 — 그 사람에겐 이틀째를 권한다.
+  // 겁을 주지 않는다. "끊깁니다"는 응원이 아니라 협박이고, 협박은 한두 번은
+  // 먹히지만 그 다음엔 알림을 끄게 만든다. 지금까지 해온 것을 말해주고
+  // 오늘 하나면 하루가 더 붙는다고 알려준다.
+  //
+  // 드는 시간도 같이 적는다. 사람은 얼마나 걸릴지 모르면 시작하지 않는다.
   function message(streak: number) {
     if (streak <= 1) {
       return {
@@ -78,8 +81,8 @@ export async function GET(req: NextRequest) {
       }
     }
     return {
-      title: `연속 ${streak}일이 오늘 끊깁니다`,
-      body: '지금 하나 올리면 이어져요. 3분이면 됩니다.',
+      title: `연속 ${streak}일 가고 있어요`,
+      body: `오늘 하나만 올리면 ${streak + 1}일째예요. 3분이면 됩니다.`,
     }
   }
 
