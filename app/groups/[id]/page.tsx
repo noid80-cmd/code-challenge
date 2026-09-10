@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
-type Group = { id: string; name: string; description: string | null; owner_id: string; is_public: boolean }
+type Group = { id: string; name: string; description: string | null; owner_id: string; is_public: boolean; pending_owner_id: string | null }
 type Submission = {
   id: string; video_url: string; caption: string | null
   likes_count: number; created_at: string; user_id: string; is_private: boolean
@@ -61,6 +61,7 @@ export default function GroupPage() {
   // 방장을 넘길 때만 멤버 목록이 필요하다. 평소엔 인원수만 있으면 된다.
   const [members, setMembers] = useState<{ id: string; name: string }[]>([])
   const [transferOpen, setTransferOpen] = useState(false)
+  const [pendingName, setPendingName] = useState('')
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [commentsBySubId, setCommentsBySubId] = useState<Record<string, Comment[]>>({})
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
@@ -93,7 +94,7 @@ export default function GroupPage() {
     // select('*') 는 이제 못 쓴다. 초대 코드와 비밀번호 해시는 읽을 수 있는
     // 칸에서 빠졌고, 없는 칸을 달라고 하면 요청이 통째로 실패한다.
     const { data: g } = await supabase.from('groups')
-      .select('id, name, description, owner_id, is_public').eq('id', groupId).single()
+      .select('id, name, description, owner_id, is_public, pending_owner_id').eq('id', groupId).single()
     if (!g) { window.location.href = '/groups'; return }
     setGroup(g)
 
@@ -104,6 +105,13 @@ export default function GroupPage() {
 
     const { count } = await supabase.from('group_members').select('id', { count: 'exact', head: true }).eq('group_id', groupId)
     setMemberCount(count ?? 0)
+
+    if (g.pending_owner_id) {
+      const { data: pn } = await supabase.from('profiles').select('name').eq('id', g.pending_owner_id).maybeSingle()
+      setPendingName((pn?.name as string) ?? '상대방')
+    } else {
+      setPendingName('')
+    }
 
     const { data: subs, error: subsErr } = await supabase
       .from('submissions')
@@ -325,15 +333,26 @@ ${window.location.origin}/groups?g=${group.id}`
 
   // 방장은 나갈 방법이 삭제뿐이었다. 멤버가 여럿인 방을 나가겠다고 통째로
   // 없애면 남의 기록까지 지운다. 넘기고 나가는 길을 만든다.
-  async function transferOwner(toId: string, toName: string) {
-    if (!confirm(`${toName} 님에게 방장을 넘길까요? 넘기면 되돌릴 수 없습니다.`)) return
+  //
+  // 단, 바로 넘기지 않는다. 방장은 공지·비밀번호·삭제 권한이라 떠넘길 수
+  // 있는 자리다. 지명해두고 상대가 수락해야 넘어간다.
+  async function offerOwner(toId: string, toName: string) {
+    if (!confirm(`${toName} 님에게 방장을 넘기겠다고 제안할까요?\n상대가 수락해야 넘어갑니다.`)) return
     const supabase = createClient()
-    const { error } = await supabase.rpc('transfer_group_owner', {
+    const { error } = await supabase.rpc('offer_group_owner', {
       p_group_id: groupId, p_new_owner: toId,
     })
-    if (error) { alert('넘기지 못했어요: ' + error.message); return }
+    if (error) { alert('제안하지 못했어요: ' + error.message); return }
     setTransferOpen(false)
-    alert(`${toName} 님이 방장이 되었어요.`)
+    window.location.reload()
+  }
+
+  async function answerOwnerOffer(accept: boolean) {
+    const supabase = createClient()
+    const { error } = await supabase.rpc(accept ? 'accept_group_owner' : 'decline_group_owner', {
+      p_group_id: groupId,
+    })
+    if (error) { alert('처리하지 못했어요: ' + error.message); return }
     window.location.reload()
   }
 
@@ -417,10 +436,10 @@ ${window.location.origin}/groups?g=${group.id}`
           }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: '#f0ece0', marginBottom: 6 }}>방장 넘기기</div>
             <div style={{ fontSize: 12.5, color: '#c0bab0', lineHeight: 1.6, marginBottom: 14, wordBreak: 'keep-all' }}>
-              넘기면 이 방의 공지·비밀번호·삭제 권한이 그 사람에게 갑니다. 넘긴 뒤에는 방에서 나갈 수 있어요.
+              고른 사람이 수락하면 이 방의 공지·비밀번호·삭제 권한이 그 사람에게 갑니다. 넘어간 뒤에는 방에서 나갈 수 있어요.
             </div>
             {members.map(m => (
-              <button key={m.id} onClick={() => transferOwner(m.id, m.name)} style={{
+              <button key={m.id} onClick={() => offerOwner(m.id, m.name)} style={{
                 display: 'block', width: '100%', textAlign: 'left', cursor: 'pointer',
                 background: 'rgba(240,236,224,0.05)', border: '1px solid rgba(240,236,224,0.12)',
                 borderRadius: 11, padding: '11px 13px', marginBottom: 8,
@@ -437,6 +456,32 @@ ${window.location.origin}/groups?g=${group.id}`
       )}
 
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '16px 16px 0' }}>
+        {group?.pending_owner_id === userId && (
+          <div style={{
+            background: 'rgba(230,197,131,0.1)', border: '1px solid rgba(230,197,131,0.4)',
+            borderRadius: 16, padding: '14px 16px', marginBottom: 14,
+          }}>
+            <div style={{ fontSize: 13.5, fontWeight: 800, color: '#e6c583', marginBottom: 4 }}>
+              방장을 넘겨받으시겠어요?
+            </div>
+            <div style={{ fontSize: 12.5, color: '#e0dcd0', lineHeight: 1.6, marginBottom: 12, wordBreak: 'keep-all' }}>
+              수락하면 이 방의 공지·비밀번호·삭제 권한이 넘어옵니다.
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => answerOwnerOffer(true)} style={{
+                flex: 1, padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                color: '#0a0a08', fontSize: 13, fontWeight: 800,
+              }}>수락</button>
+              <button onClick={() => answerOwnerOffer(false)} style={{
+                flex: 1, padding: '10px', borderRadius: 10, cursor: 'pointer',
+                background: 'transparent', border: '1px solid rgba(240,236,224,0.2)',
+                color: '#c0bab0', fontSize: 13, fontWeight: 700,
+              }}>거절</button>
+            </div>
+          </div>
+        )}
+
         {/* 그룹 정보 */}
         <div style={{
           background: 'linear-gradient(145deg, #111110, #0d0d0c)',
@@ -449,10 +494,17 @@ ${window.location.origin}/groups?g=${group.id}`
             {isOwner && (
               <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
                 {memberCount > 1 && (
-                  <button onClick={openTransfer} style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    color: '#98948a', fontSize: 11, fontWeight: 600, padding: 0,
-                  }}>방장 넘기기</button>
+                  group?.pending_owner_id ? (
+                    <button onClick={() => answerOwnerOffer(false)} style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: '#e6c583', fontSize: 11, fontWeight: 700, padding: 0,
+                    }}>{pendingName} 님 수락 대기 중 · 취소</button>
+                  ) : (
+                    <button onClick={openTransfer} style={{
+                      background: 'none', border: 'none', cursor: 'pointer',
+                      color: '#98948a', fontSize: 11, fontWeight: 600, padding: 0,
+                    }}>방장 넘기기</button>
+                  )
                 )}
                 <button onClick={deleteGroup} style={{
                   background: 'none', border: 'none', cursor: 'pointer',

@@ -178,14 +178,25 @@ grant execute on function public.join_group_with_password(uuid, text) to authent
 grant execute on function public.set_group_password(uuid, text) to authenticated;
 grant execute on function public.group_member_counts() to anon, authenticated;
 
--- 방장 넘기기 (2026-09-11)
+-- 방장 넘기기 — 수락해야 넘어간다 (2026-09-11)
 --
 -- 방장이 방을 나가려면 삭제하는 수밖에 없었다. 멤버가 여럿인 방을
 -- 나가겠다고 통째로 없애면 남의 기록까지 지운다.
 --
--- 클라이언트가 owner_id 를 직접 고치게 두지 않는다 — 정책만으로는
--- 방장이 아무나(멤버가 아닌 사람에게도) 넘길 수 있다. 함수가 확인한다.
-create or replace function public.transfer_group_owner(p_group_id uuid, p_new_owner uuid)
+-- 바로 넘기지는 않는다. 방장은 공지·비밀번호·삭제 권한이라 떠넘길 수 있는
+-- 자리다. 지명해두고(pending_owner_id) 상대가 수락해야 넘어간다.
+--
+-- owner_id 를 클라이언트가 직접 고치게 두지 않는다 — 정책만으로는 방장이
+-- 멤버가 아닌 사람에게도 넘길 수 있다. 함수가 확인한다.
+alter table public.groups add column if not exists pending_owner_id uuid
+  references auth.users on delete set null;
+
+-- groups 는 읽을 칸을 정해놨으므로 새 칸도 열어줘야 화면에서 보인다.
+grant select (pending_owner_id) on public.groups to anon, authenticated;
+
+drop function if exists public.transfer_group_owner(uuid, uuid);
+
+create or replace function public.offer_group_owner(p_group_id uuid, p_new_owner uuid)
 returns void language plpgsql security definer set search_path = public as $$
 begin
   if not exists (select 1 from public.groups
@@ -196,7 +207,38 @@ begin
                  where group_id = p_group_id and user_id = p_new_owner) then
     raise exception 'not a member';
   end if;
-  update public.groups set owner_id = p_new_owner where id = p_group_id;
+  update public.groups set pending_owner_id = p_new_owner where id = p_group_id;
 end $$;
 
-grant execute on function public.transfer_group_owner(uuid, uuid) to authenticated;
+create or replace function public.accept_group_owner(p_group_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.groups
+                 where id = p_group_id and pending_owner_id = auth.uid()) then
+    raise exception 'not offered';
+  end if;
+  -- 지명된 뒤에 방을 나갔을 수도 있다. 멤버가 아니면 방장이 될 수 없다.
+  if not exists (select 1 from public.group_members
+                 where group_id = p_group_id and user_id = auth.uid()) then
+    raise exception 'not a member';
+  end if;
+  update public.groups
+    set owner_id = auth.uid(), pending_owner_id = null
+    where id = p_group_id;
+end $$;
+
+-- 지명된 사람은 거절하고, 방장은 취소한다. 같은 일이라 한 함수로 둔다.
+create or replace function public.decline_group_owner(p_group_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.groups
+                 where id = p_group_id
+                   and (pending_owner_id = auth.uid() or owner_id = auth.uid())) then
+    raise exception 'not allowed';
+  end if;
+  update public.groups set pending_owner_id = null where id = p_group_id;
+end $$;
+
+grant execute on function public.offer_group_owner(uuid, uuid) to authenticated;
+grant execute on function public.accept_group_owner(uuid) to authenticated;
+grant execute on function public.decline_group_owner(uuid) to authenticated;
