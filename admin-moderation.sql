@@ -127,3 +127,8 @@ alter table public.profiles add column if not exists signup_notified_at timestam
 -- 이미 가입한 사람들에게 알림이 소급해서 쏟아지지 않도록 지금까지의 회원은
 -- 보낸 것으로 표시한다.
 update public.profiles set signup_notified_at = created_at where signup_notified_at is null;
+
+-- 전공 (2026-09-10). 영상마다 붙여서 보고 싶은 전공만 모아 볼 수 있게 한다.
+-- 값은 영어 키로 저장한다(drums/bass/guitar/piano/composition/vocal/other) —
+-- 화면 문구를 바꿔도 데이터가 흔들리지 않는다. lib/majors.ts 가 짝이다.
+alter table public.submissions add column if not exists major text;

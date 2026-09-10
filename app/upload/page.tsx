@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { MAJORS, MAJOR_LABELS, isMajor, type Major } from '@/lib/majors'
 import Link from 'next/link'
 import ChordPlayer from '@/app/components/ChordPlayer'
 import dynamic from 'next/dynamic'
@@ -31,6 +32,8 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [caption, setCaption] = useState('')
+  // 전공은 매번 바뀌지 않는다. 지난번에 고른 것을 기억해서 다시 고르게 하지 않는다.
+  const [major, setMajor] = useState<Major | ''>('')
   const [selectedProgression, setSelectedProgression] = useState(0)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
@@ -51,6 +54,11 @@ export default function UploadPage() {
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
   // 마이크 원음을 그대로 담으면 악기가 멀어서 소리가 아주 작다.
   const audioCtxRef = useRef<AudioContext | null>(null)
+  // 녹화 내내 마이크에 들어온 가장 큰 소리를 기억한다. 이게 바닥이면
+  // 연주가 안 담긴 것이다 — 사라 박 님은 그걸 모른 채 여덟 번을 올렸다.
+  const peakRef = useRef(0)
+  const peakTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [lowAudio, setLowAudio] = useState(false)
   const chunksRef = useRef<Blob[]>([])
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -93,6 +101,13 @@ export default function UploadPage() {
   }, [router])
 
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('major')
+      if (isMajor(saved)) setMajor(saved)
+    } catch { /* 저장소가 막힌 브라우저 */ }
+  }, [])
+
   // 카메라 시작 — 오버레이는 항상 DOM에 있으므로 stream을 바로 연결
   const startCamera = useCallback(async () => {
     try {
@@ -130,6 +145,7 @@ export default function UploadPage() {
     setRecordSecs(0)
     if (timerRef.current) clearInterval(timerRef.current)
     if (countdownRef.current) clearInterval(countdownRef.current)
+    if (peakTimerRef.current) clearInterval(peakTimerRef.current)
   }, [])
 
   // 셋을 세고 시작한다. 그 사이에 폰을 세우고 손을 올린다.
@@ -186,6 +202,20 @@ export default function UploadPage() {
         comp.release.value = 0.25
         const dest = ctx.createMediaStreamDestination()
         src.connect(gain); gain.connect(comp); comp.connect(dest)
+
+        // 키우기 전 원음을 본다. 키운 뒤를 보면 잡음도 커져 있어서
+        // "소리가 들어왔다"고 착각한다.
+        const analyser = ctx.createAnalyser()
+        analyser.fftSize = 2048
+        src.connect(analyser)
+        const buf = new Float32Array(analyser.fftSize)
+        peakRef.current = 0
+        peakTimerRef.current = setInterval(() => {
+          analyser.getFloatTimeDomainData(buf)
+          let m = 0
+          for (let i = 0; i < buf.length; i++) { const v = Math.abs(buf[i]); if (v > m) m = v }
+          if (m > peakRef.current) peakRef.current = m
+        }, 100)
         recordStream = new MediaStream([
           ...streamRef.current.getVideoTracks(),
           ...dest.stream.getAudioTracks(),
@@ -210,6 +240,11 @@ export default function UploadPage() {
       const f = new File([blob], `recording.${ext}`, { type: blob.type })
       setFile(f)
       setPreview(prev => { if (prev) URL.revokeObjectURL(prev); return URL.createObjectURL(blob) })
+      if (peakTimerRef.current) { clearInterval(peakTimerRef.current); peakTimerRef.current = null }
+      // -22dBFS 아래면 사실상 잡음뿐이다. 실제로 그런 영상들의 봉우리가
+      // -24 ~ -35dB 였고, 연주가 담긴 것은 -19dB 위였다.
+      const peakDb = peakRef.current > 0 ? 20 * Math.log10(peakRef.current) : -99
+      setLowAudio(peakDb < -22)
       audioCtxRef.current?.close().catch(() => {})
       audioCtxRef.current = null
       stopCamera()
@@ -248,7 +283,7 @@ export default function UploadPage() {
       return
     }
     setPreview(URL.createObjectURL(f))
-    setFile(f); setError('')
+    setFile(f); setError(''); setLowAudio(false)
   }
 
   async function generateThumbnail(f: File): Promise<Blob | null> {
@@ -323,6 +358,7 @@ export default function UploadPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!file) { setError('영상을 선택해주세요.'); return }
+    try { if (major) localStorage.setItem('major', major) } catch { /* 저장소가 막힌 브라우저 */ }
     if (!challenge) { setError('오늘의 챌린지가 없어요.'); return }
     setError(''); setUploading(true)
     const supabase = createClient()
@@ -344,6 +380,7 @@ export default function UploadPage() {
     const rows = destinations.map(dest => ({
       challenge_id: challenge.id, user_id: user.id, video_url: path,
       caption: caption.trim() || null,
+      major: major || null,
       group_id: dest === 'public' ? null : dest,
       progression_index: selectedProgression,
       is_private: false,
@@ -692,6 +729,21 @@ export default function UploadPage() {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <input ref={fileRef} type="file" accept="video/*" onChange={handleFileSelect} style={{ display: 'none' }} />
 
+          {preview && lowAudio && (
+            <div style={{
+              background: 'rgba(224,112,96,0.12)', border: '1px solid rgba(224,112,96,0.4)',
+              borderRadius: 14, padding: '12px 14px',
+            }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: '#e8a99c', marginBottom: 4 }}>
+                소리가 거의 안 들어갔어요
+              </div>
+              <div style={{ fontSize: 12.5, color: '#c8bdb4', lineHeight: 1.6 }}>
+                마이크가 손이나 케이스에 가려졌는지 확인해보세요. 이대로 올리면
+                연주가 안 들립니다. 그래도 올리실 수는 있어요.
+              </div>
+            </div>
+          )}
+
           {preview ? (
             <div style={{ borderRadius: 18, overflow: 'hidden', border: '1px solid rgba(240,236,224,0.12)' }}>
               <video src={preview} controls playsInline
@@ -801,6 +853,21 @@ export default function UploadPage() {
               </div>
             </div>
           )}
+
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: '#a8a296', marginBottom: 8 }}>전공</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {MAJORS.map(m => (
+                <button key={m} type="button" onClick={() => setMajor(prev => prev === m ? '' : m)}
+                  style={{
+                    padding: '7px 13px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700,
+                    background: major === m ? 'linear-gradient(135deg, #f8f4ec, #c8c4b0)' : 'transparent',
+                    border: major === m ? '1px solid transparent' : '1px solid rgba(240,236,224,0.18)',
+                    color: major === m ? '#0a0a08' : '#a8a296',
+                  }}>{MAJOR_LABELS[m]}</button>
+              ))}
+            </div>
+          </div>
 
           <textarea value={caption} onChange={e => setCaption(e.target.value)}
             placeholder="한마디 남겨주세요 (선택)" rows={2}

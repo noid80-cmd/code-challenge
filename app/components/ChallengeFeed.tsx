@@ -9,6 +9,7 @@ import { localDate, challengeDate } from '@/lib/date'
 import { TYPE_COLORS } from '@/lib/theme'
 import { LEVELS, LEVEL_COLORS, LEVEL_FALLBACK, LEVEL_LABELS, toLevel, type Level } from '@/lib/level'
 import { cachedLevel, fetchLevel, saveLevel } from './levelClient'
+import { MAJORS, MAJOR_LABELS, majorLabel, type Major } from '@/lib/majors'
 import PushBanner from './PushBanner'
 import LevelSheet, { LevelChip } from './LevelSheet'
 import ZoomableNotation from './ZoomableNotation'
@@ -23,10 +24,12 @@ type Challenge = {
   type: 'chord' | 'rhythm' | 'melody'
   chords: { progressions?: Progression[]; patterns?: { label: string; abc: string }[] }
 }
+type Comment = { id: string; content: string; created_at: string; user_id: string; name: string }
 type Submission = {
   id: string; challenge_id: string; video_url: string; caption?: string
   likes_count: number; created_at: string; user_liked?: boolean
   progression_index?: number; thumbnail_url?: string | null
+  major?: string | null
   user_id: string
   profiles: { name: string; avatar_url?: string } | null
 }
@@ -93,6 +96,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   const [feedOpen, setFeedOpen] = useState(true)
   // 목록에서 하나를 누르면 전체 화면으로 열고 좌우로 넘겨 본다.
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
+  // 드럼 하는 사람이 보고 싶은 건 대개 드럼이다. 전공으로 걸러 본다.
+  const [majorFilter, setMajorFilter] = useState<Major | 'all'>('all')
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -247,6 +252,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   // 그리드에서 세 번째로 보이던 영상이 뷰어에서도 세 번째여야 한다.
   // 두 곳에서 따로 정렬하면 누른 것과 다른 게 열린다.
   const visibleSubs = [...submissions]
+    .filter(s => majorFilter === 'all' || s.major === majorFilter)
     // 진행 번호는 자기 난이도 챌린지의 것이라, 다른 난이도 영상에는
     // 같은 번호라도 다른 진행이다. 진행을 골랐을 때만 이 챌린지 것으로 좁힌다.
     .filter(s => type === 'chord'
@@ -736,6 +742,30 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
             </div>
           )}
 
+            {/* 전공 고르기. 아무도 안 올린 전공은 띄우지 않는다 —
+                눌러봤자 빈 화면이 나오는 버튼은 없느니만 못하다. */}
+            {(() => {
+              const present = MAJORS.filter(m => submissions.some(s => s.major === m))
+              if (present.length < 2) return null
+              return (
+                <div style={{
+                  display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 12,
+                  paddingBottom: 2, scrollbarWidth: 'none',
+                }}>
+                  {(['all', ...present] as const).map(m => (
+                    <button key={m} onClick={() => setMajorFilter(m as Major | 'all')}
+                      style={{
+                        flexShrink: 0, padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
+                        fontSize: 12, fontWeight: 700,
+                        background: majorFilter === m ? c.glowSoft : 'transparent',
+                        color: majorFilter === m ? c.solid : '#948b7d',
+                        border: majorFilter === m ? `1px solid ${c.border}` : '1px solid transparent',
+                      }}>{m === 'all' ? '전체' : MAJOR_LABELS[m as Major]}</button>
+                  ))}
+                </div>
+              )
+            })()}
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
               {visibleSubs.map((sub, i) => {
                 const subCh = challengeById[sub.challenge_id]
@@ -821,7 +851,7 @@ function SubmissionThumb({ sub, onOpen, label, level, dimLevel }: {
           <span style={{
             fontSize: 11, color: '#9a9083', flex: 1,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          }}>{label ?? timeAgo(sub.created_at)}</span>
+          }}>{[majorLabel(sub.major), label ?? timeAgo(sub.created_at)].filter(Boolean).join(' · ')}</span>
           <span style={{
             fontSize: 11, fontWeight: 700, flexShrink: 0,
             color: sub.likes_count > 0 ? '#fb7185' : '#6f6a60',
@@ -851,6 +881,12 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
   // 높이를 재서 영상이 그 아래에서 시작하게 한다.
   const notation = useRef<HTMLDivElement>(null)
   const [notationH, setNotationH] = useState(0)
+  // 댓글. 그룹 안에만 있던 것을 공개 피드에도 연다.
+  // 정책은 이미 열려 있다(comments_select_all / insert 본인 / delete 본인).
+  const [comments, setComments] = useState<Comment[]>([])
+  const [commentsOpen, setCommentsOpen] = useState(false)
+  const [draft, setDraft] = useState('')
+  const [sending, setSending] = useState(false)
 
   // 누른 영상에서 시작한다. 레이아웃이 잡힌 뒤라야 폭을 알 수 있다.
   useEffect(() => {
@@ -885,6 +921,53 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
   }, [onClose])
 
   const cur = subs[idx]
+
+  const loadComments = useCallback(async (submissionId: string) => {
+    const supabase = createClient()
+    const { data } = await supabase.from('comments')
+      .select('id, content, created_at, user_id')
+      .eq('submission_id', submissionId).order('created_at', { ascending: true })
+    const rows = (data ?? []) as { id: string; content: string; created_at: string; user_id: string }[]
+    // submissions.user_id 와 마찬가지로 auth.users 를 참조해서 임베드 조인이
+    // 안 된다. 이름은 따로 읽어서 붙인다.
+    const ids = [...new Set(rows.map(r => r.user_id))]
+    let nameOf: Record<string, string> = {}
+    if (ids.length) {
+      const { data: profs } = await supabase.from('profiles').select('id, name').in('id', ids)
+      nameOf = Object.fromEntries((profs ?? []).map(p => [p.id, p.name as string]))
+    }
+    setComments(rows.map(r => ({ ...r, name: nameOf[r.user_id] ?? '익명' })))
+  }, [])
+
+  useEffect(() => {
+    setComments([])
+    if (cur) loadComments(cur.id)
+  }, [cur, loadComments])
+
+  async function submitComment() {
+    const content = draft.trim()
+    if (!content || !cur) return
+    setSending(true)
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setSending(false); return }
+    const { data, error } = await supabase.from('comments')
+      .insert({ submission_id: cur.id, user_id: user.id, content }).select('id')
+    setSending(false)
+    if (error || !data?.length) {
+      alert(error?.message ?? '댓글을 남기지 못했어요.')
+      return
+    }
+    setDraft('')
+    loadComments(cur.id)
+  }
+
+  async function removeComment(id: string) {
+    const supabase = createClient()
+    await supabase.from('comments').delete().eq('id', id)
+    if (cur) loadComments(cur.id)
+  }
+
   const curCh = cur ? challengeById[cur.challenge_id] : undefined
   const curLevel = toLevel(curCh?.level)
   // 무엇을 치고 있는지 보면서 들어야 한다. 이름만 있으면(진행 1) 소용이 없다.
@@ -951,6 +1034,12 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
             fontSize: 11, fontWeight: 800, padding: '2px 7px', borderRadius: 5,
             background: 'rgba(0,0,0,0.45)', color: LEVEL_COLORS[curLevel],
           }}>{LEVEL_LABELS[curLevel]}</span>
+        )}
+        {majorLabel(cur?.major) && (
+          <span style={{
+            fontSize: 11, fontWeight: 800, padding: '2px 7px', borderRadius: 5,
+            background: 'rgba(0,0,0,0.45)', color: '#e0dcd0',
+          }}>{majorLabel(cur?.major)}</span>
         )}
         {label && (
           <span style={{ fontSize: 11, fontWeight: 700, color: '#c8c4b0' }}>{label}</span>
@@ -1040,6 +1129,18 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
               <span style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{cur.likes_count}</span>
             </button>
 
+            <button onClick={() => setCommentsOpen(o => !o)} style={{
+              background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              color: '#e0dcd0', fontSize: 15, fontWeight: 800, padding: '8px 13px',
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{comments.length}</span>
+            </button>
+
             {currentUserId !== cur.user_id && (
               <div style={{ position: 'relative' }}>
                 <button onClick={() => setMenuFor(m => m === cur.id ? null : cur.id)} style={{
@@ -1070,6 +1171,84 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
             )}
           </div>
         </div>
+      )}
+
+      {commentsOpen && cur && (
+        <>
+          <div onClick={() => setCommentsOpen(false)}
+            style={{ position: 'absolute', inset: 0, zIndex: 20, background: 'rgba(0,0,0,0.4)' }} />
+          <div style={{
+            position: 'absolute', left: 0, right: 0, bottom: 0, zIndex: 21,
+            maxHeight: '62%', display: 'flex', flexDirection: 'column',
+            background: '#131312', borderTop: '1px solid rgba(240,236,224,0.14)',
+            borderTopLeftRadius: 18, borderTopRightRadius: 18,
+            paddingBottom: 'env(safe-area-inset-bottom)',
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', padding: '12px 16px 8px',
+              borderBottom: '1px solid rgba(240,236,224,0.08)',
+            }}>
+              <span style={{ fontSize: 14, fontWeight: 800, color: '#f0ece0' }}>댓글 {comments.length}</span>
+              <button onClick={() => setCommentsOpen(false)} style={{
+                marginLeft: 'auto', background: 'none', border: 'none', color: '#a8a296',
+                fontSize: 18, cursor: 'pointer', lineHeight: 1,
+              }}>×</button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', padding: '10px 16px' }}>
+              {comments.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#8b857a', fontSize: 13, padding: '24px 0' }}>
+                  첫 댓글을 남겨보세요
+                </div>
+              ) : comments.map(cm => (
+                <div key={cm.id} style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Link href={`/profile/${cm.user_id}`} style={{ fontSize: 12.5, fontWeight: 800, color: '#e0dcd0', textDecoration: 'none' }}>
+                      {cm.name}
+                    </Link>
+                    <span style={{ fontSize: 11, color: '#8b857a' }}>{timeAgo(cm.created_at)}</span>
+                    {currentUserId === cm.user_id && (
+                      <button onClick={() => removeComment(cm.id)} style={{
+                        marginLeft: 'auto', background: 'none', border: 'none',
+                        color: '#8b857a', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                      }}>삭제</button>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 13.5, color: '#f0ece0', lineHeight: 1.6, marginTop: 3, wordBreak: 'break-word' }}>
+                    {cm.content}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {currentUserId ? (
+              <div style={{
+                display: 'flex', gap: 8, padding: '10px 14px 14px',
+                borderTop: '1px solid rgba(240,236,224,0.08)',
+              }}>
+                <input value={draft} onChange={e => setDraft(e.target.value)} maxLength={300}
+                  onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) submitComment() }}
+                  placeholder="댓글 남기기"
+                  style={{
+                    flex: 1, background: 'rgba(13,13,12,0.8)', border: '1px solid rgba(240,236,224,0.15)',
+                    borderRadius: 11, padding: '10px 12px', fontSize: 13.5, color: '#f0ece0', outline: 'none',
+                  }} />
+                <button onClick={submitComment} disabled={sending || !draft.trim()} style={{
+                  padding: '10px 16px', borderRadius: 11, border: 'none',
+                  cursor: sending || !draft.trim() ? 'default' : 'pointer',
+                  background: sending || !draft.trim()
+                    ? 'rgba(240,236,224,0.15)' : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                  color: sending || !draft.trim() ? '#8b857a' : '#0a0a08',
+                  fontSize: 13, fontWeight: 800, flexShrink: 0,
+                }}>{sending ? '...' : '등록'}</button>
+              </div>
+            ) : (
+              <div style={{ padding: '14px 16px', textAlign: 'center', color: '#8b857a', fontSize: 13 }}>
+                로그인하면 댓글을 남길 수 있어요
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   )
