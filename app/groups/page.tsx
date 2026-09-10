@@ -218,13 +218,27 @@ export default function GroupsPage() {
     borderRadius: 18, padding: '16px 18px',
   }
 
-  function Lock() {
+  // 자물쇠 하나로는 눈에 안 들어왔다. 공개·비공개를 색이 다른 태그로
+  // 붙여서, 목록을 훑기만 해도 어느 쪽인지 보이게 한다.
+  function RoomTag({ isPublic }: { isPublic: boolean }) {
+    const t = isPublic
+      ? { label: '공개', fg: '#6fd8a8', bg: 'rgba(52,211,153,0.14)', bd: 'rgba(52,211,153,0.4)' }
+      : { label: '비공개', fg: '#e6c583', bg: 'rgba(230,197,131,0.13)', bd: 'rgba(230,197,131,0.38)' }
     return (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        <rect x="4" y="11" width="16" height="10" rx="2" />
-        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-      </svg>
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 3, flexShrink: 0,
+        fontSize: 10.5, fontWeight: 800, padding: '2px 7px', borderRadius: 6,
+        color: t.fg, background: t.bg, border: `1px solid ${t.bd}`,
+      }}>
+        {!isPublic && (
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <rect x="4" y="11" width="16" height="10" rx="2" />
+            <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+          </svg>
+        )}
+        {t.label}
+      </span>
     )
   }
 
@@ -305,7 +319,7 @@ export default function GroupsPage() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span style={{ fontSize: 16, fontWeight: 800, color: '#e0dcd0' }}>{g.name}</span>
-                            {!g.is_public && <span style={{ color: '#a8a296', display: 'flex' }}><Lock /></span>}
+                            <RoomTag isPublic={g.is_public} />
                             {g.owner_id === userId && (
                               <span style={{
                                 fontSize: 10, fontWeight: 800, color: '#f0ece0',
@@ -375,12 +389,15 @@ export default function GroupsPage() {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {shown.map(g => (
-                  <div key={g.id} style={cardStyle}>
+                  <div key={g.id} style={{
+                    ...cardStyle,
+                    borderLeft: `3px solid ${g.is_public ? 'rgba(52,211,153,0.55)' : 'rgba(230,197,131,0.5)'}`,
+                  }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 15.5, fontWeight: 800, color: '#e0dcd0' }}>{g.name}</span>
-                          {!g.is_public && <span style={{ color: '#a8a296', display: 'flex' }}><Lock /></span>}
+                          <RoomTag isPublic={g.is_public} />
                         </div>
                         <div style={{ fontSize: 12.5, color: '#a8a296', marginTop: 3 }}>
                           {[g.description, `${counts[g.id] ?? 0}명`].filter(Boolean).join(' · ')}
