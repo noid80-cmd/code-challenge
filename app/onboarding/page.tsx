@@ -6,6 +6,7 @@ import AcademyCard from '@/app/components/AcademyCard'
 import LevelPicker from '@/app/components/LevelPicker'
 import { saveLevel } from '@/app/components/levelClient'
 import { DEFAULT_LEVEL, type Level } from '@/lib/level'
+import { readPendingInvite } from '@/lib/pendingInvite'
 
 const STEPS = 4
 
@@ -33,7 +34,8 @@ export default function OnboardingPage() {
     const supabase = createClient()
     await saveLevel(userId, level)
     await supabase.from('profiles').update({ onboarded_at: new Date().toISOString() }).eq('id', userId)
-    window.location.href = '/'
+    // 초대 링크로 들어와 가입한 사람은 홈이 아니라 그룹으로 보낸다
+    window.location.href = readPendingInvite() ? '/groups' : '/'
   }
 
   if (!ready) return (

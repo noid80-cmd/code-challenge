@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { savePendingInvite, readPendingInvite, clearPendingInvite } from '@/lib/pendingInvite'
 import Link from 'next/link'
 
 type Group = { id: string; name: string; description: string | null; invite_code: string; owner_id: string }
@@ -23,9 +24,11 @@ export default function GroupsPage() {
   // 초대 링크(/groups?code=XXXXXX)로 들어온 경우 자동으로 참가시킨다.
   // useSearchParams 대신 window에서 읽는다 — Suspense 경계를 강제당하지 않는다.
   useEffect(() => {
-    const code = new URLSearchParams(window.location.search).get('code')
+    const urlCode = new URLSearchParams(window.location.search).get('code')
+    if (urlCode) savePendingInvite(urlCode)          // 로그인/가입을 거쳐도 살아남게
+    const code = urlCode?.toUpperCase() ?? readPendingInvite()
     if (!code) return
-    autoJoin(code.toUpperCase())
+    autoJoin(code)
   }, [])
 
   async function autoJoin(code: string) {
@@ -33,6 +36,7 @@ export default function GroupsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { window.location.href = `/login?from=${encodeURIComponent('/groups?code=' + code)}`; return }
     const { data: gid, error: err } = await supabase.rpc('join_group_by_code', { code })
+    clearPendingInvite()   // 성공이든 실패든 한 번 시도했으면 지운다
     if (err || !gid) {
       setError(err?.message?.includes('invalid code') ? '초대 코드를 찾을 수 없어요' : '참가 실패')
       return
@@ -47,8 +51,8 @@ export default function GroupsPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
       // 초대 링크로 들어온 비로그인 사용자는 코드를 유지한 채 로그인시킨다.
-      // 그냥 /groups로 보내면 로그인 후 코드가 사라져 참가가 끊긴다.
       const code = new URLSearchParams(window.location.search).get('code')
+      if (code) savePendingInvite(code)
       const back = code ? `/groups?code=${code.toUpperCase()}` : '/groups'
       window.location.href = `/login?from=${encodeURIComponent(back)}`
       return

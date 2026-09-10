@@ -32,6 +32,14 @@ export default function LoginPage() {
   const [resetEmail, setResetEmail] = useState('')
   const [resetSent, setResetSent] = useState(false)
   const [resetLoading, setResetLoading] = useState(false)
+  // 초대 링크 등으로 ?from= 을 달고 온 경우 회원가입에도 그대로 넘긴다.
+  // 여기서 끊기면 가입 후 초대 코드가 사라진다.
+  const [signupHref, setSignupHref] = useState('/signup')
+
+  useEffect(() => {
+    const from = new URLSearchParams(window.location.search).get('from')
+    if (from) setSignupHref(`/signup?from=${encodeURIComponent(from)}`)
+  }, [])
   // Recover silently whenever sb_rt exists — regardless of whether ?from= is in the URL.
   // iOS can restore the PWA directly to /login (without ?from=) after an app kill,
   // or the user may tap the "로그인" button which also links to /login without ?from=.
@@ -333,7 +341,7 @@ export default function LoginPage() {
 
             <p style={{ textAlign: 'center', color: '#b0a493', fontSize: 14, marginTop: 14 }}>
               계정이 없으신가요?{' '}
-              <Link href="/signup" style={{ fontWeight: 800, color: '#f0ece0' }}>회원가입</Link>
+              <Link href={signupHref} style={{ fontWeight: 800, color: '#f0ece0' }}>회원가입</Link>
             </p>
           </>
         )}
