@@ -20,6 +20,7 @@ type AdminSubmission = {
 type BugRow = {
   id: string; message: string; page: string | null
   created_at: string; resolved_at: string | null; userName: string
+  userId: string | null; adminReply: string | null
 }
 type AdminGroup = {
   id: string; name: string; invite_code: string; created_at: string
@@ -90,6 +91,7 @@ export default function AdminPage() {
   const [busyId, setBusyId] = useState('')
   const [bugs, setBugs] = useState<BugRow[]>([])
   const [bugsLoaded, setBugsLoaded] = useState(false)
+  const [bugDrafts, setBugDrafts] = useState<Record<string, string>>({})
   const [challengeTypeForNew, setChallengeTypeForNew] = useState<'chord' | 'rhythm' | 'melody'>('chord')
   const [rhythmDraft, setRhythmDraft] = useState<RhythmDraft | null>(null)
   const [generatingRhythm, setGeneratingRhythm] = useState(false)
@@ -359,7 +361,7 @@ export default function AdminPage() {
     if (bugsLoaded) return
     const supabase = createClient()
     const { data } = await supabase.from('bug_reports')
-      .select('id, user_id, message, page, created_at, resolved_at')
+      .select('id, user_id, message, page, created_at, resolved_at, admin_reply')
       .order('created_at', { ascending: false }).limit(100)
     const rows = data ?? []
     const ids = [...new Set(rows.map(r => r.user_id).filter(Boolean))]
@@ -371,9 +373,38 @@ export default function AdminPage() {
     setBugs(rows.map(r => ({
       id: r.id, message: r.message, page: r.page,
       created_at: r.created_at, resolved_at: r.resolved_at,
+      userId: r.user_id as string | null,
+      adminReply: (r as { admin_reply?: string | null }).admin_reply ?? null,
       userName: nameOf[r.user_id as string] ?? '(탈퇴/익명)',
     })))
     setBugsLoaded(true)
+  }
+
+  // 답장은 서비스 롤 라우트가 저장하고 신고자에게만 알림을 보낸다.
+  // 알림 대상을 찾으려면 남의 push_subscriptions 를 읽어야 해서 클라이언트로는 못 한다.
+  async function replyToBug(b: BugRow) {
+    const reply = (bugDrafts[b.id] ?? '').trim()
+    if (!reply) return
+    setBusyId(b.id)
+    try {
+      const { data: sess } = await createClient().auth.getSession()
+      const tok = sess.session?.access_token
+      const res = await fetch('/api/bug-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(tok ? { Authorization: `Bearer ${tok}` } : {}) },
+        body: JSON.stringify({ id: b.id, reply }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) { setError(data.error || '답장을 보내지 못했어요.'); setBusyId(''); return }
+      const now = new Date().toISOString()
+      setBugs(prev => prev.map(x => x.id === b.id ? { ...x, adminReply: reply, resolved_at: now } : x))
+      setBugDrafts(d => ({ ...d, [b.id]: '' }))
+      setError('')
+      setSuccess(data.web + data.app > 0 ? '답장을 보냈어요' : '답장을 저장했어요 (알림 받을 기기가 없어요)')
+    } catch {
+      setError('답장을 보내지 못했어요.')
+    }
+    setBusyId('')
   }
 
   async function toggleResolved(b: BugRow) {
@@ -605,7 +636,7 @@ export default function AdminPage() {
               {bugs.map(b => (
                 <div key={b.id} style={{
                   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 14, padding: '14px 16px', opacity: b.resolved_at ? 0.5 : 1,
+                  borderRadius: 14, padding: '14px 16px', opacity: b.resolved_at ? 0.72 : 1,
                 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -630,6 +661,40 @@ export default function AdminPage() {
                       fontSize: 12, fontWeight: 800,
                     }}>{b.resolved_at ? '되돌리기' : '처리'}</button>
                   </div>
+
+                  {b.adminReply ? (
+                    <div style={{ marginTop: 10, borderLeft: '2px solid #c8c4b0', paddingLeft: 10 }}>
+                      <div style={{ fontSize: 10.5, fontWeight: 800, color: '#c8c4b0', marginBottom: 3 }}>보낸 답장</div>
+                      <div style={{ fontSize: 12.5, color: '#ccccee', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{b.adminReply}</div>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop: 10 }}>
+                      <textarea
+                        value={bugDrafts[b.id] ?? ''}
+                        onChange={e => setBugDrafts(d => ({ ...d, [b.id]: e.target.value }))}
+                        rows={2} maxLength={1000}
+                        placeholder="답장 (쓰면 신고한 분에게 알림이 갑니다)"
+                        style={{
+                          width: '100%', boxSizing: 'border-box', resize: 'vertical',
+                          background: 'rgba(13,13,12,0.6)', border: '1px solid rgba(255,255,255,0.12)',
+                          borderRadius: 10, padding: '9px 11px', fontSize: 12.5, color: '#e8e8ff',
+                          outline: 'none', lineHeight: 1.6, fontFamily: 'inherit',
+                        }} />
+                      <button
+                        disabled={busyId === b.id || !(bugDrafts[b.id] ?? '').trim() || !b.userId}
+                        onClick={() => replyToBug(b)}
+                        style={{
+                          marginTop: 8, padding: '8px 13px', borderRadius: 9, border: 'none',
+                          fontSize: 12, fontWeight: 800,
+                          cursor: (bugDrafts[b.id] ?? '').trim() && b.userId ? 'pointer' : 'default',
+                          background: (bugDrafts[b.id] ?? '').trim() && b.userId
+                            ? 'linear-gradient(135deg, #f8f4ec, #c8c4b0)' : 'rgba(255,255,255,0.1)',
+                          color: (bugDrafts[b.id] ?? '').trim() && b.userId ? '#0a0a08' : '#9a9ac8',
+                        }}>
+                        {busyId === b.id ? '보내는 중...' : '답장 보내고 처리'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
               {bugs.length === 0 && (
