@@ -79,6 +79,12 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   const [levelSheetOpen, setLevelSheetOpen] = useState(false)
   // 내 난이도 말고 다른 난이도도 눌러서 해볼 수 있게 접어둔다
   const [otherLevels, setOtherLevels] = useState<Challenge[]>([])
+  // 영상은 난이도별로 나누지 않고 모아서 보여준다. 하루에 챌린지가 9개
+  // (3종류 x 3난이도) 생기는데 영상까지 그 아홉 칸으로 흩어지면, 하루에
+  // 열여섯 명이 올려도 어느 칸에 들어가든 한두 개밖에 안 보인다 —
+  // 사람이 없어서가 아니라 나눠놔서 비어 보인다.
+  // 악보는 자기 난이도 것을 보고, 영상만 같은 종류끼리 모은다.
+  const [challengeById, setChallengeById] = useState<Record<string, Challenge>>({})
   const [openOther, setOpenOther] = useState<string | null>(null)
   // 이 앱의 본체는 초견 연습이고 피드는 부가 기능이다. 매일 비어 있는 피드가
   // 화면 절반을 차지하면 아무도 안 쓰는 앱처럼 보여서, 기본은 접어두고
@@ -120,10 +126,14 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
     )
     setOpenOther(null)
 
+    setChallengeById(Object.fromEntries((chAll ?? []).map(c => [c.id, c as Challenge])))
+
     if (ch) {
+      // 오늘 이 종류의 챌린지 전부(난이도 불문)에 붙은 영상을 모은다.
+      const chIds = (chAll ?? []).map(c => c.id)
       const { data: subsRaw, error: subsError } = await supabase
         .from('submissions').select('*')
-        .eq('challenge_id', ch.id).is('group_id', null).eq('is_private', false)
+        .in('challenge_id', chIds).is('group_id', null).eq('is_private', false)
         .order('created_at', { ascending: false })
       if (subsError) console.error('[ChallengeFeed] submissions query error:', subsError)
 
@@ -151,7 +161,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
       }
 
       const { count } = await supabase
-        .from('submissions').select('*', { count: 'exact', head: true }).eq('challenge_id', ch.id)
+        .from('submissions').select('*', { count: 'exact', head: true })
+        .in('challenge_id', (chAll ?? []).map(c => c.id))
       setTotalCount(count ?? 0)
     }
 
@@ -711,19 +722,29 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {[...submissions]
-                .filter(s => type === 'chord' ? (filterProg === 'all' || s.progression_index === filterProg) : true)
+                // 진행 번호는 자기 난이도 챌린지의 것이라, 다른 난이도 영상에는
+                // 같은 번호라도 다른 진행이다. 진행을 골랐을 때만 이 챌린지 것으로 좁힌다.
+                .filter(s => type === 'chord'
+                  ? (filterProg === 'all' || (s.challenge_id === challenge?.id && s.progression_index === filterProg))
+                  : true)
                 .sort((a, b) => sortBy === 'popular'
                   ? b.likes_count - a.likes_count
                   : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
                 )
-                .map(sub => (
+                .map(sub => {
+                  const subCh = challengeById[sub.challenge_id]
+                  const subLevel = toLevel(subCh?.level)
+                  return (
                   <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)}
                     currentUserId={user?.id}
                     onReport={() => handleReport(sub.id)}
                     onBlock={() => handleBlock(sub.user_id)}
-                    progressions={type === 'chord' ? challenge?.chords?.progressions : undefined}
-                    patterns={type === 'rhythm' || type === 'melody' ? challenge?.chords?.patterns : undefined} />
-                ))}
+                    // 악보 표기는 그 영상이 올라온 챌린지 것을 써야 한다.
+                    progressions={type === 'chord' ? subCh?.chords?.progressions : undefined}
+                    patterns={type === 'rhythm' || type === 'melody' ? subCh?.chords?.patterns : undefined}
+                    otherLevel={subCh && subLevel !== toLevel(challenge?.level) ? subLevel : undefined} />
+                  )
+                })}
             </div>
             </>
           )}
@@ -733,9 +754,11 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   )
 }
 
-function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progressions, patterns }: {
+function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progressions, patterns, otherLevel }: {
   sub: Submission; onLike: () => void; currentUserId?: string; onReport?: () => void; onBlock?: () => void
   progressions?: Progression[]; patterns?: { label: string; abc: string }[]
+  // 내 난이도가 아닌 영상에만 붙인다. 같은 난이도에까지 배지를 달면 소음이 된다.
+  otherLevel?: Level
 }) {
   const supabase = createClient()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -797,8 +820,16 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
                 : initials}
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#f0ece0', lineHeight: 1.2 }}>
-                {sub.profiles?.name ?? '익명'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 14, fontWeight: 800, color: '#f0ece0', lineHeight: 1.2 }}>
+                  {sub.profiles?.name ?? '익명'}
+                </span>
+                {otherLevel && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 800, padding: '1px 6px', borderRadius: 5,
+                    color: LEVEL_COLORS[otherLevel], border: `1px solid ${LEVEL_COLORS[otherLevel]}55`,
+                  }}>{LEVEL_LABELS[otherLevel]}</span>
+                )}
               </div>
               <div style={{ fontSize: 11, color: '#8f8a7e', marginTop: 2 }}>{timeAgo(sub.created_at)}</div>
             </div>
