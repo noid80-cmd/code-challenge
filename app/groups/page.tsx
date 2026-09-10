@@ -1,126 +1,208 @@
-﻿'use client'
+'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { savePendingInvite, readPendingInvite, clearPendingInvite } from '@/lib/pendingInvite'
 import Link from 'next/link'
 
-type Group = { id: string; name: string; description: string | null; invite_code: string; owner_id: string }
+type Group = {
+  id: string; name: string; description: string | null
+  owner_id: string; is_public: boolean
+}
 
 export default function GroupsPage() {
-  const [groups, setGroups] = useState<Group[]>([])
+  const [mine, setMine] = useState<Group[]>([])
+  const [others, setOthers] = useState<Group[]>([])
+  const [counts, setCounts] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
-  const [joinCode, setJoinCode] = useState('')
   const [newName, setNewName] = useState('')
   const [newDesc, setNewDesc] = useState('')
+  const [newPublic, setNewPublic] = useState(true)
+  const [newPassword, setNewPassword] = useState('')
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
   const [copiedId, setCopiedId] = useState('')
-  const [showJoin, setShowJoin] = useState(false)
   const [userId, setUserId] = useState('')
+  // 비공개방은 비번을 그 카드 자리에서 받는다. 새 화면으로 보내면
+  // 어느 방에 들어가려던 건지 잊는다.
+  const [pwFor, setPwFor] = useState('')
+  const [pwInput, setPwInput] = useState('')
+  const [busy, setBusy] = useState('')
 
-  useEffect(() => { load() }, [])
+  function flash(text: string) { setMsg(text); setTimeout(() => setMsg(''), 2500) }
 
-  // 초대 링크(/groups?code=XXXXXX)로 들어온 경우 자동으로 참가시킨다.
-  // useSearchParams 대신 window에서 읽는다 — Suspense 경계를 강제당하지 않는다.
-  useEffect(() => {
-    const urlCode = new URLSearchParams(window.location.search).get('code')
-    if (urlCode) savePendingInvite(urlCode)          // 로그인/가입을 거쳐도 살아남게
-    const code = urlCode?.toUpperCase() ?? readPendingInvite()
-    if (!code) return
-    autoJoin(code)
+  const load = useCallback(async () => {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = '/login?from=/groups'; return }
+    setUserId(user.id)
+
+    const [{ data: memberRows }, { data: allGroups }, { data: countRows }] = await Promise.all([
+      supabase.from('group_members').select('group_id').eq('user_id', user.id),
+      // invite_code 와 비번 해시는 컬럼 권한에서 빠져 있어 열 이름을 적으면 안 된다.
+      supabase.from('groups').select('id, name, description, owner_id, is_public').order('created_at', { ascending: false }),
+      supabase.rpc('group_member_counts'),
+    ])
+
+    const myIds = new Set((memberRows ?? []).map((r: { group_id: string }) => r.group_id))
+    const list = (allGroups ?? []) as Group[]
+    setMine(list.filter(g => myIds.has(g.id)))
+    setOthers(list.filter(g => !myIds.has(g.id)))
+    setCounts(Object.fromEntries(
+      ((countRows ?? []) as { group_id: string; cnt: number }[]).map(r => [r.group_id, Number(r.cnt)])
+    ))
+    setLoading(false)
   }, [])
 
-  async function autoJoin(code: string) {
+  useEffect(() => { load() }, [load])
+
+  // 링크로 들어온 경우. 공개방이면 바로 넣어주고, 비공개방이면 비번을 묻는다.
+  // 예전 초대 코드 링크(?code=)도 그대로 살려둔다.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const code = params.get('code')
+    const gid = params.get('g')
+    if (code) { savePendingInvite(code); autoJoinByCode(code.toUpperCase()); return }
+    const pending = readPendingInvite()
+    if (pending) { autoJoinByCode(pending); return }
+    if (gid) openByLink(gid)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function autoJoinByCode(code: string) {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { window.location.href = `/login?from=${encodeURIComponent('/groups?code=' + code)}`; return }
     const { data: gid, error: err } = await supabase.rpc('join_group_by_code', { code })
-    clearPendingInvite()   // 성공이든 실패든 한 번 시도했으면 지운다
-    if (err || !gid) {
-      setError(err?.message?.includes('invalid code') ? '초대 코드를 찾을 수 없어요' : '참가 실패')
-      return
-    }
+    clearPendingInvite()
+    window.history.replaceState({}, '', '/groups')
+    if (err || !gid) { setError('초대 코드를 찾을 수 없어요'); return }
     flash('그룹에 참가했어요!')
-    window.history.replaceState({}, '', '/groups')   // 뒤로 가기로 다시 참가 시도되지 않게
-    window.location.href = `/groups/${gid}`
+    load()
   }
 
-  async function load() {
+  async function openByLink(gid: string) {
     const supabase = createClient()
+    const { data: g } = await supabase.from('groups').select('id, is_public').eq('id', gid).maybeSingle()
+    window.history.replaceState({}, '', '/groups')
+    if (!g) { setError('그룹을 찾을 수 없어요'); return }
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      // 초대 링크로 들어온 비로그인 사용자는 코드를 유지한 채 로그인시킨다.
-      const code = new URLSearchParams(window.location.search).get('code')
-      if (code) savePendingInvite(code)
-      const back = code ? `/groups?code=${code.toUpperCase()}` : '/groups'
-      window.location.href = `/login?from=${encodeURIComponent(back)}`
-      return
-    }
-    setUserId(user.id)
-    const { data } = await supabase.from('group_members').select('groups(id, name, description, invite_code, owner_id)').eq('user_id', user.id)
-    setGroups((data ?? []).map(m => m.groups as unknown as Group).filter(Boolean))
-    setLoading(false)
+    if (!user) return
+    const { data: already } = await supabase.from('group_members')
+      .select('id').eq('group_id', gid).eq('user_id', user.id).maybeSingle()
+    if (already) { window.location.href = `/groups/${gid}`; return }
+    if (g.is_public) joinPublic(gid)
+    else setPwFor(gid)
   }
 
   async function createGroup() {
     if (!newName.trim()) return
+    if (!newPublic && newPassword.trim().length < 2) { setError('비공개방은 비밀번호를 정해주세요'); return }
+    setBusy('create')
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    // Math.random()의 36진 표기는 길이가 들쭉날쭉해 6자가 안 될 때가 있다.
-    // 문자를 하나씩 뽑아 길이를 고정하고, 헷갈리는 O/0/I/1은 뺀다.
+    if (!user) { setBusy(''); return }
+
+    // invite_code 는 아직 필수 칸이라 채워 넣는다. 화면에서는 쓰지 않는다 —
+    // 이제 문은 링크와 비밀번호 둘뿐이다.
     const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
     const inviteCode = Array.from(
       crypto.getRandomValues(new Uint32Array(6)),
       n => ALPHABET[n % ALPHABET.length]
     ).join('')
-    const { data: group, error: err } = await supabase
-      .from('groups').insert({ name: newName.trim(), description: newDesc.trim() || null, owner_id: user.id, invite_code: inviteCode })
-      .select().single()
-    if (err || !group) { setError('생성 실패: ' + (err?.message ?? '')); return }
+
+    const { data: group, error: err } = await supabase.from('groups')
+      .insert({
+        name: newName.trim(), description: newDesc.trim() || null,
+        owner_id: user.id, invite_code: inviteCode, is_public: newPublic,
+      })
+      .select('id').single()
+    if (err || !group) { setError('생성 실패: ' + (err?.message ?? '')); setBusy(''); return }
+
     await supabase.from('group_members').insert({ group_id: group.id, user_id: user.id })
-    setNewName(''); setNewDesc(''); setShowCreate(false); setError('')
-    flash('그룹이 만들어졌어요!'); load()
+    if (!newPublic) {
+      const { error: pwErr } = await supabase.rpc('set_group_password', {
+        p_group_id: group.id, p_password: newPassword.trim(),
+      })
+      if (pwErr) setError('비밀번호 설정 실패: ' + pwErr.message)
+    }
+    setNewName(''); setNewDesc(''); setNewPassword(''); setNewPublic(true)
+    setShowCreate(false); setBusy('')
+    flash('그룹이 만들어졌어요!')
+    load()
   }
 
-  async function joinGroup() {
-    if (!joinCode.trim()) return
+  async function joinPublic(gid: string) {
+    setBusy(gid)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { window.location.href = '/login?from=/groups'; return }
-    // 초대 코드 검증은 서버 함수(join_group_by_code)가 한다. 클라이언트에서
-    // groups를 조회해 코드를 맞춰보던 방식은, 그러려면 groups를 전원 공개해야 해서
-    // 초대 코드가 그대로 노출됐다. 이제 비멤버는 groups를 읽지 못한다.
-    const { data: gid, error: err } = await supabase.rpc('join_group_by_code', { code: joinCode.trim().toUpperCase() })
+    if (!user) { setBusy(''); return }
+    // RLS가 막으면 조용히 0행이다. 반영된 행을 확인한다.
+    const { data, error: err } = await supabase.from('group_members')
+      .insert({ group_id: gid, user_id: user.id }).select('id')
+    setBusy('')
+    if (err || !data?.length) { setError('참가하지 못했어요'); return }
+    flash('그룹에 참가했어요!')
+    load()
+  }
+
+  async function joinPrivate(gid: string) {
+    if (!pwInput.trim()) return
+    setBusy(gid)
+    const supabase = createClient()
+    const { error: err } = await supabase.rpc('join_group_with_password', {
+      p_group_id: gid, p_password: pwInput.trim(),
+    })
+    setBusy('')
     if (err) {
-      setError(err.message.includes('invalid code') ? '초대 코드를 찾을 수 없어요' : '참가 실패')
+      setError(err.message.includes('wrong password') ? '비밀번호가 맞지 않아요' : '참가하지 못했어요')
       return
     }
-    if (!gid) { setError('초대 코드를 찾을 수 없어요'); return }
-    setJoinCode(''); setError(''); flash('그룹에 참가했어요!'); load()
+    setPwFor(''); setPwInput(''); setError('')
+    flash('그룹에 참가했어요!')
+    load()
   }
 
-  function inviteText(name: string, code: string) {
-    return `초견챌린지 "${name}" 그룹 초대
-${window.location.origin}/groups?code=${code}
-
-초대 코드: ${code}`
+  async function changePassword(g: Group) {
+    const next = window.prompt(`"${g.name}" 방의 새 비밀번호를 정해주세요.\n(예전 비밀번호는 저장돼 있지 않아 확인할 수 없습니다)`)
+    if (next === null) return
+    const supabase = createClient()
+    const { error: err } = await supabase.rpc('set_group_password', {
+      p_group_id: g.id, p_password: next.trim(),
+    })
+    if (err) { setError('비밀번호 변경 실패'); return }
+    flash('비밀번호를 바꿨어요')
   }
 
-  function copyCode(e: React.MouseEvent, code: string, id: string, name: string) {
-    e.preventDefault(); e.stopPropagation()   // 카드 전체가 Link라 이동을 막는다
-    navigator.clipboard?.writeText(inviteText(name, code))
-    setCopiedId(id); setTimeout(() => setCopiedId(''), 1800)
+  function copyLink(e: React.MouseEvent, g: Group) {
+    e.preventDefault(); e.stopPropagation()
+    const text = `초견챌린지 "${g.name}" 그룹\n${window.location.origin}/groups?g=${g.id}` +
+      (g.is_public ? '' : '\n\n(비공개방이라 비밀번호가 필요해요)')
+    navigator.clipboard?.writeText(text)
+    setCopiedId(g.id); setTimeout(() => setCopiedId(''), 1800)
   }
-
-  function flash(text: string) { setMsg(text); setTimeout(() => setMsg(''), 2500) }
 
   const inputStyle: React.CSSProperties = {
     background: 'rgba(13,13,12,0.8)', border: '1px solid rgba(240,236,224,0.15)',
     borderRadius: 11, padding: '12px 14px',
     fontSize: 14, color: '#f0ece0', outline: 'none', boxSizing: 'border-box', width: '100%',
+  }
+
+  const cardStyle: React.CSSProperties = {
+    background: 'linear-gradient(145deg, #111110, #0d0d0c)',
+    border: '1px solid rgba(240,236,224,0.1)',
+    borderRadius: 18, padding: '16px 18px',
+  }
+
+  function Lock() {
+    return (
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <rect x="4" y="11" width="16" height="10" rx="2" />
+        <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+      </svg>
+    )
   }
 
   return (
@@ -132,128 +214,164 @@ ${window.location.origin}/groups?code=${code}
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
         <Link href="/chord" style={{ color: '#a8a296', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
-        <span style={{ fontWeight: 800, fontSize: 16, color: '#f0ece0', letterSpacing: '-0.02em' }}>내 그룹</span>
+        <span style={{ fontWeight: 800, fontSize: 16, color: '#f0ece0', letterSpacing: '-0.02em' }}>그룹</span>
         <div style={{ width: 48 }} />
       </header>
 
-      <main style={{ maxWidth: 560, margin: '0 auto', padding: '28px 16px 100px' }}>
-        {/* 초대 링크를 누르면 자동으로 참가되므로, 코드 직접 입력은 보조 수단이다.
-            (학원에서 코드만 구두로 알려주거나 링크가 잘려서 온 경우)
-            참가한 그룹이 없을 때만 펼쳐 두고, 있으면 접어서 주된 동선을 가리지 않게 한다. */}
-        {(showJoin || groups.length === 0) ? (
-          <>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#8f8a7e', marginBottom: 8, letterSpacing: '-0.01em' }}>
-              받은 초대 코드로 참가
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-              <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
-                placeholder="초대 코드 입력"
-                style={{ ...inputStyle, width: 'auto', flex: 1 }}
-                onKeyDown={e => e.key === 'Enter' && joinGroup()} />
-              <button onClick={joinGroup} style={{
-                padding: '12px 16px', borderRadius: 11,
-                background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-                color: '#0a0a08', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-                boxShadow: '0 4px 14px rgba(240,236,224,0.35)',
-              }}>참가하기</button>
-            </div>
-          </>
-        ) : (
-          <button onClick={() => setShowJoin(true)} style={{
-            background: 'none', border: 'none', padding: '2px 0 12px',
-            color: '#8f8a7e', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-          }}>초대 코드 직접 입력</button>
-        )}
-
+      <main style={{ maxWidth: 560, margin: '0 auto', padding: '24px 16px 100px' }}>
         <button onClick={() => { setShowCreate(!showCreate); setError('') }} style={{
-          width: '100%', padding: '12px', borderRadius: 12, marginBottom: showCreate ? 0 : 24,
+          width: '100%', padding: '12px', borderRadius: 12, marginBottom: showCreate ? 10 : 22,
           background: 'transparent', border: '1px dashed rgba(240,236,224,0.2)',
           color: '#a8a296', fontSize: 14, fontWeight: 700, cursor: 'pointer',
-        }}>
-          {showCreate ? '취소' : '+ 그룹 만들기'}
-        </button>
+        }}>{showCreate ? '취소' : '+ 그룹 만들기'}</button>
 
         {showCreate && (
-          <div style={{
-            background: 'linear-gradient(145deg, #111110, #0d0d0c)',
-            border: '1px solid rgba(240,236,224,0.18)', borderRadius: 18, padding: 18, marginBottom: 20, marginTop: 10,
-            boxShadow: '0 8px 32px rgba(240,236,224,0.06)',
-          }}>
+          <div style={{ ...cardStyle, border: '1px solid rgba(240,236,224,0.18)', padding: 18, marginBottom: 20 }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="그룹 이름"
-                style={inputStyle} autoFocus onKeyDown={e => e.key === 'Enter' && createGroup()} />
+                style={inputStyle} autoFocus />
               <input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="한 줄 소개 (선택)" style={inputStyle} />
-              <button onClick={createGroup} style={{
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                {[{ v: true, label: '공개방', desc: '누구나 참가' }, { v: false, label: '비공개방', desc: '비밀번호 필요' }].map(o => (
+                  <button key={String(o.v)} onClick={() => setNewPublic(o.v)} style={{
+                    flex: 1, padding: '10px', borderRadius: 11, cursor: 'pointer', textAlign: 'left',
+                    background: newPublic === o.v ? 'rgba(240,236,224,0.1)' : 'transparent',
+                    border: newPublic === o.v ? '1px solid rgba(240,236,224,0.35)' : '1px solid rgba(240,236,224,0.14)',
+                  }}>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: newPublic === o.v ? '#f0ece0' : '#a8a296' }}>{o.label}</div>
+                    <div style={{ fontSize: 11, color: '#8f8a7e', marginTop: 2 }}>{o.desc}</div>
+                  </button>
+                ))}
+              </div>
+
+              {!newPublic && (
+                <>
+                  <input value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                    placeholder="방 비밀번호" style={inputStyle} />
+                  <div style={{ fontSize: 11.5, color: '#8f8a7e', lineHeight: 1.6, marginTop: -4 }}>
+                    비밀번호는 저장해두지 않고 잠그는 데만 씁니다 — 나중에 다시 볼 수 없고
+                    바꾸는 것만 됩니다. 수업에서 불러줄 수 있는 말로 정하세요.
+                  </div>
+                </>
+              )}
+
+              <button onClick={createGroup} disabled={busy === 'create'} style={{
                 padding: '12px', borderRadius: 10, border: 'none', cursor: 'pointer',
                 background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
                 color: '#0a0a08', fontSize: 14, fontWeight: 700,
-                boxShadow: '0 4px 16px rgba(240,236,224,0.35)',
-              }}>만들기</button>
+              }}>{busy === 'create' ? '만드는 중...' : '만들기'}</button>
             </div>
           </div>
         )}
 
-        {error && <p style={{ color: '#f0ece0', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>{error}</p>}
+        {error && <p style={{ color: '#e8a99c', fontSize: 13, textAlign: 'center', marginBottom: 12 }}>{error}</p>}
         {msg && <p style={{ color: '#f8f4ec', fontSize: 13, textAlign: 'center', marginBottom: 12, fontWeight: 700 }}>{msg}</p>}
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: 60, color: '#a5a096', fontSize: 14 }}>불러오는 중</div>
-        ) : groups.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '52px 0' }}>
-            <div style={{
-              width: 60, height: 60, borderRadius: 18,
-              background: 'rgba(240,236,224,0.05)', border: '1px solid rgba(240,236,224,0.1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px',
-            }}>
-              <svg width="26" height="22" viewBox="0 0 26 22" fill="none">
-                <circle cx="9" cy="7" r="4" stroke="#6e6a60" strokeWidth="1.5"/>
-                <circle cx="19" cy="8" r="3" stroke="#6e6a60" strokeWidth="1.5"/>
-                <path d="M1 20c0-3.866 3.582-7 8-7s8 3.134 8 7" stroke="#6e6a60" strokeWidth="1.5" strokeLinecap="round"/>
-                <path d="M18 16c2.761 0 5 1.567 5 3.5" stroke="#6e6a60" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <p style={{ color: '#8f8a7e', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>참가한 그룹이 없어요</p>
-            <p style={{ color: '#a5a096', fontSize: 13 }}>그룹을 만들거나 초대 코드로 참가해보세요</p>
-          </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {groups.map(g => (
-              <Link key={g.id} href={`/groups/${g.id}`} style={{ textDecoration: 'none' }}>
-                <div style={{
-                  background: 'linear-gradient(145deg, #111110, #0d0d0c)',
-                  border: '1px solid rgba(240,236,224,0.1)',
-                  borderRadius: 18, padding: '18px 20px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                }}>
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#e0dcd0', marginBottom: 4 }}>{g.name}</div>
-                    {g.description && <div style={{ fontSize: 13, color: '#8f8a7e' }}>{g.description}</div>}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                    {g.owner_id === userId && (
-                      <span style={{ fontSize: 10, fontWeight: 800, color: '#f0ece0', background: 'rgba(240,236,224,0.1)', border: '1px solid rgba(240,236,224,0.25)', padding: '2px 8px', borderRadius: 6 }}>
-                        방장
-                      </span>
-                    )}
-                    <button onClick={e => copyCode(e, g.invite_code, g.id, g.name)} style={{
-                      display: 'flex', alignItems: 'center', gap: 7,
-                      background: 'rgba(240,236,224,0.07)', border: '1px solid rgba(240,236,224,0.18)',
-                      borderRadius: 9, padding: '5px 9px', cursor: 'pointer',
-                    }}>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: '#a8a296', letterSpacing: '0.06em' }}>초대링크</span>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: '#f0ece0', letterSpacing: '0.12em' }}>
-                        {copiedId === g.id ? '링크 복사됨' : g.invite_code}
-                      </span>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a8a296" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="9" y="9" width="12" height="12" rx="2" />
-                        <path d="M5 15V5a2 2 0 0 1 2-2h10" />
-                      </svg>
-                    </button>
-                  </div>
+          <>
+            {mine.length > 0 && (
+              <>
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#8f8a7e', marginBottom: 10 }}>내 그룹</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 26 }}>
+                  {mine.map(g => (
+                    <Link key={g.id} href={`/groups/${g.id}`} style={{ textDecoration: 'none' }}>
+                      <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            <span style={{ fontSize: 16, fontWeight: 800, color: '#e0dcd0' }}>{g.name}</span>
+                            {!g.is_public && <span style={{ color: '#8f8a7e', display: 'flex' }}><Lock /></span>}
+                            {g.owner_id === userId && (
+                              <span style={{
+                                fontSize: 10, fontWeight: 800, color: '#f0ece0',
+                                background: 'rgba(240,236,224,0.1)', border: '1px solid rgba(240,236,224,0.25)',
+                                padding: '1px 7px', borderRadius: 6,
+                              }}>방장</span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 12.5, color: '#8f8a7e', marginTop: 3 }}>
+                            {[g.description, `${counts[g.id] ?? 0}명`].filter(Boolean).join(' · ')}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+                          <button onClick={e => copyLink(e, g)} style={{
+                            background: 'rgba(240,236,224,0.07)', border: '1px solid rgba(240,236,224,0.18)',
+                            borderRadius: 9, padding: '6px 10px', cursor: 'pointer',
+                            fontSize: 11.5, fontWeight: 800, color: '#f0ece0',
+                          }}>{copiedId === g.id ? '복사됨' : '링크 복사'}</button>
+                          {g.owner_id === userId && !g.is_public && (
+                            <button onClick={e => { e.preventDefault(); e.stopPropagation(); changePassword(g) }} style={{
+                              background: 'none', border: 'none', cursor: 'pointer',
+                              fontSize: 11, fontWeight: 700, color: '#8f8a7e', padding: 0,
+                            }}>비밀번호 변경</button>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
                 </div>
-              </Link>
-            ))}
-          </div>
+              </>
+            )}
+
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#8f8a7e', marginBottom: 10 }}>
+              둘러보기 {others.length > 0 && <span style={{ color: '#6e6a60' }}>({others.length})</span>}
+            </div>
+            {others.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '36px 0', color: '#8f8a7e', fontSize: 13 }}>
+                아직 다른 그룹이 없어요
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {others.map(g => (
+                  <div key={g.id} style={cardStyle}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 15.5, fontWeight: 800, color: '#e0dcd0' }}>{g.name}</span>
+                          {!g.is_public && <span style={{ color: '#8f8a7e', display: 'flex' }}><Lock /></span>}
+                        </div>
+                        <div style={{ fontSize: 12.5, color: '#8f8a7e', marginTop: 3 }}>
+                          {[g.description, `${counts[g.id] ?? 0}명`].filter(Boolean).join(' · ')}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => g.is_public
+                          ? joinPublic(g.id)
+                          : (setPwFor(pwFor === g.id ? '' : g.id), setPwInput(''), setError(''))}
+                        disabled={busy === g.id}
+                        style={{
+                          flexShrink: 0, padding: '8px 14px', borderRadius: 10, cursor: 'pointer',
+                          border: g.is_public ? 'none' : '1px solid rgba(240,236,224,0.2)',
+                          background: g.is_public ? 'linear-gradient(135deg, #f8f4ec, #c8c4b0)' : 'transparent',
+                          color: g.is_public ? '#0a0a08' : '#a8a296',
+                          fontSize: 12.5, fontWeight: 800,
+                        }}>
+                        {busy === g.id ? '...' : g.is_public ? '참가' : '비밀번호'}
+                      </button>
+                    </div>
+
+                    {pwFor === g.id && (
+                      <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                        <input value={pwInput} onChange={e => setPwInput(e.target.value)}
+                          placeholder="방 비밀번호" autoFocus
+                          onKeyDown={e => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) joinPrivate(g.id) }}
+                          style={{ ...inputStyle, flex: 1, padding: '10px 12px', fontSize: 13 }} />
+                        <button onClick={() => joinPrivate(g.id)} disabled={busy === g.id || !pwInput.trim()} style={{
+                          padding: '10px 14px', borderRadius: 10, border: 'none',
+                          cursor: pwInput.trim() ? 'pointer' : 'default',
+                          background: pwInput.trim() ? 'linear-gradient(135deg, #f8f4ec, #c8c4b0)' : 'rgba(240,236,224,0.12)',
+                          color: pwInput.trim() ? '#0a0a08' : '#8b857a',
+                          fontSize: 12.5, fontWeight: 800, flexShrink: 0,
+                        }}>참가</button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>
