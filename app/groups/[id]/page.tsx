@@ -466,6 +466,20 @@ ${window.location.origin}/groups?g=${group.id}`
               background: 'none', border: 'none', cursor: 'pointer',
               color: '#a8a296', fontSize: 13, fontWeight: 700,
             }}>닫기</button>
+
+            {/* 막지는 않는다. 다만 넘길 사람을 먼저 보게 한다 — 아무 시도
+                없이 나가는 것과, 골라봤지만 마땅치 않아 나가는 것은 다르다. */}
+            <div style={{ borderTop: '1px solid rgba(240,236,224,0.1)', marginTop: 8, paddingTop: 10 }}>
+              <button onClick={leaveAsOwner} style={{
+                width: '100%', background: 'none', border: 'none', cursor: 'pointer',
+                color: '#98948a', fontSize: 11.5, fontWeight: 600, padding: '4px 0', lineHeight: 1.6,
+              }}>
+                지정하지 않고 나가기
+                <div style={{ fontSize: 10.5, color: '#85807a', marginTop: 2 }}>
+                  가장 오래 계신 분에게 방장이 넘어가고, 방에 공지로 남아요
+                </div>
+              </button>
+            </div>
           </div>
         </>
       )}
@@ -522,7 +536,7 @@ ${window.location.origin}/groups?g=${group.id}`
                   )
                 )}
                 {memberCount > 1 && (
-                  <button onClick={leaveAsOwner} style={{
+                  <button onClick={openTransfer} style={{
                     background: 'none', border: 'none', cursor: 'pointer',
                     color: '#98948a', fontSize: 11, fontWeight: 600, padding: 0,
                   }}>방 나가기</button>
