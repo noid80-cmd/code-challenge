@@ -164,6 +164,28 @@ export default function GroupsPage() {
     load()
   }
 
+  // 만들 때만 고르게 해놔서, 이미 있는 방은 바꿀 방법이 없었다.
+  // 비공개로 돌릴 때는 비밀번호를 같이 받는다 — 비번 없는 비공개방은
+  // 아무도 새로 못 들어오는 방이 된다.
+  async function togglePublic(g: Group) {
+    const supabase = createClient()
+    if (g.is_public) {
+      const pw = window.prompt(`"${g.name}" 방을 비공개로 돌립니다.
+들어올 때 쓸 비밀번호를 정해주세요.`)
+      if (pw === null) return
+      if (pw.trim().length < 2) { setError('비밀번호를 정해주세요'); return }
+      const { error: pwErr } = await supabase.rpc('set_group_password', {
+        p_group_id: g.id, p_password: pw.trim(),
+      })
+      if (pwErr) { setError('비밀번호 설정 실패'); return }
+    }
+    const { data, error: err } = await supabase.from('groups')
+      .update({ is_public: !g.is_public }).eq('id', g.id).select('id, is_public')
+    if (err || !data?.length) { setError('바꾸지 못했어요'); return }
+    flash(g.is_public ? '비공개방으로 바꿨어요' : '공개방으로 바꿨어요')
+    load()
+  }
+
   async function changePassword(g: Group) {
     const next = window.prompt(`"${g.name}" 방의 새 비밀번호를 정해주세요.\n(예전 비밀번호는 저장돼 있지 않아 확인할 수 없습니다)`)
     if (next === null) return
@@ -301,11 +323,19 @@ export default function GroupsPage() {
                             borderRadius: 9, padding: '6px 10px', cursor: 'pointer',
                             fontSize: 11.5, fontWeight: 800, color: '#f0ece0',
                           }}>{copiedId === g.id ? '복사됨' : '링크 복사'}</button>
-                          {g.owner_id === userId && !g.is_public && (
-                            <button onClick={e => { e.preventDefault(); e.stopPropagation(); changePassword(g) }} style={{
-                              background: 'none', border: 'none', cursor: 'pointer',
-                              fontSize: 11, fontWeight: 700, color: '#8f8a7e', padding: 0,
-                            }}>비밀번호 변경</button>
+                          {g.owner_id === userId && (
+                            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                              {!g.is_public && (
+                                <button onClick={e => { e.preventDefault(); e.stopPropagation(); changePassword(g) }} style={{
+                                  background: 'none', border: 'none', cursor: 'pointer',
+                                  fontSize: 11, fontWeight: 700, color: '#8f8a7e', padding: 0,
+                                }}>비밀번호 변경</button>
+                              )}
+                              <button onClick={e => { e.preventDefault(); e.stopPropagation(); togglePublic(g) }} style={{
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                fontSize: 11, fontWeight: 700, color: '#8f8a7e', padding: 0,
+                              }}>{g.is_public ? '비공개로' : '공개로'}</button>
+                            </div>
                           )}
                         </div>
                       </div>
