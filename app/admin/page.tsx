@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { MAJORS, MAJOR_LABELS, isMajor, type Major } from '@/lib/majors'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { localDate, challengeDate } from '@/lib/date'
@@ -16,7 +17,7 @@ type Member = { id: string; name: string; avatar_url: string | null; created_at:
 type AdminSubmission = {
   id: string; user_id: string; created_at: string; hidden_at: string | null
   caption: string | null; group_id: string | null; userName: string; challengeTitle: string
-  video_url: string
+  video_url: string; major: string | null
 }
 type BugRow = {
   id: string; message: string; page: string | null
@@ -310,6 +311,29 @@ export default function AdminPage() {
     setError(''); return true
   }
 
+  // 이미 올라온 영상에는 전공이 없다. 영상만 봐서는 알 수 없으니 어드민이
+  // 지정한다. 한 사람이 같은 악기를 계속 올리므로, 나머지도 같이 채울지 묻는다.
+  async function setMajor(sub: AdminSubmission, major: Major | '') {
+    setBusyId(sub.id)
+    const value = major || null
+    const ok = await applyUpdate('submissions', sub.id, { major: value })
+    if (!ok) { setBusyId(''); return }
+    setSubs(prev => prev.map(x => x.id === sub.id ? { ...x, major: value } : x))
+
+    const others = subs.filter(x => x.user_id === sub.user_id && x.id !== sub.id && !x.major)
+    if (value && others.length > 0 &&
+        confirm(`${sub.userName} 님의 전공이 안 정해진 영상이 ${others.length}개 더 있어요. 같이 ${MAJOR_LABELS[major as Major]}로 넣을까요?`)) {
+      const supabase = createClient()
+      const { data } = await supabase.from('submissions')
+        .update({ major: value })
+        .eq('user_id', sub.user_id).is('major', null).select('id')
+      const done = new Set((data ?? []).map((r: { id: string }) => r.id))
+      setSubs(prev => prev.map(x => done.has(x.id) ? { ...x, major: value } : x))
+      setSuccess(`${done.size}개에 전공을 넣었어요`)
+    }
+    setBusyId('')
+  }
+
   async function toggleHidden(sub: AdminSubmission) {
     setBusyId(sub.id)
     const next = sub.hidden_at ? null : new Date().toISOString()
@@ -339,7 +363,7 @@ export default function AdminPage() {
     if (subsLoaded) return
     const supabase = createClient()
     const { data } = await supabase.from('submissions')
-      .select('id, user_id, challenge_id, caption, created_at, hidden_at, group_id, video_url')
+      .select('id, user_id, challenge_id, caption, created_at, hidden_at, group_id, video_url, major')
       .order('created_at', { ascending: false }).limit(100)
     const rows = data ?? []
     const userIds = [...new Set(rows.map(r => r.user_id))]
@@ -355,6 +379,7 @@ export default function AdminPage() {
     setSubs(rows.map(r => ({
       id: r.id, user_id: r.user_id, created_at: r.created_at, hidden_at: r.hidden_at,
       caption: r.caption, group_id: r.group_id, video_url: r.video_url,
+      major: (r as { major?: string | null }).major ?? null,
       userName: nameOf[r.user_id] ?? '이름없음',
       challengeTitle: titleOf[r.challenge_id] ?? '(삭제된 챌린지)',
     })))
@@ -620,6 +645,22 @@ export default function AdminPage() {
                       background: 'transparent', color: sub.hidden_at ? '#a5b4fc' : '#e07060',
                       fontSize: 12, fontWeight: 800,
                     }}>{sub.hidden_at ? '되돌리기' : '내리기'}</button>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#8a8ab5' }}>전공</span>
+                    <select
+                      value={isMajor(sub.major) ? sub.major : ''}
+                      disabled={busyId === sub.id}
+                      onChange={e => setMajor(sub, e.target.value as Major | '')}
+                      style={{
+                        fontSize: 12, fontWeight: 700, padding: '6px 9px', borderRadius: 9,
+                        background: 'rgba(13,13,12,0.6)', border: '1px solid rgba(255,255,255,0.14)',
+                        color: sub.major ? '#ccccee' : '#8a8ab5', cursor: 'pointer',
+                      }}>
+                      <option value="">— 안 정함 —</option>
+                      {MAJORS.map(m => <option key={m} value={m}>{MAJOR_LABELS[m]}</option>)}
+                    </select>
                   </div>
                 </div>
               ))}
