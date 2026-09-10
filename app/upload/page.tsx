@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { MAJORS, MAJOR_LABELS, isMajor, type Major } from '@/lib/majors'
+import { localDate } from '@/lib/date'
 import Link from 'next/link'
 import ChordPlayer from '@/app/components/ChordPlayer'
 import dynamic from 'next/dynamic'
@@ -34,6 +35,8 @@ export default function UploadPage() {
   const [caption, setCaption] = useState('')
   // 전공은 매번 바뀌지 않는다. 지난번에 고른 것을 기억해서 다시 고르게 하지 않는다.
   const [major, setMajor] = useState<Major | ''>('')
+  // 올리고 나서 보여줄 것들. 숫자가 있어야 칭찬이 빈말로 안 들린다.
+  const [stats, setStats] = useState<{ streak: number; first: boolean; todayCount: number } | null>(null)
   const [selectedProgression, setSelectedProgression] = useState(0)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState('')
@@ -389,6 +392,45 @@ export default function UploadPage() {
     const { error: dbError } = await supabase.from('submissions').insert(rows)
     if (dbError) { setError('저장 실패: ' + dbError.message); setUploading(false); return }
     setUploading(false); setDone(true)
+    loadStats(user.id, rows.length)
+  }
+
+  // 오늘까지 며칠 연속인지, 오늘 몇 번째로 올린 사람인지.
+  // 실패해도 완료 화면은 그대로 뜬다 — 축하가 업로드를 막으면 안 된다.
+  async function loadStats(userId: string, justAdded: number) {
+    try {
+      const supabase = createClient()
+      const dayStart = new Date()
+      dayStart.setHours(0, 0, 0, 0)
+      const [{ data: mine }, { count: todayCount }] = await Promise.all([
+        supabase.from('submissions').select('created_at').eq('user_id', userId),
+        supabase.from('submissions').select('id', { count: 'exact', head: true })
+          .gte('created_at', dayStart.toISOString()),
+      ])
+      const days = new Set((mine ?? []).map(r => localDate(new Date(r.created_at as string))))
+      let streak = 0
+      for (let i = 0; i < 400; i++) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        if (!days.has(localDate(d))) break
+        streak++
+      }
+      setStats({
+        streak,
+        first: (mine?.length ?? 0) <= justAdded,
+        todayCount: todayCount ?? 0,
+      })
+    } catch { /* 숫자가 없으면 문구만 보여준다 */ }
+  }
+
+  function praise(st: { streak: number; first: boolean }) {
+    if (st.first) return { head: '첫 연주를 올렸어요', sub: '여기서부터 시작입니다. 내일 또 오세요.' }
+    if (st.streak >= 30) return { head: `연속 ${st.streak}일`, sub: '한 달을 하루도 안 빠졌어요. 이건 실력이 됩니다.' }
+    if (st.streak >= 14) return { head: `연속 ${st.streak}일`, sub: '2주를 이어왔어요. 이제 안 하면 이상한 날이 됩니다.' }
+    if (st.streak >= 7) return { head: `연속 ${st.streak}일`, sub: '일주일을 채웠어요. 여기서부터가 진짜입니다.' }
+    if (st.streak >= 3) return { head: `연속 ${st.streak}일`, sub: '습관이 붙고 있어요. 내일도 이어가세요.' }
+    if (st.streak === 2) return { head: '이틀 연속 해내셨네요', sub: '사흘째가 고비예요. 내일도 오세요.' }
+    return { head: '오늘도 해내셨네요', sub: '매일 하나씩이 제일 빠른 길입니다.' }
   }
 
   // 완료 화면
@@ -408,9 +450,15 @@ export default function UploadPage() {
               <path d="M5 14l7 7L23 7" stroke="#f0ece0" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
-          <h2 style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 10, color: '#f0ece0' }}>업로드 완료!</h2>
-          <p style={{ color: '#c0bab0', fontSize: 14, marginBottom: 36, lineHeight: 1.8 }}>
+          <h2 style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 10, color: '#f0ece0' }}>
+            {stats ? praise(stats).head : '업로드 완료!'}
+          </h2>
+          <p style={{ color: '#e0dcd0', fontSize: 14.5, marginBottom: 14, lineHeight: 1.7, wordBreak: 'keep-all' }}>
+            {stats ? praise(stats).sub : '올라갔어요.'}
+          </p>
+          <p style={{ color: '#c0bab0', fontSize: 13, marginBottom: 30, lineHeight: 1.8, wordBreak: 'keep-all' }}>
             {[hasPublic && '전체 피드', ...selectedGroups.map(g => g.name)].filter(Boolean).join(', ')}에 올라갔어요.
+            {stats && stats.todayCount > 1 && ` 오늘 ${stats.todayCount}번째 연주예요.`}
           </p>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
             {selectedGroups.map(g => (
