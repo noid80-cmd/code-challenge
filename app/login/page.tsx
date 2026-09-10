@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { isNativeApp } from '@/lib/capacitor'
+import { isInAppBrowser, isAndroid, openInExternalBrowser } from '@/lib/inAppBrowser'
 
 const AppleIcon = () => (
   <svg width="18" height="18" viewBox="0 0 384 512" fill="currentColor">
@@ -35,6 +36,11 @@ export default function LoginPage() {
   // 초대 링크 등으로 ?from= 을 달고 온 경우 회원가입에도 그대로 넘긴다.
   // 여기서 끊기면 가입 후 초대 코드가 사라진다.
   const [signupHref, setSignupHref] = useState('/signup')
+  // 카톡 등 인앱 브라우저에서는 구글이 OAuth를 막는다. 초대 링크는 대부분
+  // 카톡으로 오기 때문에 여기서 안내하지 않으면 그대로 막힌다.
+  const [inApp, setInApp] = useState(false)
+
+  useEffect(() => { setInApp(isInAppBrowser()) }, [])
 
   useEffect(() => {
     const from = new URLSearchParams(window.location.search).get('from')
@@ -235,6 +241,28 @@ export default function LoginPage() {
       </div>
 
       <div style={{ width: '100%', maxWidth: 380, position: 'relative', zIndex: 1 }}>
+        {inApp && (
+          <div style={{
+            marginBottom: 20, padding: '14px 16px', borderRadius: 14,
+            background: 'rgba(224,112,96,0.12)', border: '1px solid rgba(224,112,96,0.35)',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: '#f0ece0', marginBottom: 6 }}>
+              구글 로그인이 막힐 수 있어요
+            </div>
+            <div style={{ fontSize: 12.5, color: '#b0a493', lineHeight: 1.6, marginBottom: isAndroid() ? 12 : 0 }}>
+              {isAndroid()
+                ? '카카오톡 안에서는 구글 로그인이 차단됩니다. 크롬으로 열어주세요.'
+                : '카카오톡 안에서는 구글 로그인이 차단됩니다. 오른쪽 아래 공유 버튼 → "Safari로 열기"를 눌러주세요. 이메일로는 그대로 가입할 수 있어요.'}
+            </div>
+            {isAndroid() && (
+              <button onClick={() => openInExternalBrowser()} style={{
+                width: '100%', padding: '10px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)', color: '#0a0a08',
+                fontSize: 13, fontWeight: 800,
+              }}>크롬으로 열기</button>
+            )}
+          </div>
+        )}
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <div style={{
             width: 60, height: 60, borderRadius: 18,
