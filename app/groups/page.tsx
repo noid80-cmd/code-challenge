@@ -34,7 +34,13 @@ export default function GroupsPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const inviteCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+    // Math.random()의 36진 표기는 길이가 들쭉날쭉해 6자가 안 될 때가 있다.
+    // 문자를 하나씩 뽑아 길이를 고정하고, 헷갈리는 O/0/I/1은 뺀다.
+    const ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    const inviteCode = Array.from(
+      crypto.getRandomValues(new Uint32Array(6)),
+      n => ALPHABET[n % ALPHABET.length]
+    ).join('')
     const { data: group, error: err } = await supabase
       .from('groups').insert({ name: newName.trim(), description: newDesc.trim() || null, owner_id: user.id, invite_code: inviteCode })
       .select().single()
@@ -49,10 +55,15 @@ export default function GroupsPage() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { window.location.href = '/login?from=/groups'; return }
-    const { data: group } = await supabase.from('groups').select('id').eq('invite_code', joinCode.trim().toUpperCase()).single()
-    if (!group) { setError('초대 코드를 찾을 수 없어요'); return }
-    const { error: err } = await supabase.from('group_members').insert({ group_id: group.id, user_id: user.id })
-    if (err) { setError(err.message.includes('unique') ? '이미 참가한 그룹이에요' : '참가 실패'); return }
+    // 초대 코드 검증은 서버 함수(join_group_by_code)가 한다. 클라이언트에서
+    // groups를 조회해 코드를 맞춰보던 방식은, 그러려면 groups를 전원 공개해야 해서
+    // 초대 코드가 그대로 노출됐다. 이제 비멤버는 groups를 읽지 못한다.
+    const { data: gid, error: err } = await supabase.rpc('join_group_by_code', { code: joinCode.trim().toUpperCase() })
+    if (err) {
+      setError(err.message.includes('invalid code') ? '초대 코드를 찾을 수 없어요' : '참가 실패')
+      return
+    }
+    if (!gid) { setError('초대 코드를 찾을 수 없어요'); return }
     setJoinCode(''); setError(''); flash('그룹에 참가했어요!'); load()
   }
 
