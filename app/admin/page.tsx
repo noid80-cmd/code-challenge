@@ -16,6 +16,7 @@ type Member = { id: string; name: string; avatar_url: string | null; created_at:
 type AdminSubmission = {
   id: string; user_id: string; created_at: string; hidden_at: string | null
   caption: string | null; group_id: string | null; userName: string; challengeTitle: string
+  video_url: string
 }
 type BugRow = {
   id: string; message: string; page: string | null
@@ -85,6 +86,9 @@ export default function AdminPage() {
   const [members, setMembers] = useState<Member[]>([])
   const [membersLoaded, setMembersLoaded] = useState(false)
   const [subs, setSubs] = useState<AdminSubmission[]>([])
+  // 어드민에서 영상을 볼 수가 없었다. 내리기 버튼만 있고, 무엇을 내리는지
+  // 확인할 방법이 없어서 캡션만 읽고 판단해야 했다.
+  const [playing, setPlaying] = useState<AdminSubmission | null>(null)
   const [subsLoaded, setSubsLoaded] = useState(false)
   const [adminGroups, setAdminGroups] = useState<AdminGroup[]>([])
   const [groupsLoaded, setGroupsLoaded] = useState(false)
@@ -335,7 +339,7 @@ export default function AdminPage() {
     if (subsLoaded) return
     const supabase = createClient()
     const { data } = await supabase.from('submissions')
-      .select('id, user_id, challenge_id, caption, created_at, hidden_at, group_id')
+      .select('id, user_id, challenge_id, caption, created_at, hidden_at, group_id, video_url')
       .order('created_at', { ascending: false }).limit(100)
     const rows = data ?? []
     const userIds = [...new Set(rows.map(r => r.user_id))]
@@ -350,7 +354,7 @@ export default function AdminPage() {
     ;(chs ?? []).forEach((x: { id: string; title: string }) => { titleOf[x.id] = x.title })
     setSubs(rows.map(r => ({
       id: r.id, user_id: r.user_id, created_at: r.created_at, hidden_at: r.hidden_at,
-      caption: r.caption, group_id: r.group_id,
+      caption: r.caption, group_id: r.group_id, video_url: r.video_url,
       userName: nameOf[r.user_id] ?? '이름없음',
       challengeTitle: titleOf[r.challenge_id] ?? '(삭제된 챌린지)',
     })))
@@ -593,7 +597,7 @@ export default function AdminPage() {
               {subs.map(sub => (
                 <div key={sub.id} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 14, padding: '14px 16px', opacity: sub.hidden_at ? 0.55 : 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div onClick={() => setPlaying(sub)} style={{ flex: 1, minWidth: 0, cursor: 'pointer' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
                         <span style={{ fontSize: 14, fontWeight: 800, color: '#ccccee' }}>{sub.userName}</span>
                         {sub.hidden_at && (
@@ -603,7 +607,7 @@ export default function AdminPage() {
                           <span style={{ fontSize: 10, fontWeight: 800, color: '#9a9ac8', background: 'rgba(255,255,255,0.07)', padding: '2px 6px', borderRadius: 5 }}>그룹</span>
                         )}
                       </div>
-                      <div style={{ fontSize: 12, color: '#9a9ac8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontSize: 12, color: '#9a9ac8', lineHeight: 1.5, wordBreak: 'break-word' }}>
                         {sub.challengeTitle}{sub.caption ? ` · ${sub.caption}` : ''}
                       </div>
                       <div style={{ fontSize: 11, color: '#8a8ab5', marginTop: 3 }}>
@@ -623,6 +627,41 @@ export default function AdminPage() {
                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#8a8ab5', fontSize: 14 }}>영상이 없어요</div>
               )}
             </div>
+
+            {playing && (
+              <div onClick={() => setPlaying(null)} style={{
+                position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.82)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+              }}>
+                <div onClick={e => e.stopPropagation()} style={{
+                  width: 'min(520px, 100%)', maxHeight: '90vh', overflowY: 'auto',
+                  background: '#141418', border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: 18, padding: 16,
+                }}>
+                  <video
+                    src={playing.video_url.startsWith('http')
+                      ? playing.video_url
+                      : createClient().storage.from('videos').getPublicUrl(playing.video_url).data.publicUrl}
+                    controls autoPlay playsInline
+                    style={{ width: '100%', borderRadius: 12, background: '#000', maxHeight: '60vh' }} />
+                  <div style={{ fontSize: 15, fontWeight: 800, color: '#ccccee', marginTop: 12 }}>{playing.userName}</div>
+                  <div style={{ fontSize: 12.5, color: '#9a9ac8', marginTop: 3 }}>{playing.challengeTitle}</div>
+                  {playing.caption && (
+                    <div style={{ fontSize: 13.5, color: '#e0e0f5', marginTop: 10, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                      {playing.caption}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 11.5, color: '#8a8ab5', marginTop: 8 }}>
+                    {new Date(playing.created_at).toLocaleString('ko-KR')}
+                  </div>
+                  <button onClick={() => setPlaying(null)} style={{
+                    width: '100%', marginTop: 14, padding: '11px', borderRadius: 11,
+                    background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)',
+                    color: '#ccccee', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                  }}>닫기</button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
