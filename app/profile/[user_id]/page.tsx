@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { use } from 'react'
+import { thumbUrl } from '@/lib/thumbUrl'
 
 const supabase = createClient()
 
@@ -152,7 +153,7 @@ export default function ProfilePage({ params }: { params: Promise<{ user_id: str
                   }}>
                     <video
                       src={getPublicUrl(sub.video_url)}
-                      poster={sub.thumbnail_url ? getPublicUrl(sub.thumbnail_url) : undefined}
+                      poster={thumbUrl(supabase, sub.thumbnail_url)}
                       controls playsInline preload="metadata"
                       style={{ width: '100%', display: 'block', background: '#000', height: 'auto' }}
                     />

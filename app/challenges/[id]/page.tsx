@@ -10,6 +10,7 @@ const ChordPlayer = dynamic(() => import('@/app/components/ChordPlayer'), { ssr:
 const RhythmViewer = dynamic(() => import('@/app/components/RhythmViewer'), { ssr: false })
 const MelodyPlayer = dynamic(() => import('@/app/components/MelodyPlayer'), { ssr: false })
 import { localDate } from '@/lib/date'
+import { thumbUrl } from '@/lib/thumbUrl'
 
 type Progression = { label: string; chords: string[] | string[][]; style?: string; tempo?: number }
 type Pattern = { label: string; abc: string }
@@ -252,11 +253,7 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
-  const posterUrl = sub.thumbnail_url
-    ? sub.thumbnail_url.startsWith('http')
-      ? sub.thumbnail_url
-      : supabase.storage.from('videos').getPublicUrl(sub.thumbnail_url).data.publicUrl
-    : undefined
+  const posterUrl = thumbUrl(supabase, sub.thumbnail_url)
   const initials = (sub.profiles?.name ?? '?').slice(0, 1).toUpperCase()
 
   return (

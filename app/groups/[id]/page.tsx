@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { thumbUrl } from '@/lib/thumbUrl'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
@@ -796,11 +797,7 @@ function SubmissionCard({
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
-  const posterUrl = sub.thumbnail_url
-    ? sub.thumbnail_url.startsWith('http')
-      ? sub.thumbnail_url
-      : supabase.storage.from('videos').getPublicUrl(sub.thumbnail_url).data.publicUrl
-    : undefined
+  const posterUrl = thumbUrl(supabase, sub.thumbnail_url)
 
   const topComments = comments.filter(c => c.parent_id === null)
   const getReplies = (id: string) => comments.filter(c => c.parent_id === id)

@@ -10,6 +10,7 @@ import { TYPE_COLORS } from '@/lib/theme'
 import { LEVELS, LEVEL_COLORS, LEVEL_FALLBACK, LEVEL_LABELS, toLevel, type Level } from '@/lib/level'
 import { cachedLevel, fetchLevel, saveLevel } from './levelClient'
 import { MAJORS, MAJOR_LABELS, majorLabel, majorColor, type Major } from '@/lib/majors'
+import { thumbUrl } from '@/lib/thumbUrl'
 import PushBanner from './PushBanner'
 import LevelSheet, { LevelChip } from './LevelSheet'
 import ZoomableNotation from './ZoomableNotation'
@@ -829,11 +830,10 @@ function SubmissionThumb({ sub, onOpen, label, level, dimLevel }: {
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
-  const posterUrl = sub.thumbnail_url
-    ? sub.thumbnail_url.startsWith('http')
-      ? sub.thumbnail_url
-      : supabase.storage.from('videos').getPublicUrl(sub.thumbnail_url).data.publicUrl
-    : undefined
+  // 썸네일 파일이 없어질 수도 있다. 그때 <img>는 조용히 실패하고 검은 네모만
+  // 남는데, 그러면 누가 무엇을 올렸는지도 안 보인다 — 커버로 넘긴다.
+  const [posterFailed, setPosterFailed] = useState(false)
+  const posterUrl = posterFailed ? undefined : thumbUrl(supabase, sub.thumbnail_url)
 
   return (
     <button onClick={onOpen} style={{
@@ -844,7 +844,8 @@ function SubmissionThumb({ sub, onOpen, label, level, dimLevel }: {
     }}>
       <div style={{ position: 'relative', aspectRatio: '4 / 5', background: '#000' }}>
         {posterUrl
-          ? <img src={posterUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ? <img src={posterUrl} alt="" onError={() => setPosterFailed(true)}
+                 style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           : (
             // 화면에 아무것도 안 잡힌 영상이다(카메라를 가렸거나 천장을 찍었거나).
             // 검은 네모를 늘어놓는 대신 이름과 전공을 얹은 커버를 그린다.

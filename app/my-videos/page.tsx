@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { localDate } from '@/lib/date'
+import { thumbUrl } from '@/lib/thumbUrl'
 import AcademyCard from '@/app/components/AcademyCard'
 import BugReport from '@/app/components/BugReport'
 import { PushSettingRow } from '@/app/components/PushBanner'
@@ -372,11 +373,7 @@ function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
-  const posterUrl = sub.thumbnail_url
-    ? sub.thumbnail_url.startsWith('http')
-      ? sub.thumbnail_url
-      : supabase.storage.from('videos').getPublicUrl(sub.thumbnail_url).data.publicUrl
-    : undefined
+  const posterUrl = thumbUrl(supabase, sub.thumbnail_url)
   const displayPoster = posterUrl ?? localPoster ?? undefined
   const date = new Date(sub.created_at)
 
