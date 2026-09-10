@@ -221,11 +221,16 @@ export default function UploadPage() {
       }
 
       video.onloadeddata = () => {
+        // 첫 프레임을 쓰면 대부분 까맣거나 흐리다 — 그 순간 카메라는 아직
+        // 노출과 초점을 잡는 중이고, 연주는 시작도 안 했다. 목록이 검은
+        // 네모로 덮여 있던 이유다. 1초쯤 지난 지점을 잡는다.
+        const at = Math.min(1.2, (video.duration || 2) * 0.25) || 0.1
+
         // Muted videos can play() without user gesture on iOS Safari
         // This is the only reliable way to get onseeked/frames on iOS
         video.play().then(() => {
           video.ontimeupdate = () => {
-            if (video.currentTime > 0) {
+            if (video.currentTime >= at) {
               video.ontimeupdate = null
               video.pause()
               setTimeout(capture, 50)
@@ -234,7 +239,7 @@ export default function UploadPage() {
         }).catch(() => {
           // Non-iOS fallback: seek directly
           video.onseeked = capture
-          video.currentTime = 0.1
+          video.currentTime = at
         })
       }
 

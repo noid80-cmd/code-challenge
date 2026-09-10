@@ -864,6 +864,10 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
   const cur = subs[idx]
   const curCh = cur ? challengeById[cur.challenge_id] : undefined
   const curLevel = toLevel(curCh?.level)
+  // 무엇을 치고 있는지 보면서 들어야 한다. 이름만 있으면(진행 1) 소용이 없다.
+  const prog = cur && curCh && curCh.type === 'chord' && cur.progression_index != null
+    ? curCh.chords?.progressions?.[cur.progression_index]
+    : undefined
   const label = cur && curCh && cur.progression_index != null
     ? (curCh.type === 'chord'
         ? curCh.chords?.progressions?.[cur.progression_index]?.label
@@ -925,6 +929,32 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
           {idx + 1} / {subs.length}
         </span>
       </div>
+
+      {/* 지금 치고 있는 코드 진행 — 보면서 들으라고 위에 붙인다 */}
+      {prog && prog.chords?.length > 0 && (
+        <div style={{
+          position: 'absolute', left: 0, right: 0,
+          top: 'calc(54px + env(safe-area-inset-top))',
+          display: 'flex', flexWrap: 'wrap', gap: 5, justifyContent: 'center',
+          padding: '0 12px', pointerEvents: 'none',
+        }}>
+          {prog.chords.map((ch, i) => (
+            <span key={i} style={{
+              fontSize: 13, fontWeight: 800, color: '#f0ece0',
+              background: 'rgba(0,0,0,0.62)', border: '1px solid rgba(240,236,224,0.18)',
+              borderRadius: 8, padding: '4px 9px', letterSpacing: '-0.01em',
+            }}>{ch}</span>
+          ))}
+          {(prog.style || prog.tempo) && (
+            <span style={{
+              fontSize: 11.5, fontWeight: 700, color: '#c8c4b0',
+              background: 'rgba(0,0,0,0.62)', borderRadius: 8, padding: '5px 9px',
+            }}>
+              {[prog.style, prog.tempo ? `♩ ${prog.tempo}` : null].filter(Boolean).join(' · ')}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* 아래: 누구 · 한마디 · 좋아요 */}
       {cur && (
