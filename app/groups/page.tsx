@@ -7,7 +7,7 @@ import Link from 'next/link'
 
 type Group = {
   id: string; name: string; description: string | null
-  owner_id: string; is_public: boolean
+  owner_id: string; is_public: boolean; pending_owner_id: string | null
 }
 
 export default function GroupsPage() {
@@ -42,7 +42,7 @@ export default function GroupsPage() {
     const [{ data: memberRows }, { data: allGroups }, { data: countRows }] = await Promise.all([
       supabase.from('group_members').select('group_id').eq('user_id', user.id),
       // invite_code 와 비번 해시는 컬럼 권한에서 빠져 있어 열 이름을 적으면 안 된다.
-      supabase.from('groups').select('id, name, description, owner_id, is_public').order('created_at', { ascending: false }),
+      supabase.from('groups').select('id, name, description, owner_id, is_public, pending_owner_id').order('created_at', { ascending: false }),
       supabase.rpc('group_member_counts'),
     ])
 
@@ -320,6 +320,13 @@ export default function GroupsPage() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span style={{ fontSize: 16, fontWeight: 800, color: '#e0dcd0' }}>{g.name}</span>
                             <RoomTag isPublic={g.is_public} />
+                            {g.pending_owner_id === userId && (
+                              <span style={{
+                                fontSize: 10.5, fontWeight: 800, padding: '2px 7px', borderRadius: 6,
+                                color: '#e6c583', background: 'rgba(230,197,131,0.13)',
+                                border: '1px solid rgba(230,197,131,0.38)',
+                              }}>방장 제안</span>
+                            )}
                             {g.owner_id === userId && (
                               <span style={{
                                 fontSize: 10, fontWeight: 800, color: '#f0ece0',
