@@ -832,6 +832,9 @@ function SubmissionThumb({ sub, onOpen, label, level, dimLevel }: {
   )
 }
 
+// 상단 바(닫기·난이도·번호) 아래가 내용이 시작되는 자리다.
+const TOP_BAR = '54px + env(safe-area-inset-top)'
+
 // 누르면 전체 화면으로 열고 좌우로 넘겨 본다. 스크롤 스냅을 쓰면 라이브러리
 // 없이도 손가락이 놓는 자리에 딱 맞춰 선다.
 function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, onReport, onBlock, challengeById, myLevel }: {
@@ -844,6 +847,10 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
   const videos = useRef<(HTMLVideoElement | null)[]>([])
   const [idx, setIdx] = useState(startIndex)
   const [menuFor, setMenuFor] = useState<string | null>(null)
+  // 악보를 영상 위에 겹쳐 놓으면 영상도 가리고 재생 컨트롤도 가린다.
+  // 높이를 재서 영상이 그 아래에서 시작하게 한다.
+  const notation = useRef<HTMLDivElement>(null)
+  const [notationH, setNotationH] = useState(0)
 
   // 누른 영상에서 시작한다. 레이아웃이 잡힌 뒤라야 폭을 알 수 있다.
   useEffect(() => {
@@ -858,6 +865,15 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
       if (i === idx) { v.play().catch(() => {}) } else { v.pause(); v.currentTime = 0 }
     })
   }, [idx])
+
+  useEffect(() => {
+    const el = notation.current
+    if (!el) { setNotationH(0); return }
+    const ro = new ResizeObserver(() => setNotationH(el.offsetHeight))
+    ro.observe(el)
+    setNotationH(el.offsetHeight)
+    return () => ro.disconnect()
+  }, [idx, subs])
 
   // 뒤 화면이 같이 움직이면 넘기다가 페이지가 스크롤된다.
   useEffect(() => {
@@ -895,7 +911,9 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
           if (next !== idx) setIdx(next)
         }}
         style={{
-          position: 'absolute', inset: 0, display: 'flex',
+          position: 'absolute', left: 0, right: 0, bottom: 0,
+          top: notationH > 0 ? `calc(${TOP_BAR} + ${notationH + 10}px)` : 0,
+          display: 'flex',
           overflowX: 'auto', overflowY: 'hidden',
           scrollSnapType: 'x mandatory', scrollbarWidth: 'none',
         }}>
@@ -946,7 +964,7 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
       {prog && prog.chords?.length > 0 && (
         <div style={{
           position: 'absolute', left: 0, right: 0,
-          top: 'calc(54px + env(safe-area-inset-top))',
+          top: `calc(${TOP_BAR})`,
           display: 'flex', flexWrap: 'wrap', gap: 5, justifyContent: 'center',
           padding: '0 12px', pointerEvents: 'none',
         }}>
@@ -970,18 +988,20 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
 
       {/* 지금 치고 있는 악보 — 리듬·멜로디 */}
       {pattern && (
-        <div style={{
+        <div ref={notation} style={{
           position: 'absolute', left: 0, right: 0,
-          top: 'calc(54px + env(safe-area-inset-top))',
+          top: `calc(${TOP_BAR})`,
           padding: '0 12px',
           // 악보 위에서 손가락을 대도 옆으로 넘어가야 한다. 눌러서 쓸 일이
           // 없는 표시이므로 터치를 그냥 통과시킨다.
           pointerEvents: 'none',
         }}>
           <div style={{
-            background: 'rgba(0,0,0,0.66)', border: '1px solid rgba(240,236,224,0.15)',
-            borderRadius: 12, padding: '6px 10px 8px',
-            maxHeight: '34vh', overflow: 'hidden',
+            background: 'rgba(20,20,18,0.92)', border: '1px solid rgba(240,236,224,0.15)',
+            borderRadius: 12, padding: '4px 10px 6px',
+            // 영상이 손톱만 해지는 것만 막는 안전선이다. 보통 악보(네 줄)는
+            // 여기 못 미친다.
+            maxHeight: '52vh', overflow: 'hidden',
           }}>
             {curCh?.type === 'rhythm'
               ? <RhythmViewer patterns={[pattern]} hideLabel />
