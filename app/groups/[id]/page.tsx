@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
-type Group = { id: string; name: string; description: string | null; invite_code: string; owner_id: string }
+type Group = { id: string; name: string; description: string | null; owner_id: string; is_public: boolean }
 type Submission = {
   id: string; video_url: string; caption: string | null
   likes_count: number; created_at: string; user_id: string; is_private: boolean
@@ -84,7 +84,10 @@ export default function GroupPage() {
     if (!user) { window.location.href = '/login?from=' + encodeURIComponent(window.location.pathname); return }
     setUserId(user.id)
 
-    const { data: g } = await supabase.from('groups').select('*').eq('id', groupId).single()
+    // select('*') 는 이제 못 쓴다. 초대 코드와 비밀번호 해시는 읽을 수 있는
+    // 칸에서 빠졌고, 없는 칸을 달라고 하면 요청이 통째로 실패한다.
+    const { data: g } = await supabase.from('groups')
+      .select('id, name, description, owner_id, is_public').eq('id', groupId).single()
     if (!g) { window.location.href = '/groups'; return }
     setGroup(g)
 
@@ -297,9 +300,7 @@ export default function GroupPage() {
     if (!group) return
     // 코드만 주면 상대가 앱을 찾아 들어가 입력해야 한다. 링크를 같이 보내면 눌러서 바로 들어온다.
     const text = `초견챌린지 "${group.name}" 그룹 초대
-${window.location.origin}/groups?code=${group.invite_code}
-
-초대 코드: ${group.invite_code}`
+${window.location.origin}/groups?g=${group.id}`
     navigator.clipboard.writeText(text)
     setCopied(true); setTimeout(() => setCopied(false), 2000)
   }
@@ -348,7 +349,7 @@ ${window.location.origin}/groups?code=${group.invite_code}
           fontSize: 12, fontWeight: 800, cursor: 'pointer',
           letterSpacing: '0.06em', transition: 'all 0.2s',
         }}>
-          {copied ? '링크 복사됨' : group?.invite_code}
+          {copied ? '링크 복사됨' : '링크 복사'}
         </button>
       </header>
 

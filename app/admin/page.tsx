@@ -25,7 +25,7 @@ type BugRow = {
   userId: string | null; adminReply: string | null
 }
 type AdminGroup = {
-  id: string; name: string; invite_code: string; created_at: string
+  id: string; name: string; created_at: string
   ownerName: string; memberCount: number; videoCount: number
 }
 
@@ -449,7 +449,7 @@ export default function AdminPage() {
     if (groupsLoaded) return
     const supabase = createClient()
     const { data: gs } = await supabase.from('groups')
-      .select('id, name, owner_id, invite_code, created_at').order('created_at', { ascending: false })
+      .select('id, name, owner_id, created_at').order('created_at', { ascending: false })
     const rows = gs ?? []
     const ownerIds = [...new Set(rows.map(g => g.owner_id))]
     const [{ data: ms }, { data: gsubs }, { data: profs }] = await Promise.all([
@@ -464,7 +464,7 @@ export default function AdminPage() {
     const nameOf: Record<string, string> = {}
     ;(profs ?? []).forEach((x: { id: string; name: string }) => { nameOf[x.id] = x.name })
     setAdminGroups(rows.map(g => ({
-      id: g.id, name: g.name, invite_code: g.invite_code, created_at: g.created_at,
+      id: g.id, name: g.name, created_at: g.created_at,
       ownerName: nameOf[g.owner_id] ?? '이름없음',
       memberCount: memberCount[g.id] ?? 0,
       videoCount: videoCount[g.id] ?? 0,

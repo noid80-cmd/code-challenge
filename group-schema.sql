@@ -109,7 +109,13 @@ create extension if not exists pgcrypto with schema extensions;
 
 -- 비밀번호 해시와 초대 코드는 클라이언트가 읽을 수 없다.
 -- (RLS는 행 단위라 칸을 못 가린다. 칸을 가리는 건 컬럼 권한이다.)
-revoke select (join_password_hash, invite_code) on public.groups from anon, authenticated;
+--
+-- 칸 단위 revoke만 하면 소용이 없다 — Supabase가 anon/authenticated 에
+-- 테이블 전체 SELECT를 이미 줬고, 테이블 권한이 남아 있으면 그게 이긴다.
+-- 테이블 권한을 걷어내고 읽을 칸만 다시 준다.
+revoke select on public.groups from anon, authenticated;
+grant select (id, name, description, owner_id, is_public, created_at)
+  on public.groups to anon, authenticated;
 
 -- 목록은 누구나 본다. 감출 것은 위 두 칸뿐이다.
 drop policy if exists "groups_select_member" on public.groups;
