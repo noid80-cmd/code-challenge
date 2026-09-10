@@ -55,6 +55,9 @@ export default function GroupPage() {
   const { id: groupId } = useParams<{ id: string }>()
   const [group, setGroup] = useState<Group | null>(null)
   const [memberCount, setMemberCount] = useState(0)
+  // 공개방은 참가하지 않아도 들어와서 볼 수 있다. 들어가 볼 이유를 안
+  // 보여주면서 들어오라고 할 수는 없다. 올리기와 채팅만 참가해야 된다.
+  const [guest, setGuest] = useState(false)
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [commentsBySubId, setCommentsBySubId] = useState<Record<string, Comment[]>>({})
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
@@ -92,8 +95,9 @@ export default function GroupPage() {
     setGroup(g)
 
     const { data: membership } = await supabase
-      .from('group_members').select('id').eq('group_id', groupId).eq('user_id', user.id).single()
-    if (!membership) { window.location.href = '/groups'; return }
+      .from('group_members').select('id').eq('group_id', groupId).eq('user_id', user.id).maybeSingle()
+    if (!membership && !g.is_public) { window.location.href = '/groups'; return }
+    setGuest(!membership)
 
     const { count } = await supabase.from('group_members').select('id', { count: 'exact', head: true }).eq('group_id', groupId)
     setMemberCount(count ?? 0)
@@ -305,6 +309,26 @@ ${window.location.origin}/groups?g=${group.id}`
     setCopied(true); setTimeout(() => setCopied(false), 2000)
   }
 
+  // 들어왔으면 나갈 수도 있어야 한다. 나가는 길이 없으면 애초에 안 들어온다.
+  async function leaveGroup() {
+    if (!group || !userId) return
+    if (!confirm(`"${group.name}" 방에서 나갈까요? 올린 영상은 그대로 남습니다.`)) return
+    const supabase = createClient()
+    const { data, error } = await supabase.from('group_members')
+      .delete().eq('group_id', groupId).eq('user_id', userId).select('id')
+    if (error || !data?.length) { alert('나가지 못했어요. 잠시 후 다시 시도해주세요.'); return }
+    window.location.href = '/groups'
+  }
+
+  async function joinHere() {
+    if (!group) return
+    const supabase = createClient()
+    const { data, error } = await supabase.from('group_members')
+      .insert({ group_id: groupId, user_id: userId }).select('id')
+    if (error || !data?.length) { alert('참가하지 못했어요.'); return }
+    window.location.reload()
+  }
+
   async function deleteGroup() {
     if (!group) return
     if (!confirm(`"${group.name}" 그룹을 삭제할까요? 모든 영상과 채팅이 삭제됩니다.`)) return
@@ -369,19 +393,39 @@ ${window.location.origin}/groups?g=${group.id}`
                 color: '#98948a', fontSize: 11, fontWeight: 600, padding: 0, marginTop: 6,
               }}>그룹 삭제</button>
             )}
+            {!isOwner && !guest && (
+              <button onClick={leaveGroup} style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#98948a', fontSize: 11, fontWeight: 600, padding: 0, marginTop: 6,
+              }}>방 나가기</button>
+            )}
           </div>
-          <Link href={`/upload?group=${groupId}`} style={{
-            padding: '8px 16px', borderRadius: 10,
-            background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-            color: '#0a0a08', fontSize: 13, fontWeight: 700, textDecoration: 'none',
-            boxShadow: '0 4px 14px rgba(240,236,224,0.35)',
-          }}>업로드</Link>
+          {guest ? (
+            <button onClick={joinHere} style={{
+              padding: '8px 16px', borderRadius: 10, border: 'none', cursor: 'pointer',
+              background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+              color: '#0a0a08', fontSize: 13, fontWeight: 700,
+            }}>참가하기</button>
+          ) : (
+            <Link href={`/upload?group=${groupId}`} style={{
+              padding: '8px 16px', borderRadius: 10,
+              background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+              color: '#0a0a08', fontSize: 13, fontWeight: 700, textDecoration: 'none',
+              boxShadow: '0 4px 14px rgba(240,236,224,0.35)',
+            }}>업로드</Link>
+          )}
         </div>
 
         {/* 탭 */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 16, background: 'rgba(240,236,224,0.04)', borderRadius: 12, padding: 4 }}>
           {(['feed', 'chat'] as const).map(tab => (
-            <button key={tab} onClick={() => setActiveTab(tab)} style={{
+            <button key={tab}
+              onClick={() => {
+                // 채팅은 방 사람들의 것이다. 구경하는 사람에게는 열지 않는다.
+                if (tab === 'chat' && guest) { alert('참가하면 채팅을 볼 수 있어요.'); return }
+                setActiveTab(tab)
+              }}
+              style={{
               flex: 1, padding: '8px', borderRadius: 9, border: 'none', cursor: 'pointer',
               background: activeTab === tab ? 'rgba(240,236,224,0.12)' : 'transparent',
               color: activeTab === tab ? '#f0ece0' : '#c0bab0',

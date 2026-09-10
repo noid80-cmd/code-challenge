@@ -403,20 +403,26 @@ export default function GroupsPage() {
                           {[g.description, `${counts[g.id] ?? 0}명`].filter(Boolean).join(' · ')}
                         </div>
                       </div>
-                      <button
-                        onClick={() => g.is_public
-                          ? joinPublic(g.id)
-                          : (setPwFor(pwFor === g.id ? '' : g.id), setPwInput(''), setError(''))}
-                        disabled={busy === g.id}
-                        style={{
-                          flexShrink: 0, padding: '8px 14px', borderRadius: 10, cursor: 'pointer',
-                          border: g.is_public ? 'none' : '1px solid rgba(240,236,224,0.2)',
-                          background: g.is_public ? 'linear-gradient(135deg, #f8f4ec, #c8c4b0)' : 'transparent',
-                          color: g.is_public ? '#0a0a08' : '#c0bab0',
-                          fontSize: 12.5, fontWeight: 800,
-                        }}>
-                        {busy === g.id ? '...' : g.is_public ? '참가' : '비밀번호'}
-                      </button>
+                      {/* 공개방은 참가 전에 들어가 볼 수 있다. 안을 못 보면
+                          들어갈 이유를 알 수 없다. 비공개방은 비번부터다. */}
+                      {g.is_public ? (
+                        <Link href={`/groups/${g.id}`} style={{
+                          flexShrink: 0, padding: '8px 14px', borderRadius: 10,
+                          background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                          color: '#0a0a08', fontSize: 12.5, fontWeight: 800, textDecoration: 'none',
+                        }}>둘러보기</Link>
+                      ) : (
+                        <button
+                          onClick={() => (setPwFor(pwFor === g.id ? '' : g.id), setPwInput(''), setError(''))}
+                          disabled={busy === g.id}
+                          style={{
+                            flexShrink: 0, padding: '8px 14px', borderRadius: 10, cursor: 'pointer',
+                            border: '1px solid rgba(240,236,224,0.2)', background: 'transparent',
+                            color: '#c0bab0', fontSize: 12.5, fontWeight: 800,
+                          }}>
+                          {busy === g.id ? '...' : '비밀번호'}
+                        </button>
+                      )}
                     </div>
 
                     {pwFor === g.id && (

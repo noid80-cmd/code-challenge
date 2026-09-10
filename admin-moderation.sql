@@ -165,3 +165,22 @@ drop trigger if exists guard_submission_update on public.submissions;
 create trigger guard_submission_update
   before update on public.submissions
   for each row execute function public.guard_submission_update();
+
+
+-- 공개방은 참가하지 않아도 안을 볼 수 있다 (2026-09-10)
+--
+-- 둘러보기에서 이름과 인원수만 보여주면서 들어오라고 할 수는 없다.
+-- 들어가 볼 이유를 보여줘야 들어간다. 올리기와 채팅은 그대로 멤버만 —
+-- group_messages 정책은 건드리지 않는다.
+drop policy if exists "submissions_select" on public.submissions;
+create policy "submissions_select" on public.submissions for select using (
+  -- 내려간 영상은 본인과 어드민에게만 보인다
+  (hidden_at is null or user_id = auth.uid() or is_admin())
+  and (
+    group_id is null
+    or user_id = auth.uid()
+    or is_group_member(group_id)
+    or is_admin()
+    or exists (select 1 from public.groups g where g.id = group_id and g.is_public)
+  )
+);
