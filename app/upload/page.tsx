@@ -129,9 +129,12 @@ export default function UploadPage() {
   function startRecording() {
     if (!streamRef.current) return
     chunksRef.current = []
-    const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
-      ? 'video/webm;codecs=vp8,opus'
-      : MediaRecorder.isTypeSupported('video/webm') ? 'video/webm' : ''
+    // mp4를 먼저 고른다. 안드로이드에서 녹화하면 webm이 나오는데 아이폰은
+    // 그걸 못 읽는다 — 서로의 연주를 보는 앱에서 절반이 절반을 못 보게 된다.
+    // 셋 다 안 되면 브라우저 기본값에 맡긴다(아이폰은 원래 mp4로 녹화한다).
+    const mimeType = ['video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4',
+      'video/webm;codecs=vp8,opus', 'video/webm']
+      .find(t => MediaRecorder.isTypeSupported(t)) ?? ''
     const recorder = new MediaRecorder(streamRef.current, {
       ...(mimeType ? { mimeType } : {}),
       videoBitsPerSecond: 1_800_000,
