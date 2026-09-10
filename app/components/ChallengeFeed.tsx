@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
@@ -86,10 +86,13 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   // 악보는 자기 난이도 것을 보고, 영상만 같은 종류끼리 모은다.
   const [challengeById, setChallengeById] = useState<Record<string, Challenge>>({})
   const [openOther, setOpenOther] = useState<string | null>(null)
-  // 이 앱의 본체는 초견 연습이고 피드는 부가 기능이다. 매일 비어 있는 피드가
-  // 화면 절반을 차지하면 아무도 안 쓰는 앱처럼 보여서, 기본은 접어두고
-  // 연주가 하나도 없으면 아예 띄우지 않는다.
-  const [feedOpen, setFeedOpen] = useState(false)
+  // 예전엔 접어뒀다. 난이도별로 갈라진 피드가 매일 비어 있어서, 펼쳐두면
+  // 아무도 안 쓰는 앱처럼 보였기 때문이다. 이제 같은 종류 영상을 모으니
+  // 채워진다 — 접어두면 오늘 들어온 사람은 남들이 뭘 올렸는지 못 보고 나간다.
+  // 연주가 하나도 없으면 이 영역 자체가 안 뜬다.
+  const [feedOpen, setFeedOpen] = useState(true)
+  // 목록에서 하나를 누르면 전체 화면으로 열고 좌우로 넘겨 본다.
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -240,6 +243,19 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
       <span style={{ color: '#8f8a7e', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
     </div>
   )
+
+  // 그리드에서 세 번째로 보이던 영상이 뷰어에서도 세 번째여야 한다.
+  // 두 곳에서 따로 정렬하면 누른 것과 다른 게 열린다.
+  const visibleSubs = [...submissions]
+    // 진행 번호는 자기 난이도 챌린지의 것이라, 다른 난이도 영상에는
+    // 같은 번호라도 다른 진행이다. 진행을 골랐을 때만 이 챌린지 것으로 좁힌다.
+    .filter(s => type === 'chord'
+      ? (filterProg === 'all' || (s.challenge_id === challenge?.id && s.progression_index === filterProg))
+      : true)
+    .sort((a, b) => sortBy === 'popular'
+      ? b.likes_count - a.likes_count
+      : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)' }}>
@@ -720,49 +736,45 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
             </div>
           )}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {[...submissions]
-                // 진행 번호는 자기 난이도 챌린지의 것이라, 다른 난이도 영상에는
-                // 같은 번호라도 다른 진행이다. 진행을 골랐을 때만 이 챌린지 것으로 좁힌다.
-                .filter(s => type === 'chord'
-                  ? (filterProg === 'all' || (s.challenge_id === challenge?.id && s.progression_index === filterProg))
-                  : true)
-                .sort((a, b) => sortBy === 'popular'
-                  ? b.likes_count - a.likes_count
-                  : new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                )
-                .map(sub => {
-                  const subCh = challengeById[sub.challenge_id]
-                  const subLevel = toLevel(subCh?.level)
-                  return (
-                  <SubmissionCard key={sub.id} sub={sub} onLike={() => toggleLike(sub.id, !!sub.user_liked)}
-                    currentUserId={user?.id}
-                    onReport={() => handleReport(sub.id)}
-                    onBlock={() => handleBlock(sub.user_id)}
-                    // 악보 표기는 그 영상이 올라온 챌린지 것을 써야 한다.
-                    progressions={type === 'chord' ? subCh?.chords?.progressions : undefined}
-                    patterns={type === 'rhythm' || type === 'melody' ? subCh?.chords?.patterns : undefined}
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))', gap: 8,
+            }}>
+              {visibleSubs.map((sub, i) => {
+                const subCh = challengeById[sub.challenge_id]
+                const subLevel = toLevel(subCh?.level)
+                return (
+                  <SubmissionThumb key={sub.id} sub={sub} onOpen={() => setViewerIndex(i)}
                     otherLevel={subCh && subLevel !== toLevel(challenge?.level) ? subLevel : undefined} />
-                  )
-                })}
+                )
+              })}
             </div>
             </>
           )}
         </section>
+
+        {viewerIndex !== null && visibleSubs.length > 0 && (
+          <SubmissionViewer
+            subs={visibleSubs}
+            startIndex={Math.min(viewerIndex, visibleSubs.length - 1)}
+            onClose={() => setViewerIndex(null)}
+            currentUserId={user?.id}
+            onLike={sub => toggleLike(sub.id, !!sub.user_liked)}
+            onReport={sub => handleReport(sub.id)}
+            onBlock={sub => handleBlock(sub.user_id)}
+            challengeById={challengeById}
+            myLevel={toLevel(challenge?.level)} />
+        )}
       </main>
     </div>
   )
 }
 
-function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progressions, patterns, otherLevel }: {
-  sub: Submission; onLike: () => void; currentUserId?: string; onReport?: () => void; onBlock?: () => void
-  progressions?: Progression[]; patterns?: { label: string; abc: string }[]
-  // 내 난이도가 아닌 영상에만 붙인다. 같은 난이도에까지 배지를 달면 소음이 된다.
-  otherLevel?: Level
+// 목록에서는 썸네일만 보여준다. 카드로 늘어놓으면 아홉 개가 아홉 화면이 되어
+// "많이 하고 있네"가 안 보인다. 한 화면에 다 들어와야 그게 보인다.
+function SubmissionThumb({ sub, onOpen, otherLevel }: {
+  sub: Submission; onOpen: () => void; otherLevel?: Level
 }) {
   const supabase = createClient()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const isOwn = currentUserId === sub.user_id
   const videoUrl = sub.video_url.startsWith('http')
     ? sub.video_url
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
@@ -771,106 +783,202 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
       ? sub.thumbnail_url
       : supabase.storage.from('videos').getPublicUrl(sub.thumbnail_url).data.publicUrl
     : undefined
-  const initials = (sub.profiles?.name ?? '?').slice(0, 1).toUpperCase()
 
   return (
-    <div style={{
-      background: 'linear-gradient(145deg, #111110, #0d0d0c)',
-      border: '1px solid rgba(240,236,224,0.1)',
-      borderRadius: 20, overflow: 'hidden',
-      boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
+    <button onClick={onOpen} style={{
+      position: 'relative', aspectRatio: '3 / 4', borderRadius: 12, overflow: 'hidden',
+      border: '1px solid rgba(240,236,224,0.1)', background: '#000', padding: 0, cursor: 'pointer',
+      display: 'block', width: '100%',
     }}>
-      {progressions && progressions.length > 1 && sub.progression_index != null && (
-        <div style={{
-          position: 'relative', padding: '8px 14px',
-          borderBottom: '1px solid rgba(240,236,224,0.06)',
-          background: 'rgba(240,236,224,0.04)',
-        }}>
-          <span style={{ fontSize: 10, fontWeight: 800, color: '#a0988c', letterSpacing: '0.05em' }}>
-            {progressions[sub.progression_index]?.label ?? `진행 ${sub.progression_index + 1}`}
-          </span>
-        </div>
+      {posterUrl
+        ? <img src={posterUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        : (
+          // 썸네일이 없는 영상은 첫 프레임을 쓴다. preload="metadata" 면 영상 전체를 받지 않는다.
+          <video src={videoUrl} muted playsInline preload="metadata"
+            style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        )}
+
+      {otherLevel && (
+        <span style={{
+          position: 'absolute', top: 6, left: 6, fontSize: 9.5, fontWeight: 800,
+          padding: '1px 5px', borderRadius: 4, background: 'rgba(0,0,0,0.55)',
+          color: LEVEL_COLORS[otherLevel],
+        }}>{LEVEL_LABELS[otherLevel]}</span>
       )}
-      {patterns && patterns.length > 1 && sub.progression_index != null && (
-        <div style={{
-          position: 'relative', padding: '8px 14px',
-          borderBottom: '1px solid rgba(240,236,224,0.06)',
-          background: 'rgba(240,236,224,0.04)',
-        }}>
-          <span style={{ fontSize: 10, fontWeight: 800, color: '#a0988c', letterSpacing: '0.05em' }}>
-            {patterns[sub.progression_index]?.label ?? `패턴 ${sub.progression_index + 1}`}
+
+      <div style={{
+        position: 'absolute', left: 0, right: 0, bottom: 0, padding: '14px 7px 6px',
+        background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+        display: 'flex', alignItems: 'center', gap: 4,
+      }}>
+        <span style={{
+          fontSize: 11, fontWeight: 700, color: '#f0ece0', overflow: 'hidden',
+          textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, textAlign: 'left',
+        }}>{sub.profiles?.name ?? '익명'}</span>
+        {sub.likes_count > 0 && (
+          <span style={{ fontSize: 10.5, fontWeight: 700, color: '#fb7185', flexShrink: 0 }}>
+            ♥ {sub.likes_count}
           </span>
-        </div>
-      )}
-      <video src={videoUrl} poster={posterUrl} controls playsInline preload="metadata"
-        style={{ width: '100%', display: 'block', background: '#000', height: 'auto' }} />
-      <div style={{ padding: '14px 16px 16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Link href={`/profile/${sub.user_id}`} style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 14, fontWeight: 800, color: '#0a0a08',
-              overflow: 'hidden', flexShrink: 0,
-              boxShadow: '0 2px 10px rgba(240,236,224,0.3)',
+        )}
+      </div>
+    </button>
+  )
+}
+
+// 누르면 전체 화면으로 열고 좌우로 넘겨 본다. 스크롤 스냅을 쓰면 라이브러리
+// 없이도 손가락이 놓는 자리에 딱 맞춰 선다.
+function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, onReport, onBlock, challengeById, myLevel }: {
+  subs: Submission[]; startIndex: number; onClose: () => void; currentUserId?: string
+  onLike: (sub: Submission) => void; onReport: (sub: Submission) => void; onBlock: (sub: Submission) => void
+  challengeById: Record<string, Challenge>; myLevel: Level
+}) {
+  const supabase = createClient()
+  const scroller = useRef<HTMLDivElement>(null)
+  const videos = useRef<(HTMLVideoElement | null)[]>([])
+  const [idx, setIdx] = useState(startIndex)
+  const [menuFor, setMenuFor] = useState<string | null>(null)
+
+  // 누른 영상에서 시작한다. 레이아웃이 잡힌 뒤라야 폭을 알 수 있다.
+  useEffect(() => {
+    const el = scroller.current
+    if (el) el.scrollLeft = startIndex * el.clientWidth
+  }, [startIndex])
+
+  // 보이는 것만 재생한다. 열 개가 한꺼번에 소리를 내면 안 된다.
+  useEffect(() => {
+    videos.current.forEach((v, i) => {
+      if (!v) return
+      if (i === idx) { v.play().catch(() => {}) } else { v.pause(); v.currentTime = 0 }
+    })
+  }, [idx])
+
+  // 뒤 화면이 같이 움직이면 넘기다가 페이지가 스크롤된다.
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey) }
+  }, [onClose])
+
+  const cur = subs[idx]
+  const curCh = cur ? challengeById[cur.challenge_id] : undefined
+  const curLevel = toLevel(curCh?.level)
+  const label = cur && curCh && cur.progression_index != null
+    ? (curCh.type === 'chord'
+        ? curCh.chords?.progressions?.[cur.progression_index]?.label
+        : curCh.chords?.patterns?.[cur.progression_index]?.label)
+    : undefined
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: '#000' }}>
+      <div ref={scroller}
+        onScroll={e => {
+          const el = e.currentTarget
+          const next = Math.round(el.scrollLeft / el.clientWidth)
+          if (next !== idx) setIdx(next)
+        }}
+        style={{
+          position: 'absolute', inset: 0, display: 'flex',
+          overflowX: 'auto', overflowY: 'hidden',
+          scrollSnapType: 'x mandatory', scrollbarWidth: 'none',
+        }}>
+        {subs.map((s, i) => {
+          const url = s.video_url.startsWith('http')
+            ? s.video_url
+            : supabase.storage.from('videos').getPublicUrl(s.video_url).data.publicUrl
+          return (
+            <div key={s.id} style={{
+              flex: '0 0 100%', width: '100%', height: '100%',
+              scrollSnapAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              {sub.profiles?.avatar_url
-                ? <img src={sub.profiles.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="" />
-                : initials}
+              <video ref={el => { videos.current[i] = el }} src={url} controls playsInline
+                preload={Math.abs(i - idx) <= 1 ? 'metadata' : 'none'}
+                style={{ width: '100%', maxHeight: '100%', objectFit: 'contain', background: '#000' }} />
             </div>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontSize: 14, fontWeight: 800, color: '#f0ece0', lineHeight: 1.2 }}>
-                  {sub.profiles?.name ?? '익명'}
-                </span>
-                {otherLevel && (
-                  <span style={{
-                    fontSize: 10, fontWeight: 800, padding: '1px 6px', borderRadius: 5,
-                    color: LEVEL_COLORS[otherLevel], border: `1px solid ${LEVEL_COLORS[otherLevel]}55`,
-                  }}>{LEVEL_LABELS[otherLevel]}</span>
-                )}
-              </div>
-              <div style={{ fontSize: 11, color: '#8f8a7e', marginTop: 2 }}>{timeAgo(sub.created_at)}</div>
+          )
+        })}
+      </div>
+
+      {/* 위: 닫기 · 난이도 · 몇 번째 */}
+      <div style={{
+        position: 'absolute', top: 0, left: 0, right: 0, padding: '10px 12px',
+        paddingTop: 'calc(10px + env(safe-area-inset-top))',
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: 'linear-gradient(to bottom, rgba(0,0,0,0.75), transparent)',
+      }}>
+        <button onClick={onClose} style={{
+          background: 'rgba(0,0,0,0.4)', border: 'none', color: '#f0ece0',
+          fontSize: 20, fontWeight: 700, lineHeight: 1, cursor: 'pointer',
+          width: 34, height: 34, borderRadius: '50%',
+        }}>×</button>
+        {curLevel !== myLevel && (
+          <span style={{
+            fontSize: 11, fontWeight: 800, padding: '2px 7px', borderRadius: 5,
+            background: 'rgba(0,0,0,0.45)', color: LEVEL_COLORS[curLevel],
+          }}>{LEVEL_LABELS[curLevel]}</span>
+        )}
+        {label && (
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#c8c4b0' }}>{label}</span>
+        )}
+        <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 700, color: '#a8a296' }}>
+          {idx + 1} / {subs.length}
+        </span>
+      </div>
+
+      {/* 아래: 누구 · 한마디 · 좋아요 */}
+      {cur && (
+        <div style={{
+          position: 'absolute', left: 0, right: 0, bottom: 0, padding: '30px 14px 16px',
+          paddingBottom: 'calc(16px + env(safe-area-inset-bottom))',
+          background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)',
+        }}>
+          {cur.caption && (
+            <div style={{ fontSize: 13.5, color: '#f0ece0', lineHeight: 1.6, marginBottom: 10, wordBreak: 'break-word' }}>
+              {cur.caption}
             </div>
-          </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <button onClick={onLike} style={{
-              background: sub.user_liked ? 'rgba(244,63,94,0.14)' : 'rgba(255,255,255,0.02)',
-              border: sub.user_liked ? '1px solid rgba(244,63,94,0.4)' : '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 10, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 6,
-              color: sub.user_liked ? '#fb7185' : '#8f8a7e',
-              fontSize: 14, fontWeight: 800, padding: '7px 13px', transition: 'all 0.2s',
+          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Link href={`/profile/${cur.user_id}`} style={{ fontSize: 14, fontWeight: 800, color: '#f0ece0', textDecoration: 'none' }}>
+              {cur.profiles?.name ?? '익명'}
+            </Link>
+            <span style={{ fontSize: 11.5, color: '#a8a296' }}>{timeAgo(cur.created_at)}</span>
+
+            <button onClick={() => onLike(cur)} style={{
+              marginLeft: 'auto',
+              background: cur.user_liked ? 'rgba(244,63,94,0.18)' : 'rgba(255,255,255,0.1)',
+              border: cur.user_liked ? '1px solid rgba(244,63,94,0.5)' : '1px solid rgba(255,255,255,0.15)',
+              borderRadius: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              color: cur.user_liked ? '#fb7185' : '#e0dcd0',
+              fontSize: 15, fontWeight: 800, padding: '8px 14px',
             }}>
-              {sub.user_liked ? '♥' : '♡'}
-              <span style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{sub.likes_count}</span>
+              {cur.user_liked ? '♥' : '♡'}
+              <span style={{ fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>{cur.likes_count}</span>
             </button>
-            {!isOwn && (onReport || onBlock) && (
+
+            {currentUserId !== cur.user_id && (
               <div style={{ position: 'relative' }}>
-                <button onClick={() => setMenuOpen(v => !v)} style={{
-                  background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)',
-                  borderRadius: 10, cursor: 'pointer', color: '#a8a296',
-                  fontSize: 14, fontWeight: 800, padding: '7px 10px', lineHeight: 1,
+                <button onClick={() => setMenuFor(m => m === cur.id ? null : cur.id)} style={{
+                  background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)',
+                  borderRadius: 11, cursor: 'pointer', color: '#e0dcd0',
+                  fontSize: 15, fontWeight: 800, padding: '8px 11px', lineHeight: 1,
                 }}>⋯</button>
-                {menuOpen && (
+                {menuFor === cur.id && (
                   <>
-                    <div onClick={() => setMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
+                    <div onClick={() => setMenuFor(null)} style={{ position: 'fixed', inset: 0, zIndex: 10 }} />
                     <div style={{
-                      position: 'absolute', right: 0, bottom: '110%', zIndex: 11,
-                      background: '#161614', border: '1px solid rgba(240,236,224,0.15)',
-                      borderRadius: 12, overflow: 'hidden', minWidth: 100,
-                      boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+                      position: 'absolute', right: 0, bottom: 'calc(100% + 6px)', zIndex: 11,
+                      background: '#16161a', border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: 11, overflow: 'hidden', minWidth: 120,
                     }}>
-                      <button onClick={() => { setMenuOpen(false); onReport?.() }} style={{
-                        display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none',
-                        color: '#c8c4b8', fontSize: 13, fontWeight: 700, padding: '10px 14px', cursor: 'pointer',
-                      }}>신고</button>
-                      <button onClick={() => { setMenuOpen(false); onBlock?.() }} style={{
-                        display: 'block', width: '100%', textAlign: 'left', background: 'none', border: 'none',
-                        color: '#e05d5d', fontSize: 13, fontWeight: 700, padding: '10px 14px', cursor: 'pointer',
-                        borderTop: '1px solid rgba(240,236,224,0.08)',
-                      }}>차단</button>
+                      <button onClick={() => { setMenuFor(null); onReport(cur) }} style={{
+                        display: 'block', width: '100%', padding: '11px 14px', textAlign: 'left',
+                        background: 'none', border: 'none', color: '#e0dcd0', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                      }}>신고하기</button>
+                      <button onClick={() => { setMenuFor(null); onBlock(cur) }} style={{
+                        display: 'block', width: '100%', padding: '11px 14px', textAlign: 'left',
+                        background: 'none', border: 'none', color: '#e07060', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                      }}>차단하기</button>
                     </div>
                   </>
                 )}
@@ -878,10 +986,7 @@ function SubmissionCard({ sub, onLike, currentUserId, onReport, onBlock, progres
             )}
           </div>
         </div>
-        {sub.caption && (
-          <p style={{ fontSize: 13, color: '#c9a23f', marginTop: 10, lineHeight: 1.6 }}>{sub.caption}</p>
-        )}
-      </div>
+      )}
     </div>
   )
 }
