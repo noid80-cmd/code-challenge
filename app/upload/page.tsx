@@ -310,9 +310,9 @@ export default function UploadPage() {
       // 한 지점만 보면 하필 거기가 까맣다. 여러 곳을 재서 제일 밝은 것을
       // 쓰고, 다 어두우면 아예 만들지 않는다 — 검은 그림을 저장하느니
       // 없는 편이 낫다. 없으면 목록이 만들어진 커버를 그린다.
-      let best: { blob: Blob; lum: number } | null = null
+      let best: { blob: Blob; lum: number; detail: number } | null = null
 
-      function grab(): { blob: Promise<Blob | null>; lum: number } | null {
+      function grab(): { blob: Promise<Blob | null>; lum: number; detail: number } | null {
         const w = video.videoWidth, h = video.videoHeight
         if (!w || !h) return null
         const canvas = document.createElement('canvas')
@@ -324,31 +324,55 @@ export default function UploadPage() {
         if (!ctx) return null
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
 
-        // 밝기는 가운데만 성글게 훑어도 충분하다. 전부 읽으면 느리다.
-        const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data
-        let sum = 0, n = 0
-        for (let i = 0; i < d.length; i += 4 * 40) {
-          sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]
-          n++
+        // 밝기만 보면 하얀 벽이나 천장이 1등이 된다. 손·악기가 있는
+        // 프레임은 윤곽선이 많고, 벽은 밋밋하다 — 옆 칸과의 밝기 차이를
+        // 더해서 "볼 것이 있는 정도"를 잰다.
+        //
+        // 작게 줄여서 잰다. 원본 크기로 훑으면 폰에서 눈에 띄게 느리다.
+        const gw = 64, gh = 64
+        const small = document.createElement('canvas')
+        small.width = gw; small.height = gh
+        const sctx = small.getContext('2d')
+        if (!sctx) return null
+        sctx.drawImage(video, 0, 0, gw, gh)
+        const d = sctx.getImageData(0, 0, gw, gh).data
+        const g = new Float32Array(gw * gh)
+        let sum = 0
+        for (let i = 0, k = 0; i < d.length; i += 4, k++) {
+          const y = 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]
+          g[k] = y; sum += y
         }
-        const lum = n > 0 ? sum / n : 0
+        const lum = sum / g.length
+        let detail = 0
+        for (let y = 1; y < gh; y++) {
+          for (let x = 1; x < gw; x++) {
+            const i = y * gw + x
+            detail += Math.abs(g[i] - g[i - 1]) + Math.abs(g[i] - g[i - gw])
+          }
+        }
+        detail /= (gw - 1) * (gh - 1)
+
         return {
-          lum,
+          lum, detail,
           blob: new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.75)),
         }
       }
 
       async function captureAt(times: number[], i: number) {
         if (i >= times.length) {
-          // 25는 거의 검정이다. 이보다 어두우면 볼 게 없는 그림이다.
-          finish(best && best.lum >= 25 ? best.blob : null)
+          // 밝아도 밋밋하면(민무늬 벽·천장) 볼 것이 없는 그림이다.
+          finish(best && best.detail >= 3 ? best.blob : null)
           return
         }
         video.onseeked = async () => {
-          const g = grab()
-          if (g) {
-            const b = await g.blob
-            if (b && (!best || g.lum > best.lum)) best = { blob: b, lum: g.lum }
+          const c = grab()
+          if (c) {
+            const b = await c.blob
+            // 너무 어두운 건 후보에서 뺀다. 나머지 중에서는 볼 것이 많은
+            // 쪽을 고른다 — 밝기 순위가 아니라 내용 순위다.
+            if (b && c.lum >= 25 && (!best || c.detail > best.detail)) {
+              best = { blob: b, lum: c.lum, detail: c.detail }
+            }
           }
           captureAt(times, i + 1)
         }
@@ -360,7 +384,7 @@ export default function UploadPage() {
         // 사람은 폰을 세우는 중이다. 연주 장면은 가운데 어딘가에 있다.
         const dur = video.duration
         const d = Number.isFinite(dur) && dur > 0 ? dur : 3
-        const times = [0.3, 0.5, 0.7, 0.15].map(f => Math.min(d * f, Math.max(d - 0.2, 0.1)))
+        const times = [0.2, 0.35, 0.5, 0.65, 0.8, 0.1].map(f => Math.min(d * f, Math.max(d - 0.2, 0.1)))
 
         // 아이폰은 muted 재생을 한 번 거쳐야 프레임이 잡힌다.
         video.play().then(() => {
