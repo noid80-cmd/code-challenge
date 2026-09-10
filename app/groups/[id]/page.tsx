@@ -295,7 +295,12 @@ export default function GroupPage() {
 
   function copyCode() {
     if (!group) return
-    navigator.clipboard.writeText(group.invite_code)
+    // 코드만 주면 상대가 앱을 찾아 들어가 입력해야 한다. 링크를 같이 보내면 눌러서 바로 들어온다.
+    const text = `초견챌린지 "${group.name}" 그룹 초대
+${window.location.origin}/groups?code=${group.invite_code}
+
+초대 코드: ${group.invite_code}`
+    navigator.clipboard.writeText(text)
     setCopied(true); setTimeout(() => setCopied(false), 2000)
   }
 
@@ -343,7 +348,7 @@ export default function GroupPage() {
           fontSize: 12, fontWeight: 800, cursor: 'pointer',
           letterSpacing: '0.06em', transition: 'all 0.2s',
         }}>
-          {copied ? '복사됨 ✓' : group?.invite_code}
+          {copied ? '링크 복사됨' : group?.invite_code}
         </button>
       </header>
 

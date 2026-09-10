@@ -20,10 +20,39 @@ export default function GroupsPage() {
 
   useEffect(() => { load() }, [])
 
+  // 초대 링크(/groups?code=XXXXXX)로 들어온 경우 자동으로 참가시킨다.
+  // useSearchParams 대신 window에서 읽는다 — Suspense 경계를 강제당하지 않는다.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('code')
+    if (!code) return
+    autoJoin(code.toUpperCase())
+  }, [])
+
+  async function autoJoin(code: string) {
+    const supabase = createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { window.location.href = `/login?from=${encodeURIComponent('/groups?code=' + code)}`; return }
+    const { data: gid, error: err } = await supabase.rpc('join_group_by_code', { code })
+    if (err || !gid) {
+      setError(err?.message?.includes('invalid code') ? '초대 코드를 찾을 수 없어요' : '참가 실패')
+      return
+    }
+    flash('그룹에 참가했어요!')
+    window.history.replaceState({}, '', '/groups')   // 뒤로 가기로 다시 참가 시도되지 않게
+    window.location.href = `/groups/${gid}`
+  }
+
   async function load() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { window.location.href = '/login?from=/groups'; return }
+    if (!user) {
+      // 초대 링크로 들어온 비로그인 사용자는 코드를 유지한 채 로그인시킨다.
+      // 그냥 /groups로 보내면 로그인 후 코드가 사라져 참가가 끊긴다.
+      const code = new URLSearchParams(window.location.search).get('code')
+      const back = code ? `/groups?code=${code.toUpperCase()}` : '/groups'
+      window.location.href = `/login?from=${encodeURIComponent(back)}`
+      return
+    }
     setUserId(user.id)
     const { data } = await supabase.from('group_members').select('groups(id, name, description, invite_code, owner_id)').eq('user_id', user.id)
     setGroups((data ?? []).map(m => m.groups as unknown as Group).filter(Boolean))
@@ -68,10 +97,17 @@ export default function GroupsPage() {
     setJoinCode(''); setError(''); flash('그룹에 참가했어요!'); load()
   }
 
-  function copyCode(e: React.MouseEvent, code: string, id: string) {
+  function inviteText(name: string, code: string) {
+    return `초견챌린지 "${name}" 그룹 초대
+${window.location.origin}/groups?code=${code}
+
+초대 코드: ${code}`
+  }
+
+  function copyCode(e: React.MouseEvent, code: string, id: string, name: string) {
     e.preventDefault(); e.stopPropagation()   // 카드 전체가 Link라 이동을 막는다
-    navigator.clipboard?.writeText(code)
-    setCopiedId(id); setTimeout(() => setCopiedId(''), 1500)
+    navigator.clipboard?.writeText(inviteText(name, code))
+    setCopiedId(id); setTimeout(() => setCopiedId(''), 1800)
   }
 
   function flash(text: string) { setMsg(text); setTimeout(() => setMsg(''), 2500) }
@@ -182,14 +218,14 @@ export default function GroupsPage() {
                         방장
                       </span>
                     )}
-                    <button onClick={e => copyCode(e, g.invite_code, g.id)} style={{
+                    <button onClick={e => copyCode(e, g.invite_code, g.id, g.name)} style={{
                       display: 'flex', alignItems: 'center', gap: 7,
                       background: 'rgba(240,236,224,0.07)', border: '1px solid rgba(240,236,224,0.18)',
                       borderRadius: 9, padding: '5px 9px', cursor: 'pointer',
                     }}>
-                      <span style={{ fontSize: 9, fontWeight: 800, color: '#a8a296', letterSpacing: '0.06em' }}>초대코드</span>
+                      <span style={{ fontSize: 9, fontWeight: 800, color: '#a8a296', letterSpacing: '0.06em' }}>초대링크</span>
                       <span style={{ fontSize: 12, fontWeight: 800, color: '#f0ece0', letterSpacing: '0.12em' }}>
-                        {copiedId === g.id ? '복사됨' : g.invite_code}
+                        {copiedId === g.id ? '링크 복사됨' : g.invite_code}
                       </span>
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#a8a296" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                         <rect x="9" y="9" width="12" height="12" rx="2" />
