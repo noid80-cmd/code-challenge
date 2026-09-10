@@ -148,7 +148,11 @@ create policy "submissions_update_own" on public.submissions
 create or replace function public.guard_submission_update()
 returns trigger language plpgsql security definer as $$
 begin
-  if is_admin() then return new; end if;
+  -- 다른 트리거가 일으킨 갱신은 통과시킨다. 좋아요를 누르면 likes_count 를
+  -- 올리는 트리거(update_likes_count)가 학생 권한으로 도는데, 그것까지
+  -- 막아서 좋아요 숫자가 안 올라갔다. security definer 라도 auth.uid() 는
+  -- 여전히 그 학생이라 is_admin() 으로는 안 걸러진다.
+  if is_admin() or pg_trigger_depth() > 1 then return new; end if;
   new.hidden_at    := old.hidden_at;
   new.user_id      := old.user_id;
   new.challenge_id := old.challenge_id;
