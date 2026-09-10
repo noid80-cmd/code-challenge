@@ -736,15 +736,20 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
             </div>
           )}
 
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))', gap: 8,
-            }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
               {visibleSubs.map((sub, i) => {
                 const subCh = challengeById[sub.challenge_id]
                 const subLevel = toLevel(subCh?.level)
+                const subLabel = sub.progression_index != null
+                  ? (subCh?.type === 'chord'
+                      ? subCh?.chords?.progressions?.[sub.progression_index]?.label
+                      : subCh?.chords?.patterns?.[sub.progression_index]?.label)
+                  : undefined
                 return (
                   <SubmissionThumb key={sub.id} sub={sub} onOpen={() => setViewerIndex(i)}
-                    otherLevel={subCh && subLevel !== toLevel(challenge?.level) ? subLevel : undefined} />
+                    label={subLabel}
+                    level={subLevel}
+                    dimLevel={!subCh || subLevel === toLevel(challenge?.level)} />
                 )
               })}
             </div>
@@ -769,10 +774,11 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   )
 }
 
-// 목록에서는 썸네일만 보여준다. 카드로 늘어놓으면 아홉 개가 아홉 화면이 되어
-// "많이 하고 있네"가 안 보인다. 한 화면에 다 들어와야 그게 보인다.
-function SubmissionThumb({ sub, onOpen, otherLevel }: {
-  sub: Submission; onOpen: () => void; otherLevel?: Level
+// 목록 타일. 화면이 까매도 카드로 읽혀야 한다 — 오늘 올라온 영상 대부분이
+// 일부러 아무것도 안 잡히게 찍은 것이라, 프레임만 보여주면 빈 네모가 늘어선다.
+// 이름·난이도·진행·좋아요를 늘 함께 얹어서 "누가 무엇을 올렸다"가 읽히게 한다.
+function SubmissionThumb({ sub, onOpen, label, level, dimLevel }: {
+  sub: Submission; onOpen: () => void; label?: string; level: Level; dimLevel: boolean
 }) {
   const supabase = createClient()
   const videoUrl = sub.video_url.startsWith('http')
@@ -786,40 +792,41 @@ function SubmissionThumb({ sub, onOpen, otherLevel }: {
 
   return (
     <button onClick={onOpen} style={{
-      position: 'relative', aspectRatio: '3 / 4', borderRadius: 12, overflow: 'hidden',
-      border: '1px solid rgba(240,236,224,0.1)', background: '#000', padding: 0, cursor: 'pointer',
-      display: 'block', width: '100%',
+      display: 'block', width: '100%', padding: 0, cursor: 'pointer', textAlign: 'left',
+      background: 'linear-gradient(145deg, #131312, #0e0e0d)',
+      border: '1px solid rgba(240,236,224,0.1)',
+      borderRadius: 16, overflow: 'hidden',
     }}>
-      {posterUrl
-        ? <img src={posterUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        : (
-          // 썸네일이 없는 영상은 첫 프레임을 쓴다. preload="metadata" 면 영상 전체를 받지 않는다.
-          <video src={videoUrl} muted playsInline preload="metadata"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        )}
-
-      {otherLevel && (
+      <div style={{ position: 'relative', aspectRatio: '4 / 5', background: '#000' }}>
+        {posterUrl
+          ? <img src={posterUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          : (
+            // 썸네일이 없는 영상은 첫 프레임을 쓴다. preload="metadata" 면 영상 전체를 받지 않는다.
+            <video src={videoUrl} muted playsInline preload="metadata"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          )}
         <span style={{
-          position: 'absolute', top: 6, left: 6, fontSize: 9.5, fontWeight: 800,
-          padding: '1px 5px', borderRadius: 4, background: 'rgba(0,0,0,0.55)',
-          color: LEVEL_COLORS[otherLevel],
-        }}>{LEVEL_LABELS[otherLevel]}</span>
-      )}
+          position: 'absolute', top: 7, left: 7, fontSize: 10, fontWeight: 800,
+          padding: '2px 6px', borderRadius: 5, background: 'rgba(0,0,0,0.5)',
+          color: dimLevel ? '#a8a296' : LEVEL_COLORS[level],
+        }}>{LEVEL_LABELS[level]}</span>
+      </div>
 
-      <div style={{
-        position: 'absolute', left: 0, right: 0, bottom: 0, padding: '14px 7px 6px',
-        background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
-        display: 'flex', alignItems: 'center', gap: 4,
-      }}>
-        <span style={{
-          fontSize: 11, fontWeight: 700, color: '#f0ece0', overflow: 'hidden',
-          textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, textAlign: 'left',
-        }}>{sub.profiles?.name ?? '익명'}</span>
-        {sub.likes_count > 0 && (
-          <span style={{ fontSize: 10.5, fontWeight: 700, color: '#fb7185', flexShrink: 0 }}>
-            ♥ {sub.likes_count}
-          </span>
-        )}
+      <div style={{ padding: '9px 11px 10px' }}>
+        <div style={{
+          fontSize: 13, fontWeight: 800, color: '#f0ece0', lineHeight: 1.3,
+          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+        }}>{sub.profiles?.name ?? '익명'}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
+          <span style={{
+            fontSize: 11, color: '#9a9083', flex: 1,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>{label ?? timeAgo(sub.created_at)}</span>
+          <span style={{
+            fontSize: 11, fontWeight: 700, flexShrink: 0,
+            color: sub.likes_count > 0 ? '#fb7185' : '#6f6a60',
+          }}>{sub.likes_count > 0 ? '♥' : '♡'} {sub.likes_count}</span>
+        </div>
       </div>
     </button>
   )
