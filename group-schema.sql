@@ -242,3 +242,40 @@ end $$;
 grant execute on function public.offer_group_owner(uuid, uuid) to authenticated;
 grant execute on function public.accept_group_owner(uuid) to authenticated;
 grant execute on function public.decline_group_owner(uuid) to authenticated;
+
+-- 아무도 수락하지 않으면 방장이 못 나간다 (2026-09-11)
+--
+-- 수락 방식은 떠넘기기를 막지만, 아무도 안 받으면 방장이 인질이 된다.
+-- 나가려고 방을 통째로 없애면 남의 기록까지 지운다.
+--
+-- 마지막 수단을 둔다: 그냥 나가면 가장 오래 있은 멤버에게 방장이 간다.
+-- 정중한 길(제안 → 수락)은 그대로 두고, 막혔을 때 쓰는 문이다.
+create or replace function public.leave_group_as_owner(p_group_id uuid)
+returns uuid language plpgsql security definer set search_path = public as $$
+declare next_owner uuid;
+begin
+  if not exists (select 1 from public.groups
+                 where id = p_group_id and owner_id = auth.uid()) then
+    raise exception 'not owner';
+  end if;
+
+  select user_id into next_owner
+    from public.group_members
+    where group_id = p_group_id and user_id <> auth.uid()
+    order by joined_at asc
+    limit 1;
+
+  -- 혼자 있는 방은 넘길 사람이 없다. 그건 나가는 게 아니라 없애는 것이다.
+  if next_owner is null then
+    raise exception 'last member';
+  end if;
+
+  update public.groups
+    set owner_id = next_owner, pending_owner_id = null
+    where id = p_group_id;
+  delete from public.group_members
+    where group_id = p_group_id and user_id = auth.uid();
+  return next_owner;
+end $$;
+
+grant execute on function public.leave_group_as_owner(uuid) to authenticated;

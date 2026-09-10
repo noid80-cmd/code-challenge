@@ -376,6 +376,21 @@ ${window.location.origin}/groups?g=${group.id}`
     window.location.reload()
   }
 
+  // 아무도 수락하지 않아도 나갈 수 있어야 한다. 대신 방이 주인 없이
+  // 남지 않게, 가장 오래 있은 사람에게 방장이 간다.
+  async function leaveAsOwner() {
+    if (!group) return
+    if (memberCount <= 1) {
+      alert('혼자 있는 방이라 넘길 사람이 없어요. 방을 없애려면 "그룹 삭제"를 눌러주세요.')
+      return
+    }
+    if (!confirm('방장 자리를 가장 오래 계신 분에게 넘기고 나갑니다.\n올린 영상은 그대로 남아요. 나갈까요?')) return
+    const supabase = createClient()
+    const { error } = await supabase.rpc('leave_group_as_owner', { p_group_id: groupId })
+    if (error) { alert('나가지 못했어요: ' + error.message); return }
+    window.location.href = '/groups'
+  }
+
   async function deleteGroup() {
     if (!group) return
     if (!confirm(`"${group.name}" 그룹을 삭제할까요? 모든 영상과 채팅이 삭제됩니다.`)) return
@@ -505,6 +520,12 @@ ${window.location.origin}/groups?g=${group.id}`
                       color: '#98948a', fontSize: 11, fontWeight: 600, padding: 0,
                     }}>방장 넘기기</button>
                   )
+                )}
+                {memberCount > 1 && (
+                  <button onClick={leaveAsOwner} style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: '#98948a', fontSize: 11, fontWeight: 600, padding: 0,
+                  }}>방 나가기</button>
                 )}
                 <button onClick={deleteGroup} style={{
                   background: 'none', border: 'none', cursor: 'pointer',
