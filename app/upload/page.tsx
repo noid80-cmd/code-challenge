@@ -426,7 +426,7 @@ export default function UploadPage() {
   function praise(st: { streak: number; first: boolean }) {
     if (st.first) return { head: '첫 연주를 올렸어요', sub: '내일 하나 더 올리면 연속 2일이 됩니다. 3분이면 돼요.' }
     if (st.streak >= 30) return { head: `연속 ${st.streak}일`, sub: '한 달을 하루도 안 빠졌어요. 이건 실력이 됩니다.' }
-    if (st.streak >= 14) return { head: `연속 ${st.streak}일`, sub: '2주를 이어왔어요. 이제 안 하면 이상한 날이 됩니다.' }
+    if (st.streak >= 14) return { head: `연속 ${st.streak}일`, sub: '2주를 이어왔어요. 이제 몸이 먼저 기억합니다.' }
     if (st.streak >= 7) return { head: `연속 ${st.streak}일`, sub: '일주일을 채웠어요. 여기서부터가 진짜입니다.' }
     if (st.streak >= 3) return { head: `연속 ${st.streak}일`, sub: '슬슬 몸에 붙고 있어요.' }
     if (st.streak === 2) return { head: '이틀 연속 해내셨네요', sub: '사흘만 넘기면 습관이 붙어요. 내일도 3분입니다.' }
