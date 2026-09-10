@@ -387,7 +387,8 @@ export default function AdminPage() {
   }
 
   async function loadBugs() {
-    if (bugsLoaded) return
+    // 예전엔 한 번 읽고 말았다(bugsLoaded 가드). 그래서 탭을 다시 열어도
+    // 새로 들어온 신고가 안 보였다 — 신고가 사라진 것처럼 보인다.
     const supabase = createClient()
     const { data } = await supabase.from('bug_reports')
       .select('id, user_id, message, page, created_at, resolved_at, admin_reply')

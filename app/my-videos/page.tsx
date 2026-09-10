@@ -412,9 +412,17 @@ function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
   async function handleToggle() {
     setToggling(true)
     const next = !sub.is_private
-    await supabase.from('submissions').update({ is_private: next }).eq('id', sub.id)
-    onTogglePrivacy(next)
+    // RLS가 막으면 Supabase는 에러 없이 0행을 처리하고 끝난다. 반영된 행을
+    // 확인하지 않으면 자물쇠는 잠긴 것처럼 보이는데 서버는 그대로다 —
+    // 새로고침하면 다시 공개로 보여서 "비공이 자꾸 풀린다"가 된다.
+    const { data, error } = await supabase.from('submissions')
+      .update({ is_private: next }).eq('id', sub.id).select('id')
     setToggling(false)
+    if (error || !data?.length) {
+      alert('공개 설정을 바꾸지 못했어요. 잠시 후 다시 시도해주세요.')
+      return
+    }
+    onTogglePrivacy(next)
   }
 
   return (

@@ -132,3 +132,32 @@ update public.profiles set signup_notified_at = created_at where signup_notified
 -- 값은 영어 키로 저장한다(drums/bass/guitar/piano/composition/vocal/other) —
 -- 화면 문구를 바꿔도 데이터가 흔들리지 않는다. lib/majors.ts 가 짝이다.
 alter table public.submissions add column if not exists major text;
+
+-- 본인 영상의 공개 설정 (2026-09-10)
+--
+-- submissions 에 UPDATE 정책이 어드민용 하나뿐이었다. 그래서 학생이
+-- 자물쇠를 눌러도 0행이 처리되고 조용히 끝났다 — 화면은 잠긴 것처럼
+-- 보이는데 새로고침하면 도로 공개다("비공이 자꾸 풀려요"). 어드민은
+-- 정책을 통과하니 원장 계정에서는 멀쩡히 되던 문제.
+create policy "submissions_update_own" on public.submissions
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- 다만 본인 행이라고 아무 칸이나 고치게 두면 어드민이 내린 영상을
+-- 본인이 다시 올릴 수 있다(hidden_at 을 지우면 된다). 손댈 수 있는 칸을
+-- 정해두고, 나머지는 예전 값으로 되돌린다.
+create or replace function public.guard_submission_update()
+returns trigger language plpgsql security definer as $$
+begin
+  if is_admin() then return new; end if;
+  new.hidden_at    := old.hidden_at;
+  new.user_id      := old.user_id;
+  new.challenge_id := old.challenge_id;
+  new.video_url    := old.video_url;
+  new.likes_count  := old.likes_count;
+  return new;
+end $$;
+
+drop trigger if exists guard_submission_update on public.submissions;
+create trigger guard_submission_update
+  before update on public.submissions
+  for each row execute function public.guard_submission_update();
