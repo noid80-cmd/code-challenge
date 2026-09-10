@@ -18,7 +18,8 @@ a { text-decoration: none; color: inherit; }
 button, input, textarea, select { font-family: inherit; }
 /* iOS Safari auto-zooms when input font-size < 16px — prevent by enforcing minimum */
 input, textarea, select { font-size: max(16px, 1em) !important; }
-input::placeholder, textarea::placeholder { color: #444466; }
+/* 배경이 거의 검정이라 #444466 은 대비 1.8 — 안내 글씨가 아니라 얼룩이었다. */
+input::placeholder, textarea::placeholder { color: #9a9488; }
 
 button { transition: opacity 0.15s, transform 0.1s, background 0.15s; }
 button:active:not(:disabled) { transform: scale(0.97); }

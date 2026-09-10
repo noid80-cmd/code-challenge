@@ -235,7 +235,7 @@ export default function GroupsPage() {
         padding: '0 20px', height: 54, paddingTop: 'calc(env(safe-area-inset-top) + 24px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/chord" style={{ color: '#a8a296', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
+        <Link href="/chord" style={{ color: '#c0bab0', fontSize: 13, fontWeight: 700 }}>← 피드</Link>
         <span style={{ fontWeight: 800, fontSize: 16, color: '#f0ece0', letterSpacing: '-0.02em' }}>그룹</span>
         <div style={{ width: 48 }} />
       </header>
@@ -244,7 +244,7 @@ export default function GroupsPage() {
         <button onClick={() => { setShowCreate(!showCreate); setError('') }} style={{
           width: '100%', padding: '12px', borderRadius: 12, marginBottom: showCreate ? 10 : 22,
           background: 'transparent', border: '1px dashed rgba(240,236,224,0.2)',
-          color: '#a8a296', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+          color: '#c0bab0', fontSize: 14, fontWeight: 700, cursor: 'pointer',
         }}>{showCreate ? '취소' : '+ 그룹 만들기'}</button>
 
         {showCreate && (
@@ -261,8 +261,8 @@ export default function GroupsPage() {
                     background: newPublic === o.v ? 'rgba(240,236,224,0.1)' : 'transparent',
                     border: newPublic === o.v ? '1px solid rgba(240,236,224,0.35)' : '1px solid rgba(240,236,224,0.14)',
                   }}>
-                    <div style={{ fontSize: 13, fontWeight: 800, color: newPublic === o.v ? '#f0ece0' : '#a8a296' }}>{o.label}</div>
-                    <div style={{ fontSize: 11, color: '#8f8a7e', marginTop: 2 }}>{o.desc}</div>
+                    <div style={{ fontSize: 13, fontWeight: 800, color: newPublic === o.v ? '#f0ece0' : '#c0bab0' }}>{o.label}</div>
+                    <div style={{ fontSize: 11, color: '#a8a296', marginTop: 2 }}>{o.desc}</div>
                   </button>
                 ))}
               </div>
@@ -271,7 +271,7 @@ export default function GroupsPage() {
                 <>
                   <input value={newPassword} onChange={e => setNewPassword(e.target.value)}
                     placeholder="방 비밀번호" style={inputStyle} />
-                  <div style={{ fontSize: 11.5, color: '#8f8a7e', lineHeight: 1.6, marginTop: -4 }}>
+                  <div style={{ fontSize: 11.5, color: '#a8a296', lineHeight: 1.6, marginTop: -4 }}>
                     비밀번호는 저장해두지 않고 잠그는 데만 씁니다 — 나중에 다시 볼 수 없고
                     바꾸는 것만 됩니다. 수업에서 불러줄 수 있는 말로 정하세요.
                   </div>
@@ -291,12 +291,12 @@ export default function GroupsPage() {
         {msg && <p style={{ color: '#f8f4ec', fontSize: 13, textAlign: 'center', marginBottom: 12, fontWeight: 700 }}>{msg}</p>}
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#a5a096', fontSize: 14 }}>불러오는 중</div>
+          <div style={{ textAlign: 'center', padding: 60, color: '#c0bab0', fontSize: 14 }}>불러오는 중</div>
         ) : (
           <>
             {mine.length > 0 && (
               <>
-                <div style={{ fontSize: 12, fontWeight: 800, color: '#8f8a7e', marginBottom: 10 }}>내 그룹</div>
+                <div style={{ fontSize: 12, fontWeight: 800, color: '#a8a296', marginBottom: 10 }}>내 그룹</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 26 }}>
                   {mine.map(g => (
                     <Link key={g.id} href={`/groups/${g.id}`} style={{ textDecoration: 'none' }}>
@@ -304,7 +304,7 @@ export default function GroupsPage() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                             <span style={{ fontSize: 16, fontWeight: 800, color: '#e0dcd0' }}>{g.name}</span>
-                            {!g.is_public && <span style={{ color: '#8f8a7e', display: 'flex' }}><Lock /></span>}
+                            {!g.is_public && <span style={{ color: '#a8a296', display: 'flex' }}><Lock /></span>}
                             {g.owner_id === userId && (
                               <span style={{
                                 fontSize: 10, fontWeight: 800, color: '#f0ece0',
@@ -313,7 +313,7 @@ export default function GroupsPage() {
                               }}>방장</span>
                             )}
                           </div>
-                          <div style={{ fontSize: 12.5, color: '#8f8a7e', marginTop: 3 }}>
+                          <div style={{ fontSize: 12.5, color: '#a8a296', marginTop: 3 }}>
                             {[g.description, `${counts[g.id] ?? 0}명`].filter(Boolean).join(' · ')}
                           </div>
                         </div>
@@ -328,12 +328,12 @@ export default function GroupsPage() {
                               {!g.is_public && (
                                 <button onClick={e => { e.preventDefault(); e.stopPropagation(); changePassword(g) }} style={{
                                   background: 'none', border: 'none', cursor: 'pointer',
-                                  fontSize: 11, fontWeight: 700, color: '#8f8a7e', padding: 0,
+                                  fontSize: 11, fontWeight: 700, color: '#a8a296', padding: 0,
                                 }}>비밀번호 변경</button>
                               )}
                               <button onClick={e => { e.preventDefault(); e.stopPropagation(); togglePublic(g) }} style={{
                                 background: 'none', border: 'none', cursor: 'pointer',
-                                fontSize: 11, fontWeight: 700, color: '#8f8a7e', padding: 0,
+                                fontSize: 11, fontWeight: 700, color: '#a8a296', padding: 0,
                               }}>{g.is_public ? '비공개로' : '공개로'}</button>
                             </div>
                           )}
@@ -345,11 +345,11 @@ export default function GroupsPage() {
               </>
             )}
 
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#8f8a7e', marginBottom: 10 }}>
-              둘러보기 {others.length > 0 && <span style={{ color: '#6e6a60' }}>({others.length})</span>}
+            <div style={{ fontSize: 12, fontWeight: 800, color: '#a8a296', marginBottom: 10 }}>
+              둘러보기 {others.length > 0 && <span style={{ color: '#8f8a7e' }}>({others.length})</span>}
             </div>
             {others.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '36px 0', color: '#8f8a7e', fontSize: 13 }}>
+              <div style={{ textAlign: 'center', padding: '36px 0', color: '#a8a296', fontSize: 13 }}>
                 아직 다른 그룹이 없어요
               </div>
             ) : (
@@ -360,9 +360,9 @@ export default function GroupsPage() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <span style={{ fontSize: 15.5, fontWeight: 800, color: '#e0dcd0' }}>{g.name}</span>
-                          {!g.is_public && <span style={{ color: '#8f8a7e', display: 'flex' }}><Lock /></span>}
+                          {!g.is_public && <span style={{ color: '#a8a296', display: 'flex' }}><Lock /></span>}
                         </div>
-                        <div style={{ fontSize: 12.5, color: '#8f8a7e', marginTop: 3 }}>
+                        <div style={{ fontSize: 12.5, color: '#a8a296', marginTop: 3 }}>
                           {[g.description, `${counts[g.id] ?? 0}명`].filter(Boolean).join(' · ')}
                         </div>
                       </div>
@@ -375,7 +375,7 @@ export default function GroupsPage() {
                           flexShrink: 0, padding: '8px 14px', borderRadius: 10, cursor: 'pointer',
                           border: g.is_public ? 'none' : '1px solid rgba(240,236,224,0.2)',
                           background: g.is_public ? 'linear-gradient(135deg, #f8f4ec, #c8c4b0)' : 'transparent',
-                          color: g.is_public ? '#0a0a08' : '#a8a296',
+                          color: g.is_public ? '#0a0a08' : '#c0bab0',
                           fontSize: 12.5, fontWeight: 800,
                         }}>
                         {busy === g.id ? '...' : g.is_public ? '참가' : '비밀번호'}
@@ -392,7 +392,7 @@ export default function GroupsPage() {
                           padding: '10px 14px', borderRadius: 10, border: 'none',
                           cursor: pwInput.trim() ? 'pointer' : 'default',
                           background: pwInput.trim() ? 'linear-gradient(135deg, #f8f4ec, #c8c4b0)' : 'rgba(240,236,224,0.12)',
-                          color: pwInput.trim() ? '#0a0a08' : '#8b857a',
+                          color: pwInput.trim() ? '#0a0a08' : '#a8a296',
                           fontSize: 12.5, fontWeight: 800, flexShrink: 0,
                         }}>참가</button>
                       </div>

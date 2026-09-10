@@ -70,7 +70,7 @@ export default function BugReport() {
   if (!open) {
     return (
       <button onClick={() => setOpen(true)} style={{
-        background: 'none', border: 'none', color: '#9a9083', fontSize: 11, fontWeight: 600,
+        background: 'none', border: 'none', color: '#b0a89c', fontSize: 11, fontWeight: 600,
         cursor: 'pointer', padding: 8, textDecoration: 'underline',
       }}>버그 신고</button>
     )
@@ -84,7 +84,7 @@ export default function BugReport() {
       borderRadius: 16, padding: '16px 16px 14px',
     }}>
       <div style={{ fontSize: 13, fontWeight: 800, color: '#e0dcd0', marginBottom: 4 }}>버그 신고</div>
-      <div style={{ fontSize: 11.5, color: '#9a9083', marginBottom: 10, lineHeight: 1.6 }}>
+      <div style={{ fontSize: 11.5, color: '#b0a89c', marginBottom: 10, lineHeight: 1.6 }}>
         어떤 화면에서 무엇이 안 됐는지 적어주시면 큰 도움이 돼요.
       </div>
       <textarea
@@ -102,21 +102,21 @@ export default function BugReport() {
         <button onClick={() => { setOpen(false); setError('') }} style={{
           flex: 1, padding: '10px', borderRadius: 10, cursor: 'pointer',
           background: 'transparent', border: '1px solid rgba(240,236,224,0.18)',
-          color: '#a8a296', fontSize: 13, fontWeight: 700,
+          color: '#c0bab0', fontSize: 13, fontWeight: 700,
         }}>닫기</button>
         <button onClick={send} disabled={sending || !text.trim()} style={{
           flex: 1, padding: '10px', borderRadius: 10, border: 'none',
           cursor: sending || !text.trim() ? 'default' : 'pointer',
           background: sending || !text.trim()
             ? 'rgba(240,236,224,0.15)' : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-          color: sending || !text.trim() ? '#8b857a' : '#0a0a08',
+          color: sending || !text.trim() ? '#a8a296' : '#0a0a08',
           fontSize: 13, fontWeight: 800,
         }}>{sending ? '보내는 중...' : '보내기'}</button>
       </div>
 
       {mine.length > 0 && (
         <div style={{ marginTop: 16, borderTop: '1px solid rgba(240,236,224,0.1)', paddingTop: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 800, color: '#a8a296', marginBottom: 8 }}>내가 보낸 신고</div>
+          <div style={{ fontSize: 11, fontWeight: 800, color: '#c0bab0', marginBottom: 8 }}>내가 보낸 신고</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {mine.map(m => (
               <div key={m.id} style={{ background: 'rgba(13,13,12,0.6)', borderRadius: 11, padding: '10px 12px' }}>
@@ -124,9 +124,9 @@ export default function BugReport() {
                   <span style={{
                     fontSize: 10.5, fontWeight: 800, padding: '2px 7px', borderRadius: 6,
                     background: m.resolved_at ? 'rgba(143,208,143,0.15)' : 'rgba(240,236,224,0.1)',
-                    color: m.resolved_at ? '#8fd08f' : '#a8a296',
+                    color: m.resolved_at ? '#8fd08f' : '#c0bab0',
                   }}>{m.resolved_at ? '처리됨' : '확인 중'}</span>
-                  <span style={{ fontSize: 10.5, color: '#9a9083', marginLeft: 'auto' }}>
+                  <span style={{ fontSize: 10.5, color: '#b0a89c', marginLeft: 'auto' }}>
                     {new Date(m.created_at).toLocaleDateString('ko-KR')}
                   </span>
                 </div>

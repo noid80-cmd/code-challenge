@@ -206,7 +206,7 @@ export default function MyVideosPage() {
           const supabase = createClient()
           await supabase.auth.signOut()
           window.location.href = '/'
-        }} style={{ background: 'none', border: 'none', color: '#948b7d', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}>
+        }} style={{ background: 'none', border: 'none', color: '#b0a89c', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: 0 }}>
           로그아웃
         </button>
       </header>
@@ -305,7 +305,7 @@ export default function MyVideosPage() {
         )}
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#8b857a', fontSize: 14 }}>불러오는 중</div>
+          <div style={{ textAlign: 'center', padding: 60, color: '#a8a296', fontSize: 14 }}>불러오는 중</div>
         ) : submissions.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '52px 0' }}>
             <p style={{ color: '#b0a493', fontSize: 14, fontWeight: 700, marginBottom: 5 }}>아직 업로드한 영상이 없어요</p>
@@ -343,9 +343,9 @@ export default function MyVideosPage() {
         {!loading && (
           <div style={{ marginTop: 40, textAlign: 'center' }}>
             <BugReport />
-            <span style={{ color: '#6e6a60', fontSize: 11, padding: '0 4px' }}>·</span>
+            <span style={{ color: '#8f8a7e', fontSize: 11, padding: '0 4px' }}>·</span>
             <button onClick={handleDeleteAccount} disabled={deletingAccount} style={{
-              background: 'none', border: 'none', color: '#9a9083', fontSize: 11, fontWeight: 600,
+              background: 'none', border: 'none', color: '#b0a89c', fontSize: 11, fontWeight: 600,
               cursor: 'pointer', padding: 8, textDecoration: 'underline',
             }}>
               {deletingAccount ? '삭제 중...' : '계정 삭제'}

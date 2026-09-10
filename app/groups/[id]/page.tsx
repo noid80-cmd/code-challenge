@@ -322,7 +322,7 @@ ${window.location.origin}/groups?g=${group.id}`
   if (loading) return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
       <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#f0ece0', opacity: 0.7 }} />
-      <span style={{ color: '#8f8a7e', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
+      <span style={{ color: '#a8a296', fontSize: 14, fontWeight: 600 }}>불러오는 중</span>
     </div>
   )
 
@@ -334,7 +334,7 @@ ${window.location.origin}/groups?g=${group.id}`
         padding: '0 20px', height: 54, paddingTop: 'calc(env(safe-area-inset-top) + 24px)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
       }}>
-        <Link href="/groups" style={{ color: '#a8a296', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
+        <Link href="/groups" style={{ color: '#c0bab0', fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 3 }}>
           <svg width="7" height="12" viewBox="0 0 7 12" fill="none"><path d="M6 1L1 6L6 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
           그룹
         </Link>
@@ -362,7 +362,7 @@ ${window.location.origin}/groups?g=${group.id}`
         }}>
           <div>
             {group?.description && <div style={{ fontSize: 13, color: '#a0988c', marginBottom: 4 }}>{group.description}</div>}
-            <div style={{ fontSize: 12, color: '#8f8a7e', fontWeight: 600 }}>멤버 {memberCount}명</div>
+            <div style={{ fontSize: 12, color: '#a8a296', fontWeight: 600 }}>멤버 {memberCount}명</div>
             {isOwner && (
               <button onClick={deleteGroup} style={{
                 background: 'none', border: 'none', cursor: 'pointer',
@@ -384,7 +384,7 @@ ${window.location.origin}/groups?g=${group.id}`
             <button key={tab} onClick={() => setActiveTab(tab)} style={{
               flex: 1, padding: '8px', borderRadius: 9, border: 'none', cursor: 'pointer',
               background: activeTab === tab ? 'rgba(240,236,224,0.12)' : 'transparent',
-              color: activeTab === tab ? '#f0ece0' : '#a8a296',
+              color: activeTab === tab ? '#f0ece0' : '#c0bab0',
               fontSize: 13, fontWeight: 800, transition: 'all 0.15s',
             }}>
               {tab === 'feed' ? '피드' : '채팅'}
@@ -413,11 +413,11 @@ ${window.location.origin}/groups?g=${group.id}`
                       {isOwner && (
                         <button onClick={() => deleteAnnouncement(a.id)} style={{
                           background: 'none', border: 'none', cursor: 'pointer',
-                          color: '#8f8a7e', fontSize: 11, padding: 0, flexShrink: 0,
+                          color: '#a8a296', fontSize: 11, padding: 0, flexShrink: 0,
                         }}>삭제</button>
                       )}
                     </div>
-                    <div style={{ fontSize: 10, color: '#8f8a7e', marginTop: 6 }}>{timeAgo(a.created_at)}</div>
+                    <div style={{ fontSize: 10, color: '#a8a296', marginTop: 6 }}>{timeAgo(a.created_at)}</div>
                   </div>
                 ))}
 
@@ -445,7 +445,7 @@ ${window.location.origin}/groups?g=${group.id}`
                         <button onClick={() => { setShowAnnounceInput(false); setAnnouncementText('') }} style={{
                           padding: '9px 14px', borderRadius: 9,
                           background: 'transparent', border: '1px solid rgba(240,236,224,0.15)',
-                          color: '#8f8a7e', fontSize: 13, cursor: 'pointer',
+                          color: '#a8a296', fontSize: 13, cursor: 'pointer',
                         }}>취소</button>
                       </div>
                     </div>
@@ -468,8 +468,8 @@ ${window.location.origin}/groups?g=${group.id}`
             )}
             {submissions.length === 0 && !feedError ? (
               <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                <p style={{ color: '#8f8a7e', fontSize: 14, fontWeight: 700 }}>아직 연주가 없어요</p>
-                <p style={{ color: '#8b857a', fontSize: 13, marginTop: 5 }}>첫 번째로 올려보세요</p>
+                <p style={{ color: '#a8a296', fontSize: 14, fontWeight: 700 }}>아직 연주가 없어요</p>
+                <p style={{ color: '#a8a296', fontSize: 13, marginTop: 5 }}>첫 번째로 올려보세요</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -495,7 +495,7 @@ ${window.location.origin}/groups?g=${group.id}`
             {/* 메시지 목록 */}
             <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14, paddingBottom: 8 }}>
               {messages.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '60px 0', color: '#8f8a7e', fontSize: 14 }}>
+                <div style={{ textAlign: 'center', padding: '60px 0', color: '#a8a296', fontSize: 14 }}>
                   첫 메시지를 보내보세요
                 </div>
               )}
@@ -509,7 +509,7 @@ ${window.location.origin}/groups?g=${group.id}`
                     {!isMine && <Avatar profile={msg.profiles} size={28} />}
                     <div style={{ maxWidth: '72%' }}>
                       {!isMine && (
-                        <div style={{ fontSize: 11, fontWeight: 700, color: '#a8a296', marginBottom: 4, paddingLeft: 2 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#c0bab0', marginBottom: 4, paddingLeft: 2 }}>
                           {msg.profiles?.name ?? '익명'}
                         </div>
                       )}
@@ -525,7 +525,7 @@ ${window.location.origin}/groups?g=${group.id}`
                         {msg.content}
                       </div>
                       <div style={{
-                        fontSize: 10, color: '#8f8a7e', marginTop: 3,
+                        fontSize: 10, color: '#a8a296', marginTop: 3,
                         textAlign: isMine ? 'right' : 'left',
                         paddingLeft: isMine ? 0 : 2, paddingRight: isMine ? 2 : 0,
                       }}>
@@ -557,7 +557,7 @@ ${window.location.origin}/groups?g=${group.id}`
               <button onClick={sendMessage} disabled={sending || !messageText.trim()} style={{
                 width: 44, height: 44, borderRadius: '50%', border: 'none', flexShrink: 0,
                 background: messageText.trim() ? 'linear-gradient(135deg, #f8f4ec, #c8c4b0)' : 'rgba(240,236,224,0.08)',
-                color: messageText.trim() ? '#0a0a08' : '#8f8a7e',
+                color: messageText.trim() ? '#0a0a08' : '#a8a296',
                 fontSize: 18, cursor: messageText.trim() ? 'pointer' : 'default',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s',
@@ -641,7 +641,7 @@ function SubmissionCard({
             <Avatar profile={sub.profiles} size={34} />
             <div>
               <div style={{ fontSize: 13, fontWeight: 800, color: '#f0ece0', lineHeight: 1.2 }}>{sub.profiles?.name ?? '익명'}</div>
-              <div style={{ fontSize: 11, color: '#8f8a7e', marginTop: 1 }}>
+              <div style={{ fontSize: 11, color: '#a8a296', marginTop: 1 }}>
                 {challengeDate && <span style={{ marginRight: 4 }}>{challengeDate} ·</span>}
                 {timeAgo(sub.created_at)}
               </div>
@@ -659,7 +659,7 @@ function SubmissionCard({
               border: liked ? '1px solid rgba(240,236,224,0.4)' : '1px solid rgba(255,255,255,0.06)',
               borderRadius: 10, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 6,
-              color: liked ? '#f0ece0' : '#8f8a7e',
+              color: liked ? '#f0ece0' : '#a8a296',
               fontSize: 14, fontWeight: 800, padding: '7px 12px',
             }}>
               {liked ? '♥' : '♡'}
@@ -668,7 +668,7 @@ function SubmissionCard({
           </div>
         </div>
 
-        {sub.caption && <p style={{ fontSize: 13, color: '#a8a296', marginBottom: 10, lineHeight: 1.6 }}>{sub.caption}</p>}
+        {sub.caption && <p style={{ fontSize: 13, color: '#c0bab0', marginBottom: 10, lineHeight: 1.6 }}>{sub.caption}</p>}
         {sub.challenges?.title && (
           <div style={{
             fontSize: 11, color: '#a0988c', fontWeight: 700,
@@ -692,7 +692,7 @@ function SubmissionCard({
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 2 }}>
                         <span style={{ fontSize: 12, fontWeight: 700, color: '#f8f4ec' }}>{c.profiles?.name ?? '익명'}</span>
-                        <span style={{ fontSize: 10, color: '#8b857a' }}>{timeAgo(c.created_at)}</span>
+                        <span style={{ fontSize: 10, color: '#a8a296' }}>{timeAgo(c.created_at)}</span>
                       </div>
                       <p style={{ fontSize: 13, color: '#aca291', lineHeight: 1.5, margin: 0 }}>{c.content}</p>
                       <div style={{ display: 'flex', gap: 10, marginTop: 5 }}>
@@ -719,9 +719,9 @@ function SubmissionCard({
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 2 }}>
                               <span style={{ fontSize: 11, fontWeight: 700, color: '#d0ccc0' }}>{r.profiles?.name ?? '익명'}</span>
-                              <span style={{ fontSize: 10, color: '#8b857a' }}>{timeAgo(r.created_at)}</span>
+                              <span style={{ fontSize: 10, color: '#a8a296' }}>{timeAgo(r.created_at)}</span>
                             </div>
-                            <p style={{ fontSize: 12, color: '#a8a296', lineHeight: 1.5, margin: 0 }}>{r.content}</p>
+                            <p style={{ fontSize: 12, color: '#c0bab0', lineHeight: 1.5, margin: 0 }}>{r.content}</p>
                           </div>
                           {r.user_id === currentUserId && (
                             <button onClick={() => onDeleteComment(r.id)} style={{
@@ -756,7 +756,7 @@ function SubmissionCard({
                           <button onClick={() => { setReplyToId(null); setReplyText('') }} style={{
                             padding: '7px 8px', borderRadius: 8,
                             background: 'transparent', border: '1px solid rgba(240,236,224,0.1)',
-                            color: '#8f8a7e', fontSize: 12, cursor: 'pointer',
+                            color: '#a8a296', fontSize: 12, cursor: 'pointer',
                           }}>✕</button>
                         </div>
                       )}
@@ -771,7 +771,7 @@ function SubmissionCard({
         {!showInput ? (
           <button onClick={() => { setShowInput(true); setTimeout(() => inputRef.current?.focus(), 50) }} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            color: '#8f8a7e', fontSize: 13, fontWeight: 600, padding: 0,
+            color: '#a8a296', fontSize: 13, fontWeight: 600, padding: 0,
             display: 'flex', alignItems: 'center', gap: 5,
           }}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -799,7 +799,7 @@ function SubmissionCard({
             <button onClick={() => setShowInput(false)} style={{
               padding: '9px 10px', borderRadius: 9,
               background: 'transparent', border: '1px solid rgba(240,236,224,0.15)',
-              color: '#8f8a7e', fontSize: 13, cursor: 'pointer',
+              color: '#a8a296', fontSize: 13, cursor: 'pointer',
             }}>✕</button>
           </div>
         )}

@@ -605,7 +605,7 @@ export default function AdminPage() {
             }} style={{
               flex: 1, padding: '8px 4px', borderRadius: 9, border: 'none', cursor: 'pointer',
               background: adminTab === tab ? 'rgba(99,102,241,0.2)' : 'transparent',
-              color: adminTab === tab ? '#a5b4fc' : '#8a8ab5',
+              color: adminTab === tab ? '#a5b4fc' : '#a5a5c8',
               fontSize: 12.5, fontWeight: 800,
             }}>
               {tab === 'challenges' ? '챌린지' : tab === 'videos' ? '영상' : tab === 'members' ? '회원' : tab === 'groups' ? '그룹' : '신고'}
@@ -616,7 +616,7 @@ export default function AdminPage() {
         {/* ── 영상 관리 ── */}
         {adminTab === 'videos' && (
           <div>
-            <div style={{ fontSize: 12, color: '#9a9ac8', fontWeight: 600, marginBottom: 14 }}>
+            <div style={{ fontSize: 12, color: '#b6b6dc', fontWeight: 600, marginBottom: 14 }}>
               최근 {subs.length}개 · 내려간 영상 {subs.filter(x => x.hidden_at).length}개
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -630,13 +630,13 @@ export default function AdminPage() {
                           <span style={{ fontSize: 10, fontWeight: 800, color: '#e07060', background: 'rgba(224,112,96,0.15)', padding: '2px 6px', borderRadius: 5 }}>내려감</span>
                         )}
                         {sub.group_id && (
-                          <span style={{ fontSize: 10, fontWeight: 800, color: '#9a9ac8', background: 'rgba(255,255,255,0.07)', padding: '2px 6px', borderRadius: 5 }}>그룹</span>
+                          <span style={{ fontSize: 10, fontWeight: 800, color: '#b6b6dc', background: 'rgba(255,255,255,0.07)', padding: '2px 6px', borderRadius: 5 }}>그룹</span>
                         )}
                       </div>
-                      <div style={{ fontSize: 12, color: '#9a9ac8', lineHeight: 1.5, wordBreak: 'break-word' }}>
+                      <div style={{ fontSize: 12, color: '#b6b6dc', lineHeight: 1.5, wordBreak: 'break-word' }}>
                         {sub.challengeTitle}{sub.caption ? ` · ${sub.caption}` : ''}
                       </div>
-                      <div style={{ fontSize: 11, color: '#8a8ab5', marginTop: 3 }}>
+                      <div style={{ fontSize: 11, color: '#a5a5c8', marginTop: 3 }}>
                         {new Date(sub.created_at).toLocaleDateString('ko-KR')}
                       </div>
                     </div>
@@ -649,7 +649,7 @@ export default function AdminPage() {
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#8a8ab5' }}>전공</span>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: '#a5a5c8' }}>전공</span>
                     <select
                       value={isMajor(sub.major) ? sub.major : ''}
                       disabled={busyId === sub.id}
@@ -657,7 +657,7 @@ export default function AdminPage() {
                       style={{
                         fontSize: 12, fontWeight: 700, padding: '6px 9px', borderRadius: 9,
                         background: 'rgba(13,13,12,0.6)', border: '1px solid rgba(255,255,255,0.14)',
-                        color: sub.major ? '#ccccee' : '#8a8ab5', cursor: 'pointer',
+                        color: sub.major ? '#ccccee' : '#a5a5c8', cursor: 'pointer',
                       }}>
                       <option value="">— 안 정함 —</option>
                       {MAJORS.map(m => <option key={m} value={m}>{MAJOR_LABELS[m]}</option>)}
@@ -666,7 +666,7 @@ export default function AdminPage() {
                 </div>
               ))}
               {subs.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#8a8ab5', fontSize: 14 }}>영상이 없어요</div>
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#a5a5c8', fontSize: 14 }}>영상이 없어요</div>
               )}
             </div>
 
@@ -687,13 +687,13 @@ export default function AdminPage() {
                     controls autoPlay playsInline
                     style={{ width: '100%', borderRadius: 12, background: '#000', maxHeight: '60vh' }} />
                   <div style={{ fontSize: 15, fontWeight: 800, color: '#ccccee', marginTop: 12 }}>{playing.userName}</div>
-                  <div style={{ fontSize: 12.5, color: '#9a9ac8', marginTop: 3 }}>{playing.challengeTitle}</div>
+                  <div style={{ fontSize: 12.5, color: '#b6b6dc', marginTop: 3 }}>{playing.challengeTitle}</div>
                   {playing.caption && (
                     <div style={{ fontSize: 13.5, color: '#e0e0f5', marginTop: 10, lineHeight: 1.7, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
                       {playing.caption}
                     </div>
                   )}
-                  <div style={{ fontSize: 11.5, color: '#8a8ab5', marginTop: 8 }}>
+                  <div style={{ fontSize: 11.5, color: '#a5a5c8', marginTop: 8 }}>
                     {new Date(playing.created_at).toLocaleString('ko-KR')}
                   </div>
                   <button onClick={() => setPlaying(null)} style={{
@@ -710,7 +710,7 @@ export default function AdminPage() {
         {/* ── 버그 신고 ── */}
         {adminTab === 'bugs' && (
           <div>
-            <div style={{ fontSize: 12, color: '#9a9ac8', fontWeight: 600, marginBottom: 14 }}>
+            <div style={{ fontSize: 12, color: '#b6b6dc', fontWeight: 600, marginBottom: 14 }}>
               미처리 {bugs.filter(b => !b.resolved_at).length}건 · 전체 {bugs.length}건
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -724,21 +724,21 @@ export default function AdminPage() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
                         <span style={{ fontSize: 13, fontWeight: 800, color: '#ccccee' }}>{b.userName}</span>
                         {b.page && (
-                          <span style={{ fontSize: 10, fontWeight: 700, color: '#9a9ac8', background: 'rgba(255,255,255,0.07)', padding: '2px 6px', borderRadius: 5 }}>{b.page}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: '#b6b6dc', background: 'rgba(255,255,255,0.07)', padding: '2px 6px', borderRadius: 5 }}>{b.page}</span>
                         )}
                         {b.resolved_at && (
                           <span style={{ fontSize: 10, fontWeight: 800, color: '#8fd08f', background: 'rgba(143,208,143,0.15)', padding: '2px 6px', borderRadius: 5 }}>처리됨</span>
                         )}
                       </div>
                       <div style={{ fontSize: 13, color: '#ccccee', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{b.message}</div>
-                      <div style={{ fontSize: 11, color: '#8a8ab5', marginTop: 6 }}>
+                      <div style={{ fontSize: 11, color: '#a5a5c8', marginTop: 6 }}>
                         {new Date(b.created_at).toLocaleString('ko-KR')}
                       </div>
                     </div>
                     <button disabled={busyId === b.id} onClick={() => toggleResolved(b)} style={{
                       flexShrink: 0, padding: '7px 11px', borderRadius: 9, cursor: 'pointer',
                       border: `1px solid ${b.resolved_at ? 'rgba(154,154,200,0.3)' : 'rgba(143,208,143,0.4)'}`,
-                      background: 'transparent', color: b.resolved_at ? '#9a9ac8' : '#8fd08f',
+                      background: 'transparent', color: b.resolved_at ? '#b6b6dc' : '#8fd08f',
                       fontSize: 12, fontWeight: 800,
                     }}>{b.resolved_at ? '되돌리기' : '처리'}</button>
                   </div>
@@ -770,7 +770,7 @@ export default function AdminPage() {
                           cursor: (bugDrafts[b.id] ?? '').trim() && b.userId ? 'pointer' : 'default',
                           background: (bugDrafts[b.id] ?? '').trim() && b.userId
                             ? 'linear-gradient(135deg, #f8f4ec, #c8c4b0)' : 'rgba(255,255,255,0.1)',
-                          color: (bugDrafts[b.id] ?? '').trim() && b.userId ? '#0a0a08' : '#9a9ac8',
+                          color: (bugDrafts[b.id] ?? '').trim() && b.userId ? '#0a0a08' : '#b6b6dc',
                         }}>
                         {busyId === b.id ? '보내는 중...' : '답장 보내고 처리'}
                       </button>
@@ -779,7 +779,7 @@ export default function AdminPage() {
                 </div>
               ))}
               {bugs.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#8a8ab5', fontSize: 14 }}>신고가 없어요</div>
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#a5a5c8', fontSize: 14 }}>신고가 없어요</div>
               )}
             </div>
           </div>
@@ -788,7 +788,7 @@ export default function AdminPage() {
         {/* ── 그룹 현황 ── */}
         {adminTab === 'groups' && (
           <div>
-            <div style={{ fontSize: 12, color: '#9a9ac8', fontWeight: 600, marginBottom: 14 }}>
+            <div style={{ fontSize: 12, color: '#b6b6dc', fontWeight: 600, marginBottom: 14 }}>
               총 {adminGroups.length}개
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -797,19 +797,19 @@ export default function AdminPage() {
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 800, color: '#ccccee', marginBottom: 3 }}>{g.name}</div>
-                      <div style={{ fontSize: 12, color: '#9a9ac8' }}>
+                      <div style={{ fontSize: 12, color: '#b6b6dc' }}>
                         방장 {g.ownerName} · {new Date(g.created_at).toLocaleDateString('ko-KR')}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right', flexShrink: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 800, color: '#a5b4fc' }}>멤버 {g.memberCount}</div>
-                      <div style={{ fontSize: 12, color: '#9a9ac8', marginTop: 2 }}>영상 {g.videoCount}</div>
+                      <div style={{ fontSize: 12, color: '#b6b6dc', marginTop: 2 }}>영상 {g.videoCount}</div>
                     </div>
                   </div>
                 </div>
               ))}
               {adminGroups.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#8a8ab5', fontSize: 14 }}>그룹이 없어요</div>
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#a5a5c8', fontSize: 14 }}>그룹이 없어요</div>
               )}
             </div>
           </div>
@@ -818,7 +818,7 @@ export default function AdminPage() {
         {/* ── 회원 명단 ── */}
         {adminTab === 'members' && (
           <div>
-            <div style={{ fontSize: 12, color: '#9a9ac8', fontWeight: 600, marginBottom: 14 }}>
+            <div style={{ fontSize: 12, color: '#b6b6dc', fontWeight: 600, marginBottom: 14 }}>
               총 {members.length}명
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -855,8 +855,8 @@ export default function AdminPage() {
                     </div>
                   </div>
                   <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                    <div style={{ fontSize: 18, fontWeight: 900, color: m.submissionCount > 0 ? '#818cf8' : '#8a8ab5' }}>{m.submissionCount}</div>
-                    <div style={{ fontSize: 10, color: '#8a8ab5', fontWeight: 600 }}>영상</div>
+                    <div style={{ fontSize: 18, fontWeight: 900, color: m.submissionCount > 0 ? '#818cf8' : '#a5a5c8' }}>{m.submissionCount}</div>
+                    <div style={{ fontSize: 10, color: '#a5a5c8', fontWeight: 600 }}>영상</div>
                   </div>
                   <button disabled={busyId === m.id} onClick={() => toggleSuspend(m)} style={{
                     flexShrink: 0, padding: '6px 10px', borderRadius: 8, cursor: 'pointer',
@@ -867,7 +867,7 @@ export default function AdminPage() {
                 </div>
               ))}
               {members.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: '#8a8ab5', fontSize: 14 }}>회원이 없어요</div>
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#a5a5c8', fontSize: 14 }}>회원이 없어요</div>
               )}
             </div>
           </div>
@@ -1049,7 +1049,7 @@ export default function AdminPage() {
                     }}>
                       {/* 마디 헤더 */}
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <span style={{ fontSize: 10, color: '#9a9ac8', fontWeight: 700 }}>{mi + 1}마디</span>
+                        <span style={{ fontSize: 10, color: '#b6b6dc', fontWeight: 700 }}>{mi + 1}마디</span>
                         {prog.chords.length > 1 && (
                           <button onClick={() => removeMeasure(pi, mi)}
                             style={{ background: 'none', border: 'none', color: '#9494c0', fontSize: 13, cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
@@ -1079,7 +1079,7 @@ export default function AdminPage() {
                         ))}
                         {measure.length < 4 && (
                           <button onClick={() => addChordToMeasure(pi, mi)}
-                            style={{ width: 26, padding: '5px 3px', borderRadius: 7, background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.12)', fontSize: 13, color: '#8a8ab5', cursor: 'pointer' }}>+</button>
+                            style={{ width: 26, padding: '5px 3px', borderRadius: 7, background: 'rgba(255,255,255,0.04)', border: '1px dashed rgba(255,255,255,0.12)', fontSize: 13, color: '#a5a5c8', cursor: 'pointer' }}>+</button>
                         )}
                       </div>
                     </div>
