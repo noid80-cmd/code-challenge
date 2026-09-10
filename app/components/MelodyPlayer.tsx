@@ -1,7 +1,9 @@
 'use client'
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
-type Pattern = { label: string; abc: string }
+// transpose 는 반음 수다. 악보는 C장조로 적혀 있고, 조표와 음이름 표기는
+// abcjs 가 맞춰준다 — 음이름을 직접 옮기면 임시표가 틀어진다.
+type Pattern = { label: string; abc: string; transpose?: number }
 
 // Shifts every written pitch down one octave and switches the clef to bass —
 // for bass players reading the same solfège melody in a comfortable register.
@@ -133,6 +135,7 @@ export default function MelodyPlayer({
             // format.stretchlast=1 forces every row (the only/last line of each chunk) to fill staffwidth
             format: { stretchlast: 1 },
             scale: 0.8,
+            visualTranspose: patterns[pi]?.transpose ?? 0,
             foregroundColor: '#f0ece0',
             selectionColor: 'none',
             paddingtop: ci === 0 ? 4 : 20,
@@ -151,7 +154,7 @@ export default function MelodyPlayer({
         })
       })
     })
-  }, [processedChunks, uid, activeTab, hasMultiple, containerWidth])
+  }, [processedChunks, patterns, uid, activeTab, hasMultiple, containerWidth])
 
   return (
     <div ref={containerRef}>

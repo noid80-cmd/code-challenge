@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { pickAdvancedKey } from '@/lib/melodyKeys'
 import { requireAdmin } from '@/lib/adminGuard'
 import Anthropic from '@anthropic-ai/sdk'
 
@@ -276,7 +277,8 @@ function buildPrompt(level: string, recentTitles: string[] = [], recipe: typeof 
   return `계이름 시창(멜로디 초견) 챌린지를 생성하세요. 서로 다른 멜로디 특징을 가진 프레이즈 2개를 포함합니다.${recentBlock}
 
 난이도: ${levelLabel}
-조성: C장조 고정 (계이름 도-레-미-파-솔-라-시-도 읽기 연습)
+조성: 악보는 C장조로 적되, 고급은 화면에 다른 조표로 옮겨서 보여줍니다.
+제목에 조성 이름을 넣지 마세요 — 시스템이 붙입니다.
 
 아래 마디 패턴 라이브러리에서 각 프레이즈에 대해 정확히 8개 마디 ID를 선택하세요.
 각 마디는 정확히 4박자입니다.
@@ -520,7 +522,12 @@ export async function POST(req: Request) {
       const assembled = assemblePatternsABC(rawPatterns)
       if (!assembled) { console.error(`[generate-melody] attempt ${attempt}: assembly failed`); continue }
 
-      const newTitle = String(parsed.title || '계이름 시창 챌린지')
+      // 고급은 C장조만 반복하면 계이름 위치를 외워버린다. 조표를 바꿔서
+      // 매번 다시 읽게 한다. 악보는 C장조 그대로고 그릴 때만 옮긴다.
+      const key = level === 'advanced' ? pickAdvancedKey(recentTitles) : null
+      if (key) for (const p of assembled) (p as { transpose?: number }).transpose = key.semitones
+
+      const newTitle = String(parsed.title || '계이름 시창 챌린지') + (key ? ` — ${key.label}` : '')
       if (recentTitles.includes(newTitle)) {
         console.error(`[generate-melody] attempt ${attempt}: duplicate title "${newTitle}" — retrying`)
         continue

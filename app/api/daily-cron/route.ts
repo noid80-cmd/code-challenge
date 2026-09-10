@@ -4,6 +4,7 @@ import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
 import { LEVEL_LABELS, isLevel, type Level } from '@/lib/level'
 import { sendFcm } from '@/lib/fcm'
+import { pickAdvancedKey } from '@/lib/melodyKeys'
 
 export const maxDuration = 300
 
@@ -993,6 +994,10 @@ JSON 객체로만 응답:
     return result.length >= 2 ? result : null
   }
 
+  // 고급은 C장조만 반복하면 계이름 위치를 외워버린다. 조표를 바꿔서 매번
+  // 다시 읽게 한다. 악보는 C장조 그대로고 그릴 때만 옮긴다.
+  const melodyKey = level === 'advanced' ? pickAdvancedKey() : null
+
   const { data: existingMelody } = await supabase
     .from('challenges').select('id, title').eq('date', today).eq('type', 'melody').eq('level', level).maybeSingle()
 
@@ -1233,11 +1238,15 @@ JSON 객체로만 응답:
     }
 
     if (melodyCh) {
+      // 고급은 조표를 바꿔 보여준다. 악보는 C장조 그대로고 그릴 때만 옮긴다.
+      if (melodyKey) {
+        for (const p of melodyCh.patterns as Array<{ transpose?: number }>) p.transpose = melodyKey.semitones
+      }
       const { error: insErr } = await supabase.from('challenges').insert({
         date: today,
         type: 'melody',
         level: melodyLevel,
-        title: melodyCh.title,
+        title: melodyCh.title + (melodyKey ? ` — ${melodyKey.label}` : ''),
         description: melodyCh.description,
         chords: { patterns: melodyCh.patterns },
       })
@@ -1245,7 +1254,7 @@ JSON 객체로만 응답:
         console.error('[cron] challenge insert failed:', insErr.message)
         insertErrors.push(insErr.message)
       }
-      melodyTitle = melodyCh.title
+      melodyTitle = melodyCh.title + (melodyKey ? ` — ${melodyKey.label}` : '')
     }
   }
 
