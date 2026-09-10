@@ -85,3 +85,30 @@ create policy "groups_select_member" on public.groups for select
 drop policy if exists "group_members_select_same_group" on public.group_members;
 create policy "group_members_select_same_group" on public.group_members for select
   using (user_id = auth.uid() or is_group_member(group_id) or is_admin());
+
+
+-- =============================================
+-- 4. 버그 신고 (2026-09-10 추가)
+-- =============================================
+create table if not exists public.bug_reports (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users on delete set null,
+  message text not null,
+  page text,
+  user_agent text,
+  resolved_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+alter table public.bug_reports enable row level security;
+
+-- 삽입 정책을 두지 않는다. 저장은 서버 라우트(service role)만 한다 —
+-- 클라이언트가 직접 넣게 두면 아무나 수천 건을 밀어넣을 수 있다.
+create policy "bug_reports_select" on public.bug_reports for select
+  using (user_id = auth.uid() or is_admin());
+
+create policy "bug_reports_update_admin" on public.bug_reports for update
+  using (is_admin());
+
+create index if not exists bug_reports_created_idx
+  on public.bug_reports (resolved_at, created_at desc);

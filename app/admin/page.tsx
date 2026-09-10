@@ -17,6 +17,10 @@ type AdminSubmission = {
   id: string; user_id: string; created_at: string; hidden_at: string | null
   caption: string | null; group_id: string | null; userName: string; challengeTitle: string
 }
+type BugRow = {
+  id: string; message: string; page: string | null
+  created_at: string; resolved_at: string | null; userName: string
+}
 type AdminGroup = {
   id: string; name: string; invite_code: string; created_at: string
   ownerName: string; memberCount: number; videoCount: number
@@ -67,7 +71,7 @@ const emptyDraft = (): DraftChallenge => ({
 export default function AdminPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
-  const [adminTab, setAdminTab] = useState<'challenges' | 'members' | 'videos' | 'groups'>('challenges')
+  const [adminTab, setAdminTab] = useState<'challenges' | 'members' | 'videos' | 'groups' | 'bugs'>('challenges')
   const [generating, setGenerating] = useState(false)
   const [saving, setSaving] = useState(false)
   const [draft, setDraft] = useState<DraftChallenge | null>(null)
@@ -84,6 +88,8 @@ export default function AdminPage() {
   const [adminGroups, setAdminGroups] = useState<AdminGroup[]>([])
   const [groupsLoaded, setGroupsLoaded] = useState(false)
   const [busyId, setBusyId] = useState('')
+  const [bugs, setBugs] = useState<BugRow[]>([])
+  const [bugsLoaded, setBugsLoaded] = useState(false)
   const [challengeTypeForNew, setChallengeTypeForNew] = useState<'chord' | 'rhythm' | 'melody'>('chord')
   const [rhythmDraft, setRhythmDraft] = useState<RhythmDraft | null>(null)
   const [generatingRhythm, setGeneratingRhythm] = useState(false)
@@ -349,6 +355,35 @@ export default function AdminPage() {
     setSubsLoaded(true)
   }
 
+  async function loadBugs() {
+    if (bugsLoaded) return
+    const supabase = createClient()
+    const { data } = await supabase.from('bug_reports')
+      .select('id, user_id, message, page, created_at, resolved_at')
+      .order('created_at', { ascending: false }).limit(100)
+    const rows = data ?? []
+    const ids = [...new Set(rows.map(r => r.user_id).filter(Boolean))]
+    const { data: profs } = ids.length
+      ? await supabase.from('profiles').select('id, name').in('id', ids)
+      : { data: [] }
+    const nameOf: Record<string, string> = {}
+    ;(profs ?? []).forEach((x: { id: string; name: string }) => { nameOf[x.id] = x.name })
+    setBugs(rows.map(r => ({
+      id: r.id, message: r.message, page: r.page,
+      created_at: r.created_at, resolved_at: r.resolved_at,
+      userName: nameOf[r.user_id as string] ?? '(탈퇴/익명)',
+    })))
+    setBugsLoaded(true)
+  }
+
+  async function toggleResolved(b: BugRow) {
+    setBusyId(b.id)
+    const next = b.resolved_at ? null : new Date().toISOString()
+    const ok = await applyUpdate('bug_reports', b.id, { resolved_at: next })
+    if (ok) setBugs(prev => prev.map(x => x.id === b.id ? { ...x, resolved_at: next } : x))
+    setBusyId('')
+  }
+
   async function loadGroups() {
     if (groupsLoaded) return
     const supabase = createClient()
@@ -499,19 +534,20 @@ export default function AdminPage() {
       <main style={{ maxWidth: 560, margin: '0 auto', padding: '24px 16px 80px' }}>
         {/* 탭 */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'rgba(255,255,255,0.04)', borderRadius: 12, padding: 4 }}>
-          {(['challenges', 'videos', 'members', 'groups'] as const).map(tab => (
+          {(['challenges', 'videos', 'members', 'groups', 'bugs'] as const).map(tab => (
             <button key={tab} onClick={() => {
               setAdminTab(tab)
               if (tab === 'members') loadMembers()
               if (tab === 'videos') loadSubs()
               if (tab === 'groups') loadGroups()
+              if (tab === 'bugs') loadBugs()
             }} style={{
               flex: 1, padding: '8px 4px', borderRadius: 9, border: 'none', cursor: 'pointer',
               background: adminTab === tab ? 'rgba(99,102,241,0.2)' : 'transparent',
               color: adminTab === tab ? '#a5b4fc' : '#8a8ab5',
               fontSize: 12.5, fontWeight: 800,
             }}>
-              {tab === 'challenges' ? '챌린지' : tab === 'videos' ? '영상' : tab === 'members' ? '회원' : '그룹'}
+              {tab === 'challenges' ? '챌린지' : tab === 'videos' ? '영상' : tab === 'members' ? '회원' : tab === 'groups' ? '그룹' : '신고'}
             </button>
           ))}
         </div>
@@ -554,6 +590,50 @@ export default function AdminPage() {
               ))}
               {subs.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#8a8ab5', fontSize: 14 }}>영상이 없어요</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── 버그 신고 ── */}
+        {adminTab === 'bugs' && (
+          <div>
+            <div style={{ fontSize: 12, color: '#9a9ac8', fontWeight: 600, marginBottom: 14 }}>
+              미처리 {bugs.filter(b => !b.resolved_at).length}건 · 전체 {bugs.length}건
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {bugs.map(b => (
+                <div key={b.id} style={{
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 14, padding: '14px 16px', opacity: b.resolved_at ? 0.5 : 1,
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: '#ccccee' }}>{b.userName}</span>
+                        {b.page && (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: '#9a9ac8', background: 'rgba(255,255,255,0.07)', padding: '2px 6px', borderRadius: 5 }}>{b.page}</span>
+                        )}
+                        {b.resolved_at && (
+                          <span style={{ fontSize: 10, fontWeight: 800, color: '#8fd08f', background: 'rgba(143,208,143,0.15)', padding: '2px 6px', borderRadius: 5 }}>처리됨</span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 13, color: '#ccccee', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{b.message}</div>
+                      <div style={{ fontSize: 11, color: '#8a8ab5', marginTop: 6 }}>
+                        {new Date(b.created_at).toLocaleString('ko-KR')}
+                      </div>
+                    </div>
+                    <button disabled={busyId === b.id} onClick={() => toggleResolved(b)} style={{
+                      flexShrink: 0, padding: '7px 11px', borderRadius: 9, cursor: 'pointer',
+                      border: `1px solid ${b.resolved_at ? 'rgba(154,154,200,0.3)' : 'rgba(143,208,143,0.4)'}`,
+                      background: 'transparent', color: b.resolved_at ? '#9a9ac8' : '#8fd08f',
+                      fontSize: 12, fontWeight: 800,
+                    }}>{b.resolved_at ? '되돌리기' : '처리'}</button>
+                  </div>
+                </div>
+              ))}
+              {bugs.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '40px 0', color: '#8a8ab5', fontSize: 14 }}>신고가 없어요</div>
               )}
             </div>
           </div>

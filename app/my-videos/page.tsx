@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { localDate } from '@/lib/date'
 import AcademyCard from '@/app/components/AcademyCard'
+import BugReport from '@/app/components/BugReport'
 import { PushSettingRow } from '@/app/components/PushBanner'
 
 type Submission = {
@@ -341,6 +342,8 @@ export default function MyVideosPage() {
 
         {!loading && (
           <div style={{ marginTop: 40, textAlign: 'center' }}>
+            <BugReport />
+            <span style={{ color: '#6e6a60', fontSize: 11, padding: '0 4px' }}>·</span>
             <button onClick={handleDeleteAccount} disabled={deletingAccount} style={{
               background: 'none', border: 'none', color: '#9a9083', fontSize: 11, fontWeight: 600,
               cursor: 'pointer', padding: 8, textDecoration: 'underline',
