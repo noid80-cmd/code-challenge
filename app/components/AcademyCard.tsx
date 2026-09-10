@@ -22,7 +22,12 @@ export default function AcademyCard({ compact = false }: { compact?: boolean }) 
         KH
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: compact ? 14 : 16, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.01em', marginBottom: 3 }}>
+        {/* 좁은 화면에서 "앱이에 / 요"로 잘려 내려왔다. 한글은 낱말 단위로
+            끊어야 한다 — keep-all 이 그 일을 한다. */}
+        <div style={{
+          fontSize: compact ? 14 : 16, fontWeight: 900, color: '#f0ece0',
+          letterSpacing: '-0.01em', marginBottom: 3, wordBreak: 'keep-all',
+        }}>
           KHMUSIC이 만든 앱이에요
         </div>
         <div style={{ fontSize: compact ? 12 : 13, color: '#c8c4b0', lineHeight: 1.6, wordBreak: 'keep-all' }}>

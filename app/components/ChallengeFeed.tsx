@@ -984,6 +984,25 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
   }
 
   const curCh = cur ? challengeById[cur.challenge_id] : undefined
+
+  // 잠금화면·제어센터에 뜨는 정보. 안 넣어두면 iOS가 아무 이미지나 골라
+  // 온다 — 배포 플랫폼 로고가 그대로 떠 있었다.
+  useEffect(() => {
+    const ms = typeof navigator !== 'undefined' ? navigator.mediaSession : undefined
+    if (!ms || !cur) return
+    try {
+      ms.metadata = new MediaMetadata({
+        title: `${cur.profiles?.name ?? '익명'} 님의 연주`,
+        artist: '초견챌린지',
+        artwork: [
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' },
+        ],
+      })
+    } catch { /* 이 API가 없는 브라우저 */ }
+    return () => { try { ms.metadata = null } catch { /* 무시 */ } }
+  }, [cur])
+
   const curLevel = toLevel(curCh?.level)
   // 무엇을 치고 있는지 보면서 들어야 한다. 이름만 있으면(진행 1) 소용이 없다.
   const prog = cur && curCh && curCh.type === 'chord' && cur.progression_index != null
