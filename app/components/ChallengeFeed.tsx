@@ -742,29 +742,44 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
             </div>
           )}
 
-            {/* 전공 고르기. 아무도 안 올린 전공은 띄우지 않는다 —
-                눌러봤자 빈 화면이 나오는 버튼은 없느니만 못하다. */}
+            {/* 전공 고르기. 처음엔 올라온 전공만 띄웠는데, 그러면 기능이
+                덜 된 것처럼 보인다. 일곱 개를 다 두되 비어 있는 것은 흐리게
+                해서 "오늘 이 전공은 아직 없다"가 그대로 읽히게 한다. */}
             {(() => {
-              const present = MAJORS.filter(m => submissions.some(s => s.major === m))
-              if (present.length < 2) return null
+              const countOf = (m: Major) => submissions.filter(s => s.major === m).length
               return (
                 <div style={{
                   display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 12,
                   paddingBottom: 2, scrollbarWidth: 'none',
                 }}>
-                  {(['all', ...present] as const).map(m => (
-                    <button key={m} onClick={() => setMajorFilter(m as Major | 'all')}
-                      style={{
-                        flexShrink: 0, padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
-                        fontSize: 12, fontWeight: 700,
-                        background: majorFilter === m ? c.glowSoft : 'transparent',
-                        color: majorFilter === m ? c.solid : '#948b7d',
-                        border: majorFilter === m ? `1px solid ${c.border}` : '1px solid transparent',
-                      }}>{m === 'all' ? '전체' : MAJOR_LABELS[m as Major]}</button>
-                  ))}
+                  {(['all', ...MAJORS] as const).map(m => {
+                    const n = m === 'all' ? submissions.length : countOf(m as Major)
+                    const on = majorFilter === m
+                    return (
+                      <button key={m} onClick={() => setMajorFilter(m as Major | 'all')}
+                        style={{
+                          flexShrink: 0, padding: '5px 12px', borderRadius: 20, cursor: 'pointer',
+                          fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap',
+                          background: on ? c.glowSoft : 'transparent',
+                          color: on ? c.solid : (n > 0 ? '#948b7d' : '#5f5b54'),
+                          border: on ? `1px solid ${c.border}` : '1px solid transparent',
+                        }}>
+                        {m === 'all' ? '전체' : MAJOR_LABELS[m as Major]}
+                        {n > 0 && <span style={{ marginLeft: 4, opacity: 0.75 }}>{n}</span>}
+                      </button>
+                    )
+                  })}
                 </div>
               )
             })()}
+
+            {visibleSubs.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '28px 0', color: '#8b857a', fontSize: 13 }}>
+                {majorFilter === 'all'
+                  ? '아직 올라온 연주가 없어요'
+                  : `${MAJOR_LABELS[majorFilter]} 연주는 아직 없어요`}
+              </div>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
               {visibleSubs.map((sub, i) => {
