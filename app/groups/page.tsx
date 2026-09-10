@@ -29,6 +29,7 @@ export default function GroupsPage() {
   const [pwFor, setPwFor] = useState('')
   const [pwInput, setPwInput] = useState('')
   const [busy, setBusy] = useState('')
+  const [query, setQuery] = useState('')
 
   function flash(text: string) { setMsg(text); setTimeout(() => setMsg(''), 2500) }
 
@@ -345,16 +346,35 @@ export default function GroupsPage() {
               </>
             )}
 
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#a8a296', marginBottom: 10 }}>
-              둘러보기 {others.length > 0 && <span style={{ color: '#8f8a7e' }}>({others.length})</span>}
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              gap: 10, marginBottom: 10,
+            }}>
+              <span style={{ fontSize: 12, fontWeight: 800, color: '#a8a296' }}>
+                둘러보기 {others.length > 0 && <span style={{ color: '#8f8a7e' }}>({others.length})</span>}
+              </span>
             </div>
-            {others.length === 0 ? (
+
+            {/* 방이 몇 개 안 될 땐 검색칸이 자리만 차지한다. 늘어나면 그때 나온다. */}
+            {others.length >= 6 && (
+              <input value={query} onChange={e => setQuery(e.target.value)}
+                placeholder="그룹 이름으로 찾기"
+                style={{ ...inputStyle, padding: '10px 13px', fontSize: 13.5, marginBottom: 10 }} />
+            )}
+            {(() => {
+              const q = query.trim().toLowerCase()
+              const shown = q
+                ? others.filter(g =>
+                    g.name.toLowerCase().includes(q) ||
+                    (g.description ?? '').toLowerCase().includes(q))
+                : others
+              return shown.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '36px 0', color: '#a8a296', fontSize: 13 }}>
-                아직 다른 그룹이 없어요
+                {q ? `"${query.trim()}" 로 찾은 그룹이 없어요` : '아직 다른 그룹이 없어요'}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {others.map(g => (
+                {shown.map(g => (
                   <div key={g.id} style={cardStyle}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -400,7 +420,8 @@ export default function GroupsPage() {
                   </div>
                 ))}
               </div>
-            )}
+            )
+            })()}
           </>
         )}
       </main>
