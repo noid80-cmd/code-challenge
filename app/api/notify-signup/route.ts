@@ -28,13 +28,24 @@ export async function POST(req: Request) {
   const { data: { user } } = await adminClient().auth.getUser(token)
   if (!user) return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
 
+  // 이제 로그인이 끝나는 모든 자리에서 부른다(구글 가입은 가입 폼을 지나가지
+  // 않아 알림이 아예 안 갔다). 대신 여기서 한 번만 나가도록 잠근다 —
+  // signup_notified_at 이 비어 있는 행을 채울 수 있었던 요청만 알림을 보낸다.
+  const admin = adminClient()
+  const { data: claimed } = await admin.from('profiles')
+    .update({ signup_notified_at: new Date().toISOString() })
+    .eq('id', user.id).is('signup_notified_at', null)
+    .select('id, name')
+  if (!claimed?.length) return NextResponse.json({ ok: true, skipped: true })
+
   const meta = (user.user_metadata ?? {}) as { name?: string }
+  const name = (claimed[0].name as string | null) ?? meta.name ?? '(없음)'
   const kst = new Date(Date.now() + 9 * 60 * 60 * 1000)
   const time = kst.toISOString().replace('T', ' ').slice(0, 16)
 
   await notifyTelegram([
-    '🎵 새 회원가입 - 코드 챌린지',
-    `이름: ${meta.name ?? '(없음)'}`,
+    '🎵 새 회원가입 - 초견챌린지',
+    `이름: ${name}`,
     `이메일: ${user.email ?? '(없음)'}`,
     `시간: ${time} KST`,
   ].join('\n'))

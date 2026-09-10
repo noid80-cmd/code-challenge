@@ -1,6 +1,7 @@
 'use client'
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { maybeNotifySignup } from '@/lib/notifySignup'
 import { isNativeApp } from '@/lib/capacitor'
 
 export function OAuthHandler() {
@@ -51,9 +52,10 @@ export function OAuthHandler() {
 
     if (at && rt) {
       // Implicit flow: tokens handed off from Safari via ?_at=&_rt=
-      supabase.auth.setSession({ access_token: at, refresh_token: rt }).then(({ data, error }) => {
+      supabase.auth.setSession({ access_token: at, refresh_token: rt }).then(async ({ data, error }) => {
         if (error) { window.location.href = '/login?err=' + encodeURIComponent(error.message); return }
         if (data.session?.refresh_token) localStorage.setItem('sb_rt', data.session.refresh_token)
+        await maybeNotifySignup()
         window.location.href = '/'
       })
       return
@@ -61,9 +63,10 @@ export function OAuthHandler() {
 
     if (code) {
       // PKCE fallback: exchange code in PWA context where code_verifier may exist
-      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
+      supabase.auth.exchangeCodeForSession(code).then(async ({ data, error }) => {
         if (error) { window.location.href = '/login?err=' + encodeURIComponent(error.message); return }
         if (data.session?.refresh_token) localStorage.setItem('sb_rt', data.session.refresh_token)
+        await maybeNotifySignup()
         window.location.href = '/'
       })
     }

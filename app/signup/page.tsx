@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { maybeNotifySignup } from '@/lib/notifySignup'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -49,19 +50,7 @@ export default function SignupPage() {
       setError(error.message.toLowerCase().includes('already') ? '이미 가입된 이메일이에요.' : error.message)
       return
     }
-    if (data.user) {
-      // 세션 토큰과 함께 보낸다. 라우트가 무인증이면 아무나 가짜 알림을
-      // 쏟아부을 수 있어서 막았다. 이름·이메일은 서버가 토큰으로 읽는다.
-      supabase.auth.getSession().then(({ data: s }) => {
-        const token = s.session?.access_token
-        if (!token) return
-        return fetch('/api/notify-signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({}),
-        })
-      }).catch(() => {})
-    }
+    if (data.user) maybeNotifySignup()
     setDone(true)
   }
 

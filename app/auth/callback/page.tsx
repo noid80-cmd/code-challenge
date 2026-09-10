@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { maybeNotifySignup } from '@/lib/notifySignup'
 
 async function afterLogin(_supabase: ReturnType<typeof createClient>) {
   try {
@@ -14,6 +15,9 @@ async function afterLogin(_supabase: ReturnType<typeof createClient>) {
       if (rt) localStorage.setItem('sb_rt', rt)
     }
   } catch {}
+  // 구글로 들어온 사람도 가입 알림이 가야 한다. 첫 로그인만 실제로 보내진다.
+  // 던져놓고 바로 화면을 옮기면 요청이 취소되므로 기다린다(첫 로그인 한 번뿐).
+  await maybeNotifySignup()
 }
 
 export default function AuthCallback() {

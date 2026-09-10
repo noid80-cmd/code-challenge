@@ -117,3 +117,13 @@ create policy "bug_reports_update_admin" on public.bug_reports for update
 
 create index if not exists bug_reports_created_idx
   on public.bug_reports (resolved_at, created_at desc);
+
+-- 가입 알림을 한 번만 보내기 위한 표시 (2026-09-10).
+-- 가입 알림이 이메일 가입 폼에서만 나가고 있었다 — 구글로 들어온 사람은
+-- 그 폼을 지나가지 않아 알림이 한 건도 안 갔다. 이제 로그인이 끝나는 모든
+-- 자리에서 부르는 대신, 이 컬럼이 비어 있을 때만 실제로 보낸다.
+alter table public.profiles add column if not exists signup_notified_at timestamptz;
+
+-- 이미 가입한 사람들에게 알림이 소급해서 쏟아지지 않도록 지금까지의 회원은
+-- 보낸 것으로 표시한다.
+update public.profiles set signup_notified_at = created_at where signup_notified_at is null;
