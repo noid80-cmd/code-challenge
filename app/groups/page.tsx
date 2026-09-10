@@ -17,6 +17,7 @@ export default function GroupsPage() {
   const [error, setError] = useState('')
   const [msg, setMsg] = useState('')
   const [copiedId, setCopiedId] = useState('')
+  const [showJoin, setShowJoin] = useState(false)
   const [userId, setUserId] = useState('')
 
   useEffect(() => { load() }, [])
@@ -136,21 +137,33 @@ ${window.location.origin}/groups?code=${code}
       </header>
 
       <main style={{ maxWidth: 560, margin: '0 auto', padding: '28px 16px 100px' }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: '#8f8a7e', marginBottom: 8, letterSpacing: '-0.01em' }}>
-          다른 사람에게 받은 초대 코드로 참가
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-          <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
-            placeholder="초대 코드 입력"
-            style={{ ...inputStyle, width: 'auto', flex: 1 }}
-            onKeyDown={e => e.key === 'Enter' && joinGroup()} />
-          <button onClick={joinGroup} style={{
-            padding: '12px 16px', borderRadius: 11,
-            background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-            color: '#0a0a08', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
-            boxShadow: '0 4px 14px rgba(240,236,224,0.35)',
-          }}>참가하기</button>
-        </div>
+        {/* 초대 링크를 누르면 자동으로 참가되므로, 코드 직접 입력은 보조 수단이다.
+            (학원에서 코드만 구두로 알려주거나 링크가 잘려서 온 경우)
+            참가한 그룹이 없을 때만 펼쳐 두고, 있으면 접어서 주된 동선을 가리지 않게 한다. */}
+        {(showJoin || groups.length === 0) ? (
+          <>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#8f8a7e', marginBottom: 8, letterSpacing: '-0.01em' }}>
+              받은 초대 코드로 참가
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+              <input value={joinCode} onChange={e => setJoinCode(e.target.value.toUpperCase())}
+                placeholder="초대 코드 입력"
+                style={{ ...inputStyle, width: 'auto', flex: 1 }}
+                onKeyDown={e => e.key === 'Enter' && joinGroup()} />
+              <button onClick={joinGroup} style={{
+                padding: '12px 16px', borderRadius: 11,
+                background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                color: '#0a0a08', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap',
+                boxShadow: '0 4px 14px rgba(240,236,224,0.35)',
+              }}>참가하기</button>
+            </div>
+          </>
+        ) : (
+          <button onClick={() => setShowJoin(true)} style={{
+            background: 'none', border: 'none', padding: '2px 0 12px',
+            color: '#8f8a7e', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+          }}>초대 코드 직접 입력</button>
+        )}
 
         <button onClick={() => { setShowCreate(!showCreate); setError('') }} style={{
           width: '100%', padding: '12px', borderRadius: 12, marginBottom: showCreate ? 0 : 24,
