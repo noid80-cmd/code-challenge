@@ -275,6 +275,19 @@ begin
     where id = p_group_id;
   delete from public.group_members
     where group_id = p_group_id and user_id = auth.uid();
+
+  -- 들어와 보니 내가 방장이 돼 있는데 왜인지 모르면 곤란하다.
+  -- 방에 공지로 남겨서 모두가 알게 한다.
+  insert into public.group_announcements (group_id, user_id, content)
+  values (
+    p_group_id,
+    next_owner,
+    (select coalesce(name, '이전 방장') from public.profiles where id = auth.uid())
+      || ' 님이 방을 나가면서 '
+      || (select coalesce(name, '') from public.profiles where id = next_owner)
+      || ' 님이 방장이 되었어요.'
+  );
+
   return next_owner;
 end $$;
 
