@@ -398,7 +398,11 @@ export default function GroupsPage() {
                 {shown.map(g => (
                   <div key={g.id} style={{
                     ...cardStyle,
-                    borderLeft: `3px solid ${g.is_public ? 'rgba(52,211,153,0.55)' : 'rgba(230,197,131,0.5)'}`,
+                    // 둥근 모서리를 따라가면 색 띠가 초승달처럼 휘어 보인다.
+                    // 띠가 있는 쪽만 각지게 잘라서 일자로 떨어지게 한다.
+                    borderLeft: `3px solid ${g.is_public ? 'rgba(52,211,153,0.7)' : 'rgba(230,197,131,0.65)'}`,
+                    borderTopLeftRadius: 0,
+                    borderBottomLeftRadius: 0,
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
