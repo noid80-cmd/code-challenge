@@ -21,3 +21,19 @@ export function isMajor(v: unknown): v is Major {
 export function majorLabel(v: unknown): string | null {
   return isMajor(v) ? MAJOR_LABELS[v] : null
 }
+
+// 커버(화면에 아무것도 안 잡힌 영상)에 쓰는 색. 전공마다 달라서
+// 목록을 훑으면 무슨 악기들이 올라왔는지 색으로 먼저 읽힌다.
+export const MAJOR_COLORS: Record<Major, string> = {
+  drums: '#f59e0b',
+  bass: '#a78bfa',
+  guitar: '#34d399',
+  piano: '#60a5fa',
+  composition: '#f472b6',
+  vocal: '#fb7185',
+  other: '#94a3b8',
+}
+
+export function majorColor(v: unknown): string {
+  return isMajor(v) ? MAJOR_COLORS[v] : '#8b8578'
+}

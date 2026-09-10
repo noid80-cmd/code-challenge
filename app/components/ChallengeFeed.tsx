@@ -9,7 +9,7 @@ import { localDate, challengeDate } from '@/lib/date'
 import { TYPE_COLORS } from '@/lib/theme'
 import { LEVELS, LEVEL_COLORS, LEVEL_FALLBACK, LEVEL_LABELS, toLevel, type Level } from '@/lib/level'
 import { cachedLevel, fetchLevel, saveLevel } from './levelClient'
-import { MAJORS, MAJOR_LABELS, majorLabel, type Major } from '@/lib/majors'
+import { MAJORS, MAJOR_LABELS, majorLabel, majorColor, type Major } from '@/lib/majors'
 import PushBanner from './PushBanner'
 import LevelSheet, { LevelChip } from './LevelSheet'
 import ZoomableNotation from './ZoomableNotation'
@@ -850,16 +850,19 @@ function SubmissionThumb({ sub, onOpen, label, level, dimLevel }: {
             // 검은 네모를 늘어놓는 대신 이름과 전공을 얹은 커버를 그린다.
             <div style={{
               width: '100%', height: '100%',
-              background: `linear-gradient(150deg, ${LEVEL_COLORS[level]}22, #14141a 60%, #0d0d0c)`,
-              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+              // 처음엔 색을 아주 옅게 깔았더니 그냥 까맣게 보였다.
+              // 커버는 "썸네일이 없는 자리"가 아니라 그 자체로 카드여야 한다.
+              background: `linear-gradient(155deg, ${majorColor(sub.major)}3d, ${majorColor(sub.major)}14 55%, #101014)`,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8,
             }}>
               <div style={{
-                width: 46, height: 46, borderRadius: '50%',
-                background: 'rgba(240,236,224,0.1)', border: `1px solid ${LEVEL_COLORS[level]}55`,
+                width: 52, height: 52, borderRadius: '50%',
+                background: `${majorColor(sub.major)}2e`,
+                border: `1.5px solid ${majorColor(sub.major)}`,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, fontWeight: 900, color: '#f0ece0',
+                fontSize: 21, fontWeight: 900, color: '#f4f1ea',
               }}>{(sub.profiles?.name ?? '?').slice(0, 1)}</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: '#c0bab0' }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: majorColor(sub.major), letterSpacing: '-0.01em' }}>
                 {majorLabel(sub.major) ?? '연주'}
               </div>
             </div>
