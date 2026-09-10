@@ -653,7 +653,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
               ) : (
                 <>
                   <span style={{ fontSize: 14, fontWeight: 800, color: '#f8f4ec' }}>오늘 첫 연주를 올려보세요</span>
-                  <p style={{ fontSize: 12, color: '#c0bab0', margin: 0, marginTop: 1 }}>매일 올리면 연속 기록이 쌓여요</p>
+                  <p style={{ fontSize: 12, color: '#c0bab0', margin: 0, marginTop: 1 }}>3분이면 돼요. 매일 올리면 기록이 쌓여요</p>
                 </>
               )}
             </div>

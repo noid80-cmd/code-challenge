@@ -79,7 +79,7 @@ export async function GET(req: NextRequest) {
     }
     return {
       title: `연속 ${streak}일이 오늘 끊깁니다`,
-      body: '지금 하나 올리면 이어져요. 자정까지예요.',
+      body: '지금 하나 올리면 이어져요. 3분이면 됩니다.',
     }
   }
 
