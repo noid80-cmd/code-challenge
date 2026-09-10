@@ -58,6 +58,9 @@ export default function GroupPage() {
   // 공개방은 참가하지 않아도 들어와서 볼 수 있다. 들어가 볼 이유를 안
   // 보여주면서 들어오라고 할 수는 없다. 올리기와 채팅만 참가해야 된다.
   const [guest, setGuest] = useState(false)
+  // 방장을 넘길 때만 멤버 목록이 필요하다. 평소엔 인원수만 있으면 된다.
+  const [members, setMembers] = useState<{ id: string; name: string }[]>([])
+  const [transferOpen, setTransferOpen] = useState(false)
   const [submissions, setSubmissions] = useState<Submission[]>([])
   const [commentsBySubId, setCommentsBySubId] = useState<Record<string, Comment[]>>({})
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set())
@@ -309,6 +312,31 @@ ${window.location.origin}/groups?g=${group.id}`
     setCopied(true); setTimeout(() => setCopied(false), 2000)
   }
 
+  async function openTransfer() {
+    const supabase = createClient()
+    const { data: rows } = await supabase.from('group_members')
+      .select('user_id').eq('group_id', groupId)
+    const ids = (rows ?? []).map((r: { user_id: string }) => r.user_id).filter(id => id !== userId)
+    if (ids.length === 0) { alert('넘길 사람이 없어요. 아직 혼자 있는 방입니다.'); return }
+    const { data: profs } = await supabase.from('profiles').select('id, name').in('id', ids)
+    setMembers(((profs ?? []) as { id: string; name: string }[]))
+    setTransferOpen(true)
+  }
+
+  // 방장은 나갈 방법이 삭제뿐이었다. 멤버가 여럿인 방을 나가겠다고 통째로
+  // 없애면 남의 기록까지 지운다. 넘기고 나가는 길을 만든다.
+  async function transferOwner(toId: string, toName: string) {
+    if (!confirm(`${toName} 님에게 방장을 넘길까요? 넘기면 되돌릴 수 없습니다.`)) return
+    const supabase = createClient()
+    const { error } = await supabase.rpc('transfer_group_owner', {
+      p_group_id: groupId, p_new_owner: toId,
+    })
+    if (error) { alert('넘기지 못했어요: ' + error.message); return }
+    setTransferOpen(false)
+    alert(`${toName} 님이 방장이 되었어요.`)
+    window.location.reload()
+  }
+
   // 들어왔으면 나갈 수도 있어야 한다. 나가는 길이 없으면 애초에 안 들어온다.
   async function leaveGroup() {
     if (!group || !userId) return
@@ -377,6 +405,37 @@ ${window.location.origin}/groups?g=${group.id}`
         </button>
       </header>
 
+      {transferOpen && (
+        <>
+          <div onClick={() => setTransferOpen(false)}
+            style={{ position: 'fixed', inset: 0, zIndex: 200, background: 'rgba(0,0,0,0.6)' }} />
+          <div style={{
+            position: 'fixed', zIndex: 201, left: '50%', top: '50%', transform: 'translate(-50%,-50%)',
+            width: 'min(360px, calc(100vw - 40px))', maxHeight: '70vh', overflowY: 'auto',
+            background: '#131312', border: '1px solid rgba(240,236,224,0.14)',
+            borderRadius: 18, padding: 18,
+          }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: '#f0ece0', marginBottom: 6 }}>방장 넘기기</div>
+            <div style={{ fontSize: 12.5, color: '#c0bab0', lineHeight: 1.6, marginBottom: 14, wordBreak: 'keep-all' }}>
+              넘기면 이 방의 공지·비밀번호·삭제 권한이 그 사람에게 갑니다. 넘긴 뒤에는 방에서 나갈 수 있어요.
+            </div>
+            {members.map(m => (
+              <button key={m.id} onClick={() => transferOwner(m.id, m.name)} style={{
+                display: 'block', width: '100%', textAlign: 'left', cursor: 'pointer',
+                background: 'rgba(240,236,224,0.05)', border: '1px solid rgba(240,236,224,0.12)',
+                borderRadius: 11, padding: '11px 13px', marginBottom: 8,
+                color: '#e0dcd0', fontSize: 13.5, fontWeight: 700,
+              }}>{m.name}</button>
+            ))}
+            <button onClick={() => setTransferOpen(false)} style={{
+              width: '100%', marginTop: 4, padding: '11px', borderRadius: 11,
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: '#a8a296', fontSize: 13, fontWeight: 700,
+            }}>닫기</button>
+          </div>
+        </>
+      )}
+
       <div style={{ maxWidth: 560, margin: '0 auto', padding: '16px 16px 0' }}>
         {/* 그룹 정보 */}
         <div style={{
@@ -388,10 +447,18 @@ ${window.location.origin}/groups?g=${group.id}`
             {group?.description && <div style={{ fontSize: 13, color: '#a0988c', marginBottom: 4 }}>{group.description}</div>}
             <div style={{ fontSize: 12, color: '#a8a296', fontWeight: 600 }}>멤버 {memberCount}명</div>
             {isOwner && (
-              <button onClick={deleteGroup} style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                color: '#98948a', fontSize: 11, fontWeight: 600, padding: 0, marginTop: 6,
-              }}>그룹 삭제</button>
+              <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+                {memberCount > 1 && (
+                  <button onClick={openTransfer} style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: '#98948a', fontSize: 11, fontWeight: 600, padding: 0,
+                  }}>방장 넘기기</button>
+                )}
+                <button onClick={deleteGroup} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: '#98948a', fontSize: 11, fontWeight: 600, padding: 0,
+                }}>그룹 삭제</button>
+              </div>
             )}
             {!isOwner && !guest && (
               <button onClick={leaveGroup} style={{

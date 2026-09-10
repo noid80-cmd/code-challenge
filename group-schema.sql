@@ -177,3 +177,26 @@ $$;
 grant execute on function public.join_group_with_password(uuid, text) to authenticated;
 grant execute on function public.set_group_password(uuid, text) to authenticated;
 grant execute on function public.group_member_counts() to anon, authenticated;
+
+-- 방장 넘기기 (2026-09-11)
+--
+-- 방장이 방을 나가려면 삭제하는 수밖에 없었다. 멤버가 여럿인 방을
+-- 나가겠다고 통째로 없애면 남의 기록까지 지운다.
+--
+-- 클라이언트가 owner_id 를 직접 고치게 두지 않는다 — 정책만으로는
+-- 방장이 아무나(멤버가 아닌 사람에게도) 넘길 수 있다. 함수가 확인한다.
+create or replace function public.transfer_group_owner(p_group_id uuid, p_new_owner uuid)
+returns void language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from public.groups
+                 where id = p_group_id and owner_id = auth.uid()) then
+    raise exception 'not owner';
+  end if;
+  if not exists (select 1 from public.group_members
+                 where group_id = p_group_id and user_id = p_new_owner) then
+    raise exception 'not a member';
+  end if;
+  update public.groups set owner_id = p_new_owner where id = p_group_id;
+end $$;
+
+grant execute on function public.transfer_group_owner(uuid, uuid) to authenticated;
