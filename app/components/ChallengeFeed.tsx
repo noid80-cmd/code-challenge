@@ -868,6 +868,11 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
   const prog = cur && curCh && curCh.type === 'chord' && cur.progression_index != null
     ? curCh.chords?.progressions?.[cur.progression_index]
     : undefined
+  // 리듬·멜로디는 코드처럼 글자로 못 적는다. 악보를 그대로 얹는다 —
+  // 챌린지 화면에서 쓰는 그 컴포넌트다(이미 밝은 색으로 그린다).
+  const pattern = cur && curCh && curCh.type !== 'chord' && cur.progression_index != null
+    ? curCh.chords?.patterns?.[cur.progression_index]
+    : undefined
   const label = cur && curCh && cur.progression_index != null
     ? (curCh.type === 'chord'
         ? curCh.chords?.progressions?.[cur.progression_index]?.label
@@ -953,6 +958,28 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
               {[prog.style, prog.tempo ? `♩ ${prog.tempo}` : null].filter(Boolean).join(' · ')}
             </span>
           )}
+        </div>
+      )}
+
+      {/* 지금 치고 있는 악보 — 리듬·멜로디 */}
+      {pattern && (
+        <div style={{
+          position: 'absolute', left: 0, right: 0,
+          top: 'calc(54px + env(safe-area-inset-top))',
+          padding: '0 12px',
+          // 악보 위에서 손가락을 대도 옆으로 넘어가야 한다. 눌러서 쓸 일이
+          // 없는 표시이므로 터치를 그냥 통과시킨다.
+          pointerEvents: 'none',
+        }}>
+          <div style={{
+            background: 'rgba(0,0,0,0.66)', border: '1px solid rgba(240,236,224,0.15)',
+            borderRadius: 12, padding: '6px 10px 8px',
+            maxHeight: '34vh', overflow: 'hidden',
+          }}>
+            {curCh?.type === 'rhythm'
+              ? <RhythmViewer patterns={[pattern]} hideLabel />
+              : <MelodyPlayer patterns={[pattern]} hideLabel />}
+          </div>
         </div>
       )}
 
