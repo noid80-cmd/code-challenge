@@ -846,9 +846,23 @@ function SubmissionThumb({ sub, onOpen, label, level, dimLevel }: {
         {posterUrl
           ? <img src={posterUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           : (
-            // 썸네일이 없는 영상은 첫 프레임을 쓴다. preload="metadata" 면 영상 전체를 받지 않는다.
-            <video src={videoUrl} muted playsInline preload="metadata"
-              style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            // 화면에 아무것도 안 잡힌 영상이다(카메라를 가렸거나 천장을 찍었거나).
+            // 검은 네모를 늘어놓는 대신 이름과 전공을 얹은 커버를 그린다.
+            <div style={{
+              width: '100%', height: '100%',
+              background: `linear-gradient(150deg, ${LEVEL_COLORS[level]}22, #14141a 60%, #0d0d0c)`,
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}>
+              <div style={{
+                width: 46, height: 46, borderRadius: '50%',
+                background: 'rgba(240,236,224,0.1)', border: `1px solid ${LEVEL_COLORS[level]}55`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 18, fontWeight: 900, color: '#f0ece0',
+              }}>{(sub.profiles?.name ?? '?').slice(0, 1)}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#c0bab0' }}>
+                {majorLabel(sub.major) ?? '연주'}
+              </div>
+            </div>
           )}
         <span style={{
           position: 'absolute', top: 7, left: 7, fontSize: 10, fontWeight: 800,

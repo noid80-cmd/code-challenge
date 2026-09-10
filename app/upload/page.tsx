@@ -307,44 +307,66 @@ export default function UploadPage() {
         resolve(blob)
       }
 
-      function capture() {
-        try {
-          const w = video.videoWidth, h = video.videoHeight
-          if (!w || !h) { finish(null); return }
-          const canvas = document.createElement('canvas')
-          const max = 720
-          const ratio = Math.min(max / w, max / h, 1)
-          canvas.width = Math.round(w * ratio)
-          canvas.height = Math.round(h * ratio)
-          const ctx = canvas.getContext('2d')
-          if (!ctx) { finish(null); return }
-          ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
-          canvas.toBlob(b => finish(b), 'image/jpeg', 0.75)
-        } catch { finish(null) }
+      // 한 지점만 보면 하필 거기가 까맣다. 여러 곳을 재서 제일 밝은 것을
+      // 쓰고, 다 어두우면 아예 만들지 않는다 — 검은 그림을 저장하느니
+      // 없는 편이 낫다. 없으면 목록이 만들어진 커버를 그린다.
+      let best: { blob: Blob; lum: number } | null = null
+
+      function grab(): { blob: Promise<Blob | null>; lum: number } | null {
+        const w = video.videoWidth, h = video.videoHeight
+        if (!w || !h) return null
+        const canvas = document.createElement('canvas')
+        const max = 720
+        const ratio = Math.min(max / w, max / h, 1)
+        canvas.width = Math.round(w * ratio)
+        canvas.height = Math.round(h * ratio)
+        const ctx = canvas.getContext('2d')
+        if (!ctx) return null
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+        // 밝기는 가운데만 성글게 훑어도 충분하다. 전부 읽으면 느리다.
+        const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data
+        let sum = 0, n = 0
+        for (let i = 0; i < d.length; i += 4 * 40) {
+          sum += 0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]
+          n++
+        }
+        const lum = n > 0 ? sum / n : 0
+        return {
+          lum,
+          blob: new Promise<Blob | null>(res => canvas.toBlob(res, 'image/jpeg', 0.75)),
+        }
+      }
+
+      async function captureAt(times: number[], i: number) {
+        if (i >= times.length) {
+          // 25는 거의 검정이다. 이보다 어두우면 볼 게 없는 그림이다.
+          finish(best && best.lum >= 25 ? best.blob : null)
+          return
+        }
+        video.onseeked = async () => {
+          const g = grab()
+          if (g) {
+            const b = await g.blob
+            if (b && (!best || g.lum > best.lum)) best = { blob: b, lum: g.lum }
+          }
+          captureAt(times, i + 1)
+        }
+        video.currentTime = times[i]
       }
 
       video.onloadeddata = () => {
-        // 첫 프레임을 쓰면 대부분 까맣거나 흐리다 — 그 순간 카메라는 아직
-        // 노출과 초점을 잡는 중이고, 사람은 폰을 세우는 중이다. 목록이 검은
-        // 네모로 덮여 있던 이유다. 실제 연주 장면은 한가운데에 있다.
+        // 첫 프레임은 대부분 까맣거나 흐리다 — 카메라는 노출을 잡는 중이고
+        // 사람은 폰을 세우는 중이다. 연주 장면은 가운데 어딘가에 있다.
         const dur = video.duration
-        const at = Number.isFinite(dur) && dur > 0 ? dur / 2 : 1.2
+        const d = Number.isFinite(dur) && dur > 0 ? dur : 3
+        const times = [0.3, 0.5, 0.7, 0.15].map(f => Math.min(d * f, Math.max(d - 0.2, 0.1)))
 
-        // Muted videos can play() without user gesture on iOS Safari
-        // This is the only reliable way to get onseeked/frames on iOS
+        // 아이폰은 muted 재생을 한 번 거쳐야 프레임이 잡힌다.
         video.play().then(() => {
-          video.ontimeupdate = () => {
-            if (video.currentTime >= at) {
-              video.ontimeupdate = null
-              video.pause()
-              setTimeout(capture, 50)
-            }
-          }
-        }).catch(() => {
-          // Non-iOS fallback: seek directly
-          video.onseeked = capture
-          video.currentTime = at
-        })
+          video.pause()
+          captureAt(times, 0)
+        }).catch(() => captureAt(times, 0))
       }
 
       video.onerror = () => finish(null)
