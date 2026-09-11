@@ -129,7 +129,7 @@ const ADVANCED_ONLY = new Set([...QUINTUPLET_BARS, ...TIE_BARS, ...SEXTUPLET_BAR
 //
 // 갈아끼울 자리는 평범한 마디 중에서만 고른다. 싱코페이션 마디를 덮으면
 // 아래 테마 검증이 도로 걸려 재시도가 된다.
-function enforceAdvancedBars(ids: string[]): string[] {
+function enforceAdvancedBars(ids: string[], level: string): string[] {
   const out = [...ids]
   const taken = new Set<number>()
   const pick = (pool: string[]) => pool[Math.floor(Math.random() * pool.length)]
@@ -151,7 +151,8 @@ function enforceAdvancedBars(ids: string[]): string[] {
   // — 상한이 1개라서 12일 내내 6잇단음표가 딱 1개씩 나왔던 것처럼. 둘 중
   // 어느 쪽이 나올지도 그때그때 다르게 한다.
   // 패턴 하나당 0.25면 하루(패턴 2개) 기준 44% — 이틀에 한 번쯤 만난다.
-  if (!has(QUINTUPLET_BARS) && !has(SEXTUPLET_BARS) && Math.random() < 0.25) {
+  // 잇단음표는 고급에서만 넣는다.
+  if (level === 'advanced' && !has(QUINTUPLET_BARS) && !has(SEXTUPLET_BARS) && Math.random() < 0.25) {
     replaceOne(Math.random() < 0.5 ? QUINTUPLET_BARS : SEXTUPLET_BARS)
   }
   // 붙임줄은 5·6잇단음표만큼 튀는 표기가 아니라 매번 있어도 식상하지 않다.
@@ -295,7 +296,8 @@ function assemblePatternsABC(
       return null
     }
     let ids = p.bars.map(id => String(id).toUpperCase())
-    if (level === 'advanced') ids = enforceAdvancedBars(ids)
+    // 붙임줄은 중급부터 넣는다. 잇단음표만 고급으로 남긴다.
+    if (level === 'advanced' || level === 'intermediate') ids = enforceAdvancedBars(ids, level)
     const barTexts: string[] = []
     for (const id of ids) {
       const barText = BAR_PATTERNS[id]
@@ -328,7 +330,7 @@ function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
     ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~52(5·6잇단음표)는 합쳐서 0~1개까지만. 53~56(붙임줄)은 반드시 1~2개 포함'
-    : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~56은 사용하지 않음'
+    : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 53~56(붙임줄)은 반드시 1개 포함. 45~52(5·6잇단음표)는 사용하지 않음'
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -446,7 +448,7 @@ Z: z/ B/ B B z/ B/ (3BzB z2
 51: (5:4:5B/B/B/B/B/ B/B/B/B/ z2 (3BzB
 52: (5:4:5B/B/B/B/B/ (5:4:5B/B/B/B/B/ BB z2
 
-[복잡: 붙임줄(타이) 패턴 53~56 — 고급 전용, 패턴당 반드시 1~2개]
+[복잡: 붙임줄(타이) 패턴 53~56 — 중급 이상, 패턴당 반드시 1~2개. 마디 한가운데를 넘는 타이만 있다]
 53: BB B2-B2 BB
 54: BB B-B2 B z2
 55: B2 B2-B2 BB

@@ -271,7 +271,7 @@ const SYNCO_TRIPLET_BARS = new Set(['D', 'I', 'Q', 'U', 'Z', '14', '16', '22', '
 //
 // 5·6잇단음표는 가끔이라야 한다. 매번 나오면 그것도 곧 익숙한 무늬가 된다.
 // 갈아끼울 자리는 평범한 마디에서만 고른다 — 싱코페이션 마디를 덮으면 테마가 흐려진다.
-function enforceAdvancedBars(ids: string[]): string[] {
+function enforceAdvancedBars(ids: string[], level: string): string[] {
   const out = [...ids]
   const taken = new Set<number>()
   const pick = (pool: string[]) => pool[Math.floor(Math.random() * pool.length)]
@@ -288,8 +288,9 @@ function enforceAdvancedBars(ids: string[]): string[] {
   }
 
   const has = (pool: string[]) => out.some(id => pool.includes(id))
-  // 패턴 하나당 0.25면 하루(패턴 2개) 기준 44% — 이틀에 한 번쯤 만난다.
-  if (!has(QUINTUPLET_BARS) && !has(SEXTUPLET_BARS) && Math.random() < 0.25) {
+  // 5·6잇단음표는 고급에서만. 패턴 하나당 0.25면 하루(패턴 2개) 기준 44% —
+  // 이틀에 한 번쯤 만난다.
+  if (level === 'advanced' && !has(QUINTUPLET_BARS) && !has(SEXTUPLET_BARS) && Math.random() < 0.25) {
     replaceOne(Math.random() < 0.5 ? QUINTUPLET_BARS : SEXTUPLET_BARS)
   }
   // 붙임줄은 그만큼 튀는 표기가 아니라 매번 있어도 식상하지 않다.
@@ -323,7 +324,8 @@ function assemblePatternsABC(
       return null
     }
     let ids = p.bars.map(id => String(id).toUpperCase())
-    if (level === 'advanced') ids = enforceAdvancedBars(ids)
+    // 붙임줄은 중급부터 넣는다. 잇단음표만 고급으로 남긴다.
+    if (level === 'advanced' || level === 'intermediate') ids = enforceAdvancedBars(ids, level)
     const barTexts: string[] = []
     for (const id of ids) {
       const barText = BAR_PATTERNS[id]
@@ -750,7 +752,7 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
 
     const rhythmLevelRule = rhythmLevel === 'advanced'
       ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~52(5·6잇단음표)는 합쳐서 0~1개까지만. 53~56(붙임줄)은 반드시 1~2개 포함'
-      : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~56은 사용하지 않음'
+      : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 53~56(붙임줄)은 반드시 1개 포함. 45~52(5·6잇단음표)는 사용하지 않음'
 
     const rhythmPrompt = `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
 
@@ -864,7 +866,7 @@ Z: z/ B/ B B z/ B/ (3BzB z2
 51: (5:4:5B/B/B/B/B/ B/B/B/B/ z2 (3BzB
 52: (5:4:5B/B/B/B/B/ (5:4:5B/B/B/B/B/ BB z2
 
-[복잡: 붙임줄(타이) 패턴 53~56 — 고급 전용, 패턴당 반드시 1~2개. 마디 한가운데를 넘는 타이만 있다]
+[복잡: 붙임줄(타이) 패턴 53~56 — 중급 이상, 패턴당 반드시 1~2개. 마디 한가운데를 넘는 타이만 있다]
 53: BB B2-B2 BB
 54: BB B-B2 B z2
 55: B2 B2-B2 BB
