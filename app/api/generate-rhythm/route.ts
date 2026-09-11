@@ -140,7 +140,15 @@ function enforceAdvancedBars(ids: string[]): string[] {
   }
 
   const has = (pool: string[]) => out.some(id => pool.includes(id))
-  if (!has(QUINTUPLET_BARS)) replaceOne(QUINTUPLET_BARS)
+
+  // 5·6잇단음표는 가끔이라야 한다. 매번 나오면 그것도 곧 익숙한 무늬가 된다
+  // — 상한이 1개라서 12일 내내 6잇단음표가 딱 1개씩 나왔던 것처럼. 둘 중
+  // 어느 쪽이 나올지도 그때그때 다르게 한다.
+  // 패턴 하나당 0.25면 하루(패턴 2개) 기준 44% — 이틀에 한 번쯤 만난다.
+  if (!has(QUINTUPLET_BARS) && !has(SEXTUPLET_BARS) && Math.random() < 0.25) {
+    replaceOne(Math.random() < 0.5 ? QUINTUPLET_BARS : SEXTUPLET_BARS)
+  }
+  // 붙임줄은 5·6잇단음표만큼 튀는 표기가 아니라 매번 있어도 식상하지 않다.
   if (!has(TIE_BARS)) replaceOne(TIE_BARS)
   return out
 }
@@ -286,7 +294,7 @@ function assemblePatternsABC(
 function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
-    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 49~52(5잇단음표)는 반드시 1개 포함 — 빠뜨리면 안 됨. 45~48(6잇단음표)은 0~1개. 53~56(붙임줄)은 반드시 1~2개 포함'
+    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~52(5·6잇단음표)는 합쳐서 0~1개까지만. 53~56(붙임줄)은 반드시 1~2개 포함'
     : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~56은 사용하지 않음'
 
   const recentBlock = recentTitles.length > 0
@@ -393,13 +401,13 @@ Z: z/ B/ B B z/ B/ (3BzB z2
 43: B/B/B/z/ B2 B/B/B/z/ z2
 44: z/B/z/B/ z2 (3BBB B2
 
-[매우 복잡: 6잇단음표(6연음) 패턴 45~48 — 고급 전용, 패턴당 0~1개]
+[매우 복잡: 6잇단음표(6연음) 패턴 45~48 — 고급 전용, 49~52와 합쳐 0~1개]
 45: (6:4:6B/B/B/B/B/B/ BB z2 (3BBB
 46: BB (6:4:6B/B/B/B/B/B/ z2 B2
 47: (6:4:6B/B/B/B/B/B/ B/B/B/B/ z2 (3BzB
 48: (6:4:6B/B/B/B/B/B/ (6:4:6B/B/B/B/B/B/ BB z2
 
-[매우 복잡: 5잇단음표(5연음) 패턴 49~52 — 고급 전용, 패턴당 반드시 1개]
+[매우 복잡: 5잇단음표(5연음) 패턴 49~52 — 고급 전용, 45~48과 합쳐 0~1개]
 49: (5:4:5B/B/B/B/B/ BB z2 (3BBB
 50: BB (5:4:5B/B/B/B/B/ z2 B2
 51: (5:4:5B/B/B/B/B/ B/B/B/B/ z2 (3BzB
