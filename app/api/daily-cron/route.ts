@@ -1109,7 +1109,7 @@ JSON 객체로만 응답:
     const melodyNeed = melodyRecipe.need(melodyLevel)
     const melodyNeighborCap = melodyRecipe.neighborCap(melodyLevel)
     const melodyChromaticCap = melodyRecipe.chromaticCap(melodyLevel)
-    const melodyLevelRule = `${melodyRecipe.ruleText} 두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 ${melodyNeed.leap}개(이 중 4도 이상 큰 도약 최소 ${melodyNeed.bigLeap}개 포함), 반음 패턴(U,V,W,30~34) 최소 ${melodyNeed.chromatic}개~최대 ${melodyChromaticCap}개(반드시 ${melodyChromaticCap}개를 넘기지 말 것), 리듬 심화 패턴(리듬 카테고리 전체) 최소 ${melodyNeed.rhythm}개(이 중 붓점 패턴 X,16,19,28,29,38,39 최소 ${melodyNeed.dotted}개와 셋잇단음표 패턴 Y,15,17,22,40,41 최소 ${melodyNeed.triplet}개를 반드시 포함 — 16분음표 패턴으로만 채우지 말 것), 당김음 패턴(당김음 카테고리 전체) 최소 ${melodyNeed.syncopation}개, 쉼표 패턴(쉼표 카테고리 전체) 최소 ${melodyNeed.rest}개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 ${melodyNeighborCap}개로 제한`
+    const melodyLevelRule = `${melodyRecipe.ruleText} 두 프레이즈를 합쳐(총 16마디) 도약 패턴(도약 카테고리 전체) 최소 ${melodyNeed.leap}개(이 중 4도 이상 큰 도약 최소 ${melodyNeed.bigLeap}개 포함), 반음 패턴(U,V,W,30~34) 최소 ${melodyNeed.chromatic}개~최대 ${melodyChromaticCap}개(반드시 ${melodyChromaticCap}개를 넘기지 말 것), 리듬 심화 패턴(리듬 카테고리 전체) 최소 ${melodyNeed.rhythm}개(이 중 붓점 패턴 X,16,19,28,29,38,39 최소 ${melodyNeed.dotted}개와 셋잇단음표 패턴 Y,15,17,22,40,41 최소 ${melodyNeed.triplet}개를 반드시 포함 — 16분음표 패턴으로만 채우지 말 것), 당김음 패턴(당김음 카테고리 전체) 최소 ${melodyNeed.syncopation}개, 쉼표 패턴(쉼표 카테고리 전체) 최소 ${melodyNeed.rest}개, 마디 안 붙임줄 패턴(45~50) 최소 ${melodyNeed.tie}개 포함. 두 프레이즈에 균등하게 나눌 필요 없이 한쪽에 몰아도 됨. 복합 패턴(15~22)은 여러 카테고리에 동시에 속하므로 적극 활용할 것. 이웃음 진행 패턴(A,B,C,D)은 두 프레이즈 합쳐 최대 ${melodyNeighborCap}개로 제한`
 
     const melodyPrompt = `계이름 시창(멜로디 초견) 챌린지를 생성하세요. 서로 다른 멜로디 특징을 가진 프레이즈 2개를 포함합니다.
 
