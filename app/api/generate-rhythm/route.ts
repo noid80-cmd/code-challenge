@@ -99,12 +99,18 @@ const BAR_PATTERNS: Record<string, string> = {
   '51': '(5:4:5B/B/B/B/B/ B/B/B/B/ z2 (3BzB',
   '52': '(5:4:5B/B/B/B/B/ (5:4:5B/B/B/B/B/ BB z2',
   // 마디 안 붙임줄 패턴 53~56 — 고급 전용.
+  //
+  // 마디 한가운데(4단위 지점)를 넘는 타이만 쓴다. 박 구조를 보이려고 쪼개
+  // 적는 것이라야 붙임줄에 뜻이 있다. 한 박 안에서 묶으면(B-B=4분음표,
+  // B/-B/=8분음표, B2-B2가 1~2박=2분음표) 한 음표로 그냥 써지는 것을
+  // 굳이 두 개로 그린 셈이라 눈만 복잡해진다 — 실제로 그렇게 나왔다.
+  //
   // 타이는 반드시 공백 없는 한 토큰으로 적는다. 박 단위로 쪼개 섞는
   // shuffleBeatsAcrossBars가 셀 경계에서 타이를 끊으면 엉뚱한 음표에 붙는다.
-  '53': 'B2-B2 BB z2',
-  '54': 'BB B2-B2 BB',
-  '55': 'B-B z2 B3-B',
-  '56': 'B/-B/B/B/ B2 B-B z2',
+  '53': 'BB B2-B2 BB',
+  '54': 'BB B-B2 B z2',
+  '55': 'B2 B2-B2 BB',
+  '56': 'BB z B-B2 z2',
 }
 
 // Bars that contain (3BzB — triplet with rest (syncopated feel)
@@ -414,10 +420,10 @@ Z: z/ B/ B B z/ B/ (3BzB z2
 52: (5:4:5B/B/B/B/B/ (5:4:5B/B/B/B/B/ BB z2
 
 [복잡: 붙임줄(타이) 패턴 53~56 — 고급 전용, 패턴당 반드시 1~2개]
-53: B2-B2 BB z2
-54: BB B2-B2 BB
-55: B-B z2 B3-B
-56: B/-B/B/B/ B2 B-B z2
+53: BB B2-B2 BB
+54: BB B-B2 B z2
+55: B2 B2-B2 BB
+56: BB z B-B2 z2
 
 규칙:
 - ${levelRule}

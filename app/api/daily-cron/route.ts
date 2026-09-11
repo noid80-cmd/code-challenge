@@ -138,12 +138,18 @@ const BAR_PATTERNS: Record<string, string> = {
   '51': '(5:4:5B/B/B/B/B/ B/B/B/B/ z2 (3BzB',
   '52': '(5:4:5B/B/B/B/B/ (5:4:5B/B/B/B/B/ BB z2',
   // 마디 안 붙임줄 패턴 53~56 — 고급 전용.
+  //
+  // 마디 한가운데(4단위 지점)를 넘는 타이만 쓴다. 박 구조를 보이려고 쪼개
+  // 적는 것이라야 붙임줄에 뜻이 있다. 한 박 안에서 묶으면(B-B=4분음표,
+  // B/-B/=8분음표, B2-B2가 1~2박=2분음표) 한 음표로 그냥 써지는 것을
+  // 굳이 두 개로 그린 셈이라 눈만 복잡해진다 — 실제로 그렇게 나왔다.
+  //
   // 타이는 반드시 공백 없는 한 토큰으로 적는다. 박 단위로 쪼개 섞는
   // shuffleBeatsAcrossBars가 셀 경계에서 타이를 끊으면 엉뚱한 음표에 붙는다.
-  '53': 'B2-B2 BB z2',
-  '54': 'BB B2-B2 BB',
-  '55': 'B-B z2 B3-B',
-  '56': 'B/-B/B/B/ B2 B-B z2',
+  '53': 'BB B2-B2 BB',
+  '54': 'BB B-B2 B z2',
+  '55': 'B2 B2-B2 BB',
+  '56': 'BB z B-B2 z2',
 }
 
 // --- 박자 단위 재조립 (generate-rhythm/route.ts와 동일 로직, 중복 구현 스타일 유지) ---
@@ -224,6 +230,46 @@ function shuffleBeatsAcrossBars(barTexts: string[]): string[] | null {
   return null
 }
 
+// 고급 전용 마디. 5·6잇단음표와 붙임줄은 "있으면 좋은 것"이 아니라 고급의 조건이다.
+// (generate-rhythm/route.ts 와 같은 규칙 — 이 파일이 매일 도는 쪽이다)
+const QUINTUPLET_BARS = ['49', '50', '51', '52']
+const SEXTUPLET_BARS = ['45', '46', '47', '48']
+const TIE_BARS = ['53', '54', '55', '56']
+const ADVANCED_ONLY = new Set([...QUINTUPLET_BARS, ...SEXTUPLET_BARS, ...TIE_BARS])
+const SYNCO_TRIPLET_BARS = new Set(['D', 'I', 'Q', 'U', 'Z', '14', '16', '22', '23', '27', '28', '40'])
+
+// AI에게 "포함 가능"이라고만 하면 안전한 쪽으로 흐른다 — 고급 23개를 세어보니
+// 5잇단음표가 한 번도 없었다(2026-09-11). 검증 실패로 재시도만 걸면 다 놓쳤을 때
+// 그날 문제가 통째로 비므로, 모자란 만큼 코드가 채워 넣는다.
+//
+// 5·6잇단음표는 가끔이라야 한다. 매번 나오면 그것도 곧 익숙한 무늬가 된다.
+// 갈아끼울 자리는 평범한 마디에서만 고른다 — 싱코페이션 마디를 덮으면 테마가 흐려진다.
+function enforceAdvancedBars(ids: string[]): string[] {
+  const out = [...ids]
+  const taken = new Set<number>()
+  const pick = (pool: string[]) => pool[Math.floor(Math.random() * pool.length)]
+
+  function replaceOne(pool: string[]) {
+    const spots = out
+      .map((id, i) => ({ id, i }))
+      .filter(({ id, i }) => !ADVANCED_ONLY.has(id) && !SYNCO_TRIPLET_BARS.has(id) && !taken.has(i))
+      .map(({ i }) => i)
+    if (!spots.length) return
+    const at = spots[Math.floor(Math.random() * spots.length)]
+    out[at] = pick(pool)
+    taken.add(at)
+  }
+
+  const has = (pool: string[]) => out.some(id => pool.includes(id))
+  // 패턴 하나당 0.25면 하루(패턴 2개) 기준 44% — 이틀에 한 번쯤 만난다.
+  if (!has(QUINTUPLET_BARS) && !has(SEXTUPLET_BARS) && Math.random() < 0.25) {
+    replaceOne(Math.random() < 0.5 ? QUINTUPLET_BARS : SEXTUPLET_BARS)
+  }
+  // 붙임줄은 그만큼 튀는 표기가 아니라 매번 있어도 식상하지 않다.
+  if (!has(TIE_BARS)) replaceOne(TIE_BARS)
+  return out
+}
+
 // 마디 경계를 넘는 붙임줄(tie). 마디 끝 토큰이 쉼표가 아니고(음표로 끝남)
 // 다음 마디 시작 토큰도 음표로 시작할 때만 '-'를 붙인다.
 function addRandomTies(bars: string[]): string[] {
@@ -240,7 +286,8 @@ function addRandomTies(bars: string[]): string[] {
 }
 
 function assemblePatternsABC(
-  aiPatterns: Array<{ label: string; bars: string[] }>
+  aiPatterns: Array<{ label: string; bars: string[] }>,
+  level: string,
 ): Array<{ label: string; abc: string }> | null {
   const result: Array<{ label: string; abc: string }> = []
   for (const p of aiPatterns) {
@@ -248,9 +295,11 @@ function assemblePatternsABC(
       console.error(`[cron-rhythm] bars.length=${p.bars?.length ?? 'missing'}`)
       return null
     }
+    let ids = p.bars.map(id => String(id).toUpperCase())
+    if (level === 'advanced') ids = enforceAdvancedBars(ids)
     const barTexts: string[] = []
-    for (const id of p.bars) {
-      const barText = BAR_PATTERNS[String(id).toUpperCase()]
+    for (const id of ids) {
+      const barText = BAR_PATTERNS[id]
       if (!barText) {
         console.error(`[cron-rhythm] unknown pattern ID: "${id}"`)
         return null
@@ -643,7 +692,7 @@ JSON 형식으로만 응답하세요 (다른 텍스트 없이):
     const rhythmLevel = level
 
     const rhythmLevelRule = rhythmLevel === 'advanced'
-      ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 4개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~48(6잇단음표)과 49~52(5잇단음표)는 각각 최대 1개까지만, 53~56(붙임줄)은 최대 2개까지 선택적으로 포함 가능'
+      ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~52(5·6잇단음표)는 합쳐서 0~1개까지만. 53~56(붙임줄)은 반드시 1~2개 포함'
       : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~56은 사용하지 않음'
 
     const rhythmPrompt = `드럼/리듬 초견 챌린지를 생성하세요. 서로 다른 리듬 테마의 패턴 2개를 포함합니다.
@@ -746,23 +795,23 @@ Z: z/ B/ B B z/ B/ (3BzB z2
 43: B/B/B/z/ B2 B/B/B/z/ z2
 44: z/B/z/B/ z2 (3BBB B2
 
-[매우 복잡: 6잇단음표(6연음) 패턴 45~48 — 고급 전용, 한 챌린지당 최대 1개]
+[매우 복잡: 6잇단음표(6연음) 패턴 45~48 — 고급 전용, 49~52와 합쳐 0~1개]
 45: (6:4:6B/B/B/B/B/B/ BB z2 (3BBB
 46: BB (6:4:6B/B/B/B/B/B/ z2 B2
 47: (6:4:6B/B/B/B/B/B/ B/B/B/B/ z2 (3BzB
 48: (6:4:6B/B/B/B/B/B/ (6:4:6B/B/B/B/B/B/ BB z2
 
-[매우 복잡: 5잇단음표(5연음) 패턴 49~52 — 고급 전용, 한 챌린지당 최대 1개]
+[매우 복잡: 5잇단음표(5연음) 패턴 49~52 — 고급 전용, 45~48과 합쳐 0~1개]
 49: (5:4:5B/B/B/B/B/ BB z2 (3BBB
 50: BB (5:4:5B/B/B/B/B/ z2 B2
 51: (5:4:5B/B/B/B/B/ B/B/B/B/ z2 (3BzB
 52: (5:4:5B/B/B/B/B/ (5:4:5B/B/B/B/B/ BB z2
 
-[복잡: 붙임줄(타이) 패턴 53~56 — 고급 전용, 한 챌린지당 최대 2개]
-53: B2-B2 BB z2
-54: BB B2-B2 BB
-55: B-B z2 B3-B
-56: B/-B/B/B/ B2 B-B z2
+[복잡: 붙임줄(타이) 패턴 53~56 — 고급 전용, 패턴당 반드시 1~2개. 마디 한가운데를 넘는 타이만 있다]
+53: BB B2-B2 BB
+54: BB B-B2 B z2
+55: B2 B2-B2 BB
+56: BB z B-B2 z2
 
 규칙:
 - ${rhythmLevelRule}
@@ -788,7 +837,7 @@ JSON 객체로만 응답:
       patterns: assemblePatternsABC([
         { label: '패턴 1', bars: ['A', 'C', 'G', 'D', 'R', 'E', 'J', 'P'] },
         { label: '패턴 2', bars: ['B', 'H', 'C', 'Q', 'A', 'D', 'M', 'E'] },
-      ])!,
+      ], 'intermediate')!,
     }
 
     let rhythmCh: { title: string; description: string; level: string; patterns: unknown[] } | null = null
@@ -804,7 +853,7 @@ JSON 객체로만 응답:
       if (!rhythmJsonStr) { console.error(`[cron-rhythm] attempt ${attempt}: no JSON`); continue }
       let parsed
       try { parsed = JSON.parse(rhythmJsonStr) } catch { continue }
-      const assembled = assemblePatternsABC(parsed.patterns ?? [])
+      const assembled = assemblePatternsABC(parsed.patterns ?? [], rhythmLevel)
       if (!assembled) { console.error(`[cron-rhythm] attempt ${attempt}: assembly failed`); continue }
       rhythmCh = { ...parsed, patterns: assembled }
       console.log(`[cron-rhythm] success attempt=${attempt} level=${rhythmLevel}`)
