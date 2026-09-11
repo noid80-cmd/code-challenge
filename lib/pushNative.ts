@@ -92,8 +92,15 @@ async function loadMessaging(): Promise<Messaging | 'no-bridge' | 'no-plugin'> {
  * 남는데 서버에는 토큰이 없는, 알림만 조용히 안 오는 상태가 된다.
  */
 async function saveToken(token: string): Promise<boolean> {
+  // Capacitor가 자기 플랫폼을 직접 알려준다. userAgent로 짐작하던 때는
+  // iPhone 문자열이 안 잡히는 웹뷰가 전부 android로 기록돼서, 애플 계정
+  // 사용자가 안드로이드로 집계됐다 — Play 테스터가 몇 명인지 세는 일이
+  // 이 한 줄 때문에 통째로 어긋났다. 바로 아래 bridgeInfo()는 이미 이
+  // 값을 쓰고 있었다.
   const platform =
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ? 'ios' : 'android'
+    (window as unknown as { Capacitor?: { getPlatform?: () => string } })
+      .Capacitor?.getPlatform?.()
+    ?? (/iPad|iPhone|iPod/.test(navigator.userAgent) ? 'ios' : 'android')
   // 이 요청이 늦어지면 화면이 '확인 중'에 붙잡힌다. 등록이 늦는 것보다
   // 화면이 안 움직이는 게 나쁘다.
   const abort = new AbortController()
