@@ -1277,6 +1277,7 @@ JSON 객체로만 응답:
   ]
 }`
 
+    const melodyFailures: string[] = []
     const MELODY_FALLBACK = {
       title: '계이름 시창 챌린지',
       // 난이도를 말하지 않는다. 이 폴백은 고급 자리에도 들어갈 수 있는데
@@ -1293,6 +1294,7 @@ JSON 객체로만 응답:
 
     let melodyCh: { title: string; description: string; level: string; patterns: unknown[] } | null = null
     for (let attempt = 1; attempt <= 10; attempt++) {
+      // (실패 사유는 melodyFailures 에 모아 응답으로 돌려준다)
       const melodyMsg = await anthropic.messages.create({
         model: 'claude-sonnet-4-6',
         max_tokens: 1024,
@@ -1301,7 +1303,7 @@ JSON 객체로만 응답:
       })
       const melodyText = melodyMsg.content[0].type === 'text' ? melodyMsg.content[0].text : ''
       const melodyJsonStr = extractJsonObject(melodyText)
-      if (!melodyJsonStr) { console.error(`[cron-melody] attempt ${attempt}: no JSON`); continue }
+      if (!melodyJsonStr) { console.error(`[cron-melody] attempt ${attempt}: no JSON`); melodyFailures.push('no JSON'); continue }
       let parsed
       try { parsed = JSON.parse(melodyJsonStr) } catch { continue }
       const rawMelodyPatterns: Array<{ label: string; bars: string[] }> = (parsed.patterns ?? [])
@@ -1315,15 +1317,16 @@ JSON 객체로만 응답:
         const combined = rawMelodyPatterns.flatMap(p => p.bars)
         melodyRuleBroken = validateMelodyCombined(combined, melodyLevel, melodyRecipe)
       }
-      if (melodyRuleBroken) { console.error(`[cron-melody] attempt ${attempt}: rule violation — ${melodyRuleBroken}`); continue }
+      if (melodyRuleBroken) { console.error(`[cron-melody] attempt ${attempt}: rule violation — ${melodyRuleBroken}`); melodyFailures.push(melodyRuleBroken); continue }
       const assembled = assembleMelodyABC(rawMelodyPatterns)
-      if (!assembled) { console.error(`[cron-melody] attempt ${attempt}: assembly failed`); continue }
+      if (!assembled) { console.error(`[cron-melody] attempt ${attempt}: assembly failed`); melodyFailures.push('assembly failed'); continue }
       melodyCh = { ...parsed, patterns: assembled }
       console.log(`[cron-melody] success attempt=${attempt} level=${melodyLevel}`)
       break
     }
     if (!melodyCh) {
       console.error('[cron-melody] all 10 attempts failed — using fallback')
+      insertErrors.push(`melody ${melodyLevel} fallback: ` + melodyFailures.slice(0, 10).join(' / '))
       melodyCh = MELODY_FALLBACK
     }
 
