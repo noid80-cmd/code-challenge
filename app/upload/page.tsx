@@ -410,7 +410,9 @@ export default function UploadPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!file) { setError('영상을 선택해주세요.'); return }
-    try { if (major) localStorage.setItem('major', major) } catch { /* 저장소가 막힌 브라우저 */ }
+    // 전공은 한 번만 고르면 다음부터 기억한다. 비어 있으면 영상이 어느 악기인지 알 길이 없다.
+    if (!major) { setError('전공을 하나 골라주세요. 한 번만 고르면 다음부터는 기억합니다.'); return }
+    try { localStorage.setItem('major', major) } catch { /* 저장소가 막힌 브라우저 */ }
     if (!challenge) { setError('오늘의 챌린지가 없어요.'); return }
     setError(''); setUploading(true)
     const supabase = createClient()
@@ -432,7 +434,7 @@ export default function UploadPage() {
     const rows = destinations.map(dest => ({
       challenge_id: challenge.id, user_id: user.id, video_url: path,
       caption: caption.trim() || null,
-      major: major || null,
+      major,
       group_id: dest === 'public' ? null : dest,
       progression_index: selectedProgression,
       is_private: false,
@@ -531,6 +533,9 @@ export default function UploadPage() {
   }
 
   const fmt = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+
+  // 전공까지 골라야 올릴 수 있다 — 악기를 모르면 목록에서 모아 볼 수도, 커버를 그릴 수도 없다.
+  const canSubmit = !uploading && !!file && !!challenge && !!major
 
   const inputStyle: React.CSSProperties = {
     width: '100%', background: 'rgba(13,13,12,0.8)',
@@ -952,10 +957,18 @@ export default function UploadPage() {
           )}
 
           <div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: '#c0bab0', marginBottom: 8 }}>전공</div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: '#c0bab0', marginBottom: 8 }}>
+              전공
+              {!major && (
+                <span style={{ fontWeight: 600, color: '#a8a296', marginLeft: 6 }}>
+                  하나만 골라주세요 · 다음부터는 기억합니다
+                </span>
+              )}
+            </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {MAJORS.map(m => (
-                <button key={m} type="button" onClick={() => setMajor(prev => prev === m ? '' : m)}
+                /* 한 번 고르면 다시 빈칸으로 돌아가지 않는다 — 바꾸려면 다른 것을 고른다. */
+                <button key={m} type="button" onClick={() => setMajor(m)}
                   style={{
                     padding: '7px 13px', borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 700,
                     background: major === m ? 'linear-gradient(135deg, #f8f4ec, #c8c4b0)' : 'transparent',
@@ -972,13 +985,13 @@ export default function UploadPage() {
 
 {error && <p style={{ color: '#f0ece0', fontSize: 13, textAlign: 'center' }}>{error}</p>}
 
-          <button type="submit" disabled={uploading || !file || !challenge} style={{
+          <button type="submit" disabled={!canSubmit} style={{
             width: '100%', padding: '15px', borderRadius: 13, border: 'none',
-            background: uploading || !file || !challenge ? 'rgba(240,236,224,0.08)' : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-            color: uploading || !file || !challenge ? '#a8a296' : '#0a0a08',
+            background: !canSubmit ? 'rgba(240,236,224,0.08)' : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+            color: !canSubmit ? '#a8a296' : '#0a0a08',
             fontSize: 15, fontWeight: 800,
-            cursor: uploading || !file || !challenge ? 'default' : 'pointer',
-            boxShadow: uploading || !file || !challenge ? 'none' : '0 6px 24px rgba(240,236,224,0.4)',
+            cursor: !canSubmit ? 'default' : 'pointer',
+            boxShadow: !canSubmit ? 'none' : '0 6px 24px rgba(240,236,224,0.4)',
           }}>
             {uploading ? '업로드 중...' : '연주 올리기'}
           </button>
