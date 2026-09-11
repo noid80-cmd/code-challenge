@@ -110,9 +110,9 @@ const BAR_PATTERNS: Record<string, string> = {
   // (다른 음을 이으면 이음줄이 되어 뜻이 달라진다).
   '45': 'C2 D-D2 E2 D',
   '46': 'E2 F-F2 G2 F',
-  '47': 'G2-G2 E2 C2',
+  '47': 'E2 G2-G2 E2',
   '48': 'C D E-E2 G2 F',
-  '49': 'c2-c2 G2 E2',
+  '49': 'G2 c2-c2 G2',
   '50': 'D2 F2-F2 A2',
 }
 
@@ -126,7 +126,7 @@ const CATEGORY = {
   rhythm: ['X', 'Y', 'Z', '12', '13', '15', '16', '17', '18', '19', '20', '22', '23', '24', '25', '26', '27', '28', '29', '35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48', '49', '50'],
   syncopation: ['8', '9', '11', '14', '26', '27', '45', '46', '48'],
   rest: ['5', '6', '7', '10', '15', '17', '19', '20'],
-  // 마디 안 붙임줄 — 고급에서만 요구한다(중급은 need.tie=0)
+  // 마디 안 붙임줄 — 중급부터 요구한다
   tie: ['45', '46', '47', '48', '49', '50'],
   // rhythm 을 하나로만 요구하면 AI가 16분음표 패턴으로만 채운다 — 실제로
   // 중급·고급 열흘치에 붓점이 2개대, 셋잇단음표가 3개대였다(2026-09-11).
@@ -145,21 +145,21 @@ type RecipeNeed = { leap: number; bigLeap: number; chromatic: number; rhythm: nu
 const RECIPES: { name: string; need: (level: string) => RecipeNeed; neighborCap: (level: string) => number; chromaticCap: (level: string) => number; ruleText: string }[] = [
   {
     name: '도약·리듬 집중',
-    need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 1, rhythm: level === 'advanced' ? 7 : 6, dotted: level === 'advanced' ? 2 : 1, triplet: level === 'advanced' ? 2 : 1, syncopation: 1, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
+    need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 1, rhythm: 7, dotted: 2, triplet: 2, syncopation: 1, rest: 0, tie: level === 'advanced' ? 2 : 1 }),
     neighborCap: () => 2,
     chromaticCap: () => 2,
     ruleText: '오늘은 도약과 리듬 심화 위주로 몰아서 만드세요. 쉼표 패턴은 아예 안 써도 되지만, 반음은 최소 1개는 넣으세요.',
   },
   {
     name: '반음·당김음 집중',
-    need: level => ({ leap: 1, bigLeap: 1, chromatic: 2, rhythm: 2, dotted: 1, triplet: 1, syncopation: level === 'advanced' ? 5 : 4, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
+    need: level => ({ leap: 1, bigLeap: 1, chromatic: 2, rhythm: 4, dotted: 1, triplet: 1, syncopation: level === 'advanced' ? 5 : 4, rest: 0, tie: level === 'advanced' ? 2 : 1 }),
     neighborCap: () => 3,
     chromaticCap: () => 3,
     ruleText: '오늘은 당김음 위주로 몰아서 만드세요. 반음(크로매틱)도 다른 날보다 조금 더 쓰되, 과하게 넣지 말고 딱 필요한 개수만 쓰세요.',
   },
   {
     name: '쉼표·리듬 집중',
-    need: level => ({ leap: 2, bigLeap: 1, chromatic: 1, rhythm: level === 'advanced' ? 8 : 7, dotted: 2, triplet: 2, syncopation: 1, rest: level === 'advanced' ? 5 : 4, tie: level === 'advanced' ? 2 : 0 }),
+    need: level => ({ leap: 2, bigLeap: 1, chromatic: 1, rhythm: level === 'advanced' ? 8 : 7, dotted: 2, triplet: 2, syncopation: 1, rest: level === 'advanced' ? 5 : 4, tie: level === 'advanced' ? 2 : 1 }),
     neighborCap: () => 3,
     chromaticCap: () => 2,
     ruleText: '오늘은 쉼표와 리듬 심화 위주로 몰아서 만드세요. 반음은 최소 1개는 넣으세요.',
@@ -167,8 +167,8 @@ const RECIPES: { name: string; need: (level: string) => RecipeNeed; neighborCap:
   {
     name: '균형',
     need: level => level === 'advanced'
-      ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 5, dotted: 2, triplet: 2, syncopation: 2, rest: 1, tie: 2 }
-      : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 5, dotted: 1, triplet: 1, syncopation: 2, rest: 1, tie: 0 },
+      ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 6, dotted: 2, triplet: 2, syncopation: 2, rest: 1, tie: 2 }
+      : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 6, dotted: 2, triplet: 2, syncopation: 2, rest: 1, tie: 1 },
     neighborCap: level => level === 'advanced' ? 2 : 4,
     chromaticCap: () => 3,
     ruleText: '오늘은 도약·반음·리듬·당김음·쉼표를 골고루 섞어서 만드세요. 단, 반음은 넣더라도 최소한으로만 곁들이세요.',

@@ -966,9 +966,11 @@ JSON 객체로만 응답:
     '38': 'C>G F>D G2 E2', '39': 'C<G F<D G2 E2',
     '40': '(3CEG F2 G2 F2', '41': '(3GAG F2 E2 D2',
     '42': 'CE/G/ F2 D2 C2', '43': 'C/EG/ G2 F2 D2', '44': 'C/E/G G2 E2 C2',
-    // 마디 안 붙임줄 45~50 — 고급 전용. 타이는 같은 음끼리만 잇는다.
-    '45': 'C2 D-D2 E2 D', '46': 'E2 F-F2 G2 F', '47': 'G2-G2 E2 C2',
-    '48': 'C D E-E2 G2 F', '49': 'c2-c2 G2 E2', '50': 'D2 F2-F2 A2',
+    // 마디 안 붙임줄 45~50 — 중급 이상. 타이는 같은 음끼리만 잇고,
+    // 반드시 마디 한가운데(4단위)를 걸치게 둔다. 한 박 안에서 묶으면
+    // 한 음표로 그냥 써지는 모양이라 읽는 사람에게 아무것도 안 알려준다.
+    '45': 'C2 D-D2 E2 D', '46': 'E2 F-F2 G2 F', '47': 'E2 G2-G2 E2',
+    '48': 'C D E-E2 G2 F', '49': 'G2 c2-c2 G2', '50': 'D2 F2-F2 A2',
   }
 
   const MELODY_CATEGORY = {
@@ -994,21 +996,21 @@ JSON 객체로만 응답:
   const MELODY_RECIPES: { name: string; need: (level: string) => MelodyRecipeNeed; neighborCap: (level: string) => number; chromaticCap: (level: string) => number; ruleText: string }[] = [
     {
       name: '도약·리듬 집중',
-      need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 1, rhythm: level === 'advanced' ? 7 : 6, dotted: level === 'advanced' ? 2 : 1, triplet: level === 'advanced' ? 2 : 1, syncopation: 1, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
+      need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 1, rhythm: 7, dotted: 2, triplet: 2, syncopation: 1, rest: 0, tie: level === 'advanced' ? 2 : 1 }),
       neighborCap: () => 2,
       chromaticCap: () => 2,
       ruleText: '오늘은 도약과 리듬 심화 위주로 몰아서 만드세요. 쉼표 패턴은 아예 안 써도 되지만, 반음은 최소 1개는 넣으세요.',
     },
     {
       name: '반음·당김음 집중',
-      need: level => ({ leap: 1, bigLeap: 1, chromatic: 2, rhythm: 2, dotted: 1, triplet: 1, syncopation: level === 'advanced' ? 5 : 4, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
+      need: level => ({ leap: 1, bigLeap: 1, chromatic: 2, rhythm: 4, dotted: 1, triplet: 1, syncopation: level === 'advanced' ? 5 : 4, rest: 0, tie: level === 'advanced' ? 2 : 1 }),
       neighborCap: () => 3,
       chromaticCap: () => 3,
       ruleText: '오늘은 당김음 위주로 몰아서 만드세요. 반음(크로매틱)도 다른 날보다 조금 더 쓰되, 과하게 넣지 말고 딱 필요한 개수만 쓰세요.',
     },
     {
       name: '쉼표·리듬 집중',
-      need: level => ({ leap: 2, bigLeap: 1, chromatic: 1, rhythm: level === 'advanced' ? 8 : 7, dotted: 2, triplet: 2, syncopation: 1, rest: level === 'advanced' ? 5 : 4, tie: level === 'advanced' ? 2 : 0 }),
+      need: level => ({ leap: 2, bigLeap: 1, chromatic: 1, rhythm: level === 'advanced' ? 8 : 7, dotted: 2, triplet: 2, syncopation: 1, rest: level === 'advanced' ? 5 : 4, tie: level === 'advanced' ? 2 : 1 }),
       neighborCap: () => 3,
       chromaticCap: () => 2,
       ruleText: '오늘은 쉼표와 리듬 심화 위주로 몰아서 만드세요. 반음은 최소 1개는 넣으세요.',
@@ -1016,8 +1018,8 @@ JSON 객체로만 응답:
     {
       name: '균형',
       need: level => level === 'advanced'
-        ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 5, dotted: 2, triplet: 2, syncopation: 2, rest: 1, tie: 2 }
-        : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 5, dotted: 1, triplet: 1, syncopation: 2, rest: 1, tie: 0 },
+        ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 6, dotted: 2, triplet: 2, syncopation: 2, rest: 1, tie: 2 }
+        : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 6, dotted: 2, triplet: 2, syncopation: 2, rest: 1, tie: 1 },
       neighborCap: level => level === 'advanced' ? 2 : 4,
       chromaticCap: () => 3,
       ruleText: '오늘은 도약·반음·리듬·당김음·쉼표를 골고루 섞어서 만드세요. 단, 반음은 넣더라도 최소한으로만 곁들이세요.',
@@ -1245,12 +1247,12 @@ Z: C/D/E/F/ G2 F2 E2 (16분음표 상행 런)
 43: C/EG/ G2 F2 D2 (8분음표가 중간: 도-미-솔)
 44: C/E/G G2 E2 C2 (8분음표가 뒤: 도-미-솔)
 
-[마디 안 붙임줄 45~50 — 고급 전용. 한 마디 안에서 박 경계를 타이로 넘음]
+[마디 안 붙임줄 45~50 — 중급 이상. 마디 한가운데를 타이로 넘는다 — 한 박 안에서 묶으면 그냥 긴 음표라 뜻이 없다]
 45: C2 D-D2 E2 D
 46: E2 F-F2 G2 F
-47: G2-G2 E2 C2
+47: E2 G2-G2 E2
 48: C D E-E2 G2 F
-49: c2-c2 G2 E2
+49: G2 c2-c2 G2
 50: D2 F2-F2 A2
 
 [마디를 넘어가는 붙임줄 26~27 — 반드시 짝으로만 사용. 26 바로 다음 마디에
