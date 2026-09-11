@@ -98,19 +98,15 @@ const BAR_PATTERNS: Record<string, string> = {
   '50': 'BB (5:4:5B/B/B/B/B/ z2 B2',
   '51': '(5:4:5B/B/B/B/B/ B/B/B/B/ z2 (3BzB',
   '52': '(5:4:5B/B/B/B/B/ (5:4:5B/B/B/B/B/ BB z2',
-  // 마디 안 붙임줄 패턴 53~56 — 고급 전용.
+  // 마디 안 붙임줄은 두지 않는다.
   //
-  // 마디 한가운데(4단위 지점)를 넘는 타이만 쓴다. 박 구조를 보이려고 쪼개
-  // 적는 것이라야 붙임줄에 뜻이 있다. 한 박 안에서 묶으면(B-B=4분음표,
-  // B/-B/=8분음표, B2-B2가 1~2박=2분음표) 한 음표로 그냥 써지는 것을
-  // 굳이 두 개로 그린 셈이라 눈만 복잡해진다 — 실제로 그렇게 나왔다.
+  // 한가운데를 넘기기만 하면 뜻이 생기는 줄 알았는데 아니었다. 묶은 길이가
+  // 한 음표로 써지면(2~5박=점4분음표, 2~6박=2분음표) 붙임줄을 쓸 이유가
+  // 없고, 그렇게 풀어 적고 나면 "4분+점4분+4분+8분" 같은 난해한 마디가
+  // 남는다 — 그런 리듬은 보통 쓰지 않는다.
   //
-  // 타이는 반드시 공백 없는 한 토큰으로 적는다. 박 단위로 쪼개 섞는
-  // shuffleBeatsAcrossBars가 셀 경계에서 타이를 끊으면 엉뚱한 음표에 붙는다.
-  '53': 'BB B2-B2 BB',
-  '54': 'BB B-B2 B z2',
-  '55': 'B2 B2-B2 BB',
-  '56': 'BB z B-B2 z2',
+  // L:1/8 에서 한 음표로 못 쓰는 길이는 5·7단위뿐이라 억지스럽다. 그래서
+  // 붙임줄은 마디를 넘을 때만 쓴다(addRandomTies) — 거기엔 대안이 없다.
 }
 
 // Bars that contain (3BzB — triplet with rest (syncopated feel)
@@ -118,9 +114,8 @@ const SYNCO_TRIPLET_BARS = new Set(['D', 'I', 'Q', 'U', 'Z', '14', '16', '22', '
 
 // 고급 전용 마디. 5잇단음표와 붙임줄은 "있으면 좋은 것"이 아니라 고급의 조건이다.
 const QUINTUPLET_BARS = ['49', '50', '51', '52']
-const TIE_BARS = ['53', '54', '55', '56']
 const SEXTUPLET_BARS = ['45', '46', '47', '48']
-const ADVANCED_ONLY = new Set([...QUINTUPLET_BARS, ...TIE_BARS, ...SEXTUPLET_BARS])
+const ADVANCED_ONLY = new Set([...QUINTUPLET_BARS, ...SEXTUPLET_BARS])
 
 // AI에게 "포함 가능"이라고만 하면 안전한 쪽으로 흐른다 — 실제로 고급 23개를
 // 세어보니 5잇단음표가 한 번도 없었고 붙임줄은 3개뿐이었다(2026-09-11).
@@ -155,8 +150,6 @@ function enforceAdvancedBars(ids: string[], level: string): string[] {
   if (level === 'advanced' && !has(QUINTUPLET_BARS) && !has(SEXTUPLET_BARS) && Math.random() < 0.25) {
     replaceOne(Math.random() < 0.5 ? QUINTUPLET_BARS : SEXTUPLET_BARS)
   }
-  // 붙임줄은 5·6잇단음표만큼 튀는 표기가 아니라 매번 있어도 식상하지 않다.
-  if (!has(TIE_BARS)) replaceOne(TIE_BARS)
   return out
 }
 
@@ -228,35 +221,8 @@ function shuffleBeatsAcrossBars(barTexts: string[]): string[] | null {
     const pool = shuffleArray(allCells)
     const bars: string[][] = Array.from({ length: numBars }, () => [])
     const remaining: number[] = Array(numBars).fill(4)
-    // 붙임줄은 마디 한가운데를 걸쳐야 뜻이 생긴다. 마디 라이브러리는 그렇게
-    // 만들어 뒀지만 여기서 박 단위로 섞으면 자리가 바뀐다 — 앞자리로 가면
-    // 1~2박을 잇게 되고 그건 그냥 2분음표다(실제로 그렇게 나왔다).
-    //
-    // 타이 셀은 전부 2박이므로 두 번째 박에 앉아야 한가운데를 넘는다.
-    // 그러려면 앞에 1박짜리를 하나 깔고 나서 넣어야 한다.
-    const ties = pool.filter(c => c.tokens.includes('-'))
-    const rest = pool.filter(c => !c.tokens.includes('-'))
-    if (ties.length > numBars) continue
-    const leads: BeatCell[] = []
-    for (let t = 0; t < ties.length; t++) {
-      const i = rest.findIndex(c => c.slots === 1)
-      if (i === -1) break
-      leads.push(rest.splice(i, 1)[0])
-    }
-    if (leads.length < ties.length) continue
-
-    // 타이가 늘 앞쪽 마디에만 오지 않도록 어느 마디에 앉힐지는 섞는다.
-    const barOrder = shuffleArray(Array.from({ length: numBars }, (_, i) => i))
-    ties.forEach((tie, t) => {
-      const b = barOrder[t]
-      bars[b].push(leads[t].tokens)
-      remaining[b] -= 1
-      bars[b].push(tie.tokens)
-      remaining[b] -= 2
-    })
-
     let ok = true
-    for (const cell of rest) {
+    for (const cell of pool) {
       const idx = remaining.findIndex(r => r >= cell.slots)
       if (idx === -1) { ok = false; break }
       bars[idx].push(cell.tokens)
@@ -329,8 +295,8 @@ function assemblePatternsABC(
 function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
-    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~52(5·6잇단음표)는 합쳐서 0~1개까지만. 53~56(붙임줄)은 반드시 1~2개 포함'
-    : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 53~56(붙임줄)은 반드시 1개 포함. 45~52(5·6잇단음표)는 사용하지 않음'
+    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~52(5·6잇단음표)는 합쳐서 0~1개까지만'
+    : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~52(5·6잇단음표)는 사용하지 않음'
 
   const recentBlock = recentTitles.length > 0
     ? `\n최근 사용한 제목 (절대 반복 금지):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
@@ -448,11 +414,6 @@ Z: z/ B/ B B z/ B/ (3BzB z2
 51: (5:4:5B/B/B/B/B/ B/B/B/B/ z2 (3BzB
 52: (5:4:5B/B/B/B/B/ (5:4:5B/B/B/B/B/ BB z2
 
-[복잡: 붙임줄(타이) 패턴 53~56 — 중급 이상, 패턴당 반드시 1~2개. 마디 한가운데를 넘는 타이만 있다]
-53: BB B2-B2 BB
-54: BB B-B2 B z2
-55: B2 B2-B2 BB
-56: BB z B-B2 z2
 
 규칙:
 - ${levelRule}
