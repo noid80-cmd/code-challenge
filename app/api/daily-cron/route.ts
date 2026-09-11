@@ -216,8 +216,35 @@ function shuffleBeatsAcrossBars(barTexts: string[]): string[] | null {
     const pool = shuffleArray(allCells)
     const bars: string[][] = Array.from({ length: numBars }, () => [])
     const remaining: number[] = Array(numBars).fill(4)
+    // 붙임줄은 마디 한가운데를 걸쳐야 뜻이 생긴다. 마디 라이브러리는 그렇게
+    // 만들어 뒀지만 여기서 박 단위로 섞으면 자리가 바뀐다 — 앞자리로 가면
+    // 1~2박을 잇게 되고 그건 그냥 2분음표다(실제로 그렇게 나왔다).
+    //
+    // 타이 셀은 전부 2박이므로 두 번째 박에 앉아야 한가운데를 넘는다.
+    // 그러려면 앞에 1박짜리를 하나 깔고 나서 넣어야 한다.
+    const ties = pool.filter(c => c.tokens.includes('-'))
+    const rest = pool.filter(c => !c.tokens.includes('-'))
+    if (ties.length > numBars) continue
+    const leads: BeatCell[] = []
+    for (let t = 0; t < ties.length; t++) {
+      const i = rest.findIndex(c => c.slots === 1)
+      if (i === -1) break
+      leads.push(rest.splice(i, 1)[0])
+    }
+    if (leads.length < ties.length) continue
+
+    // 타이가 늘 앞쪽 마디에만 오지 않도록 어느 마디에 앉힐지는 섞는다.
+    const barOrder = shuffleArray(Array.from({ length: numBars }, (_, i) => i))
+    ties.forEach((tie, t) => {
+      const b = barOrder[t]
+      bars[b].push(leads[t].tokens)
+      remaining[b] -= 1
+      bars[b].push(tie.tokens)
+      remaining[b] -= 2
+    })
+
     let ok = true
-    for (const cell of pool) {
+    for (const cell of rest) {
       const idx = remaining.findIndex(r => r >= cell.slots)
       if (idx === -1) { ok = false; break }
       bars[idx].push(cell.tokens)
