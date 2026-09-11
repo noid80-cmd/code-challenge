@@ -1277,6 +1277,16 @@ JSON 객체로만 응답:
   ]
 }`
 
+    // 제목에서 조성 표기를 걷어낸다. 조는 아래에서 다시 붙인다.
+    function stripKeyFromTitle(t: string): string {
+      return String(t ?? '')
+        .replace(/[A-Ga-g][#b♯♭]?\s*(장조|단조)\s*/g, '')
+        .replace(/\s*[—\-]\s*$/, '')
+        .replace(/^\s*[—\-]\s*/, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim() || '계이름 시창 챌린지'
+    }
+
     const melodyFailures: string[] = []
     const MELODY_FALLBACK = {
       title: '계이름 시창 챌린지',
@@ -1334,6 +1344,9 @@ JSON 객체로만 응답:
       // 고급은 조표를 바꿔 보여준다. 악보는 C장조 그대로고 그릴 때만 옮긴다.
       if (melodyKey) {
         for (const p of melodyCh.patterns as Array<{ transpose?: number }>) p.transpose = melodyKey.semitones
+        // 고급은 조를 옮겨 내므로 AI가 제목에 써 둔 조성은 틀린 말이 된다.
+        // 실제로 "C장조 고급 시창 챌린지 — … — A장조"가 나왔다(2026-09-11).
+        melodyCh = { ...melodyCh, title: stripKeyFromTitle(melodyCh.title) }
       }
       const { error: insErr } = await supabase.from('challenges').insert({
         date: today,
