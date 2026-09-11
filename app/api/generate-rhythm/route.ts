@@ -110,6 +110,41 @@ const BAR_PATTERNS: Record<string, string> = {
 // Bars that contain (3BzB — triplet with rest (syncopated feel)
 const SYNCO_TRIPLET_BARS = new Set(['D', 'I', 'Q', 'U', 'Z', '14', '16', '22', '23', '27', '28', '40'])
 
+// 고급 전용 마디. 5잇단음표와 붙임줄은 "있으면 좋은 것"이 아니라 고급의 조건이다.
+const QUINTUPLET_BARS = ['49', '50', '51', '52']
+const TIE_BARS = ['53', '54', '55', '56']
+const SEXTUPLET_BARS = ['45', '46', '47', '48']
+const ADVANCED_ONLY = new Set([...QUINTUPLET_BARS, ...TIE_BARS, ...SEXTUPLET_BARS])
+
+// AI에게 "포함 가능"이라고만 하면 안전한 쪽으로 흐른다 — 실제로 고급 23개를
+// 세어보니 5잇단음표가 한 번도 없었고 붙임줄은 3개뿐이었다(2026-09-11).
+// 그렇다고 검증 실패로 재시도만 걸면 5번 다 놓쳤을 때 그날 문제가 통째로
+// 비므로, 모자란 만큼 코드가 직접 채워 넣는다.
+//
+// 갈아끼울 자리는 평범한 마디 중에서만 고른다. 싱코페이션 마디를 덮으면
+// 아래 테마 검증이 도로 걸려 재시도가 된다.
+function enforceAdvancedBars(ids: string[]): string[] {
+  const out = [...ids]
+  const taken = new Set<number>()
+  const pick = (pool: string[]) => pool[Math.floor(Math.random() * pool.length)]
+
+  function replaceOne(pool: string[]) {
+    const spots = out
+      .map((id, i) => ({ id, i }))
+      .filter(({ id, i }) => !ADVANCED_ONLY.has(id) && !SYNCO_TRIPLET_BARS.has(id) && !taken.has(i))
+      .map(({ i }) => i)
+    if (!spots.length) return
+    const at = spots[Math.floor(Math.random() * spots.length)]
+    out[at] = pick(pool)
+    taken.add(at)
+  }
+
+  const has = (pool: string[]) => out.some(id => pool.includes(id))
+  if (!has(QUINTUPLET_BARS)) replaceOne(QUINTUPLET_BARS)
+  if (!has(TIE_BARS)) replaceOne(TIE_BARS)
+  return out
+}
+
 // --- 박자 단위 재조립 ---
 // AI가 고른 8개 마디를 그대로 쓰면 특정 위치(예: 2번째 마디)에 같은 마디가
 // 여러 번 연속 생성에 걸쳐 반복되는 문제가 있었음. 각 마디를 박(2단위=1beat)
@@ -209,7 +244,8 @@ function addRandomTies(bars: string[]): string[] {
 }
 
 function assemblePatternsABC(
-  aiPatterns: Array<{ label: string; bars: string[] }>
+  aiPatterns: Array<{ label: string; bars: string[] }>,
+  level: string,
 ): Array<{ label: string; abc: string }> | null {
   const result: Array<{ label: string; abc: string }> = []
   for (const p of aiPatterns) {
@@ -217,9 +253,11 @@ function assemblePatternsABC(
       console.error(`[rhythm] bars.length=${p.bars?.length ?? 'missing'}`)
       return null
     }
+    let ids = p.bars.map(id => String(id).toUpperCase())
+    if (level === 'advanced') ids = enforceAdvancedBars(ids)
     const barTexts: string[] = []
-    for (const id of p.bars) {
-      const barText = BAR_PATTERNS[String(id).toUpperCase()]
+    for (const id of ids) {
+      const barText = BAR_PATTERNS[id]
       if (!barText) {
         console.error(`[rhythm] unknown pattern ID: "${id}"`)
         return null
@@ -230,7 +268,7 @@ function assemblePatternsABC(
     // use (3BzB (note-rest-note triplet) — prevents all-straight-triplet inconsistency
     const isSyncoLabel = /싱코|당김음|엇박|오프비트/i.test(String(p.label))
     if (isSyncoLabel) {
-      const syncoCount = p.bars.filter(id => SYNCO_TRIPLET_BARS.has(String(id).toUpperCase())).length
+      const syncoCount = ids.filter(id => SYNCO_TRIPLET_BARS.has(id)).length
       if (syncoCount < 2) {
         console.error(`[rhythm] synco pattern has only ${syncoCount} (3BzB bars — retrying`)
         return null
@@ -248,7 +286,7 @@ function assemblePatternsABC(
 function buildPrompt(level: string, recentTitles: string[] = []) {
   const levelLabel = level === 'advanced' ? '고급' : '중급'
   const levelRule = level === 'advanced'
-    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 4개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~48(6잇단음표)과 49~52(5잇단음표)는 각각 최대 1개까지만 선택적으로 포함 가능. 53~56(붙임줄)은 최대 2개까지 포함 가능'
+    ? '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 최소 3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 49~52(5잇단음표)는 반드시 1개 포함 — 빠뜨리면 안 됨. 45~48(6잇단음표)은 0~1개. 53~56(붙임줄)은 반드시 1~2개 포함'
     : '각 패턴에 복잡 패턴(P~Z, 10~12, 20~21, 36~44) 중 2~3개 포함 (나머지는 A~O, 4~9, 13~19, 22~35). 45~56은 사용하지 않음'
 
   const recentBlock = recentTitles.length > 0
@@ -355,19 +393,19 @@ Z: z/ B/ B B z/ B/ (3BzB z2
 43: B/B/B/z/ B2 B/B/B/z/ z2
 44: z/B/z/B/ z2 (3BBB B2
 
-[매우 복잡: 6잇단음표(6연음) 패턴 45~48 — 고급 전용, 한 챌린지당 최대 1개]
+[매우 복잡: 6잇단음표(6연음) 패턴 45~48 — 고급 전용, 패턴당 0~1개]
 45: (6:4:6B/B/B/B/B/B/ BB z2 (3BBB
 46: BB (6:4:6B/B/B/B/B/B/ z2 B2
 47: (6:4:6B/B/B/B/B/B/ B/B/B/B/ z2 (3BzB
 48: (6:4:6B/B/B/B/B/B/ (6:4:6B/B/B/B/B/B/ BB z2
 
-[매우 복잡: 5잇단음표(5연음) 패턴 49~52 — 고급 전용, 한 챌린지당 최대 1개]
+[매우 복잡: 5잇단음표(5연음) 패턴 49~52 — 고급 전용, 패턴당 반드시 1개]
 49: (5:4:5B/B/B/B/B/ BB z2 (3BBB
 50: BB (5:4:5B/B/B/B/B/ z2 B2
 51: (5:4:5B/B/B/B/B/ B/B/B/B/ z2 (3BzB
 52: (5:4:5B/B/B/B/B/ (5:4:5B/B/B/B/B/ BB z2
 
-[복잡: 붙임줄(타이) 패턴 53~56 — 고급 전용, 한 챌린지당 최대 2개]
+[복잡: 붙임줄(타이) 패턴 53~56 — 고급 전용, 패턴당 반드시 1~2개]
 53: B2-B2 BB z2
 54: BB B2-B2 BB
 55: B-B z2 B3-B
@@ -454,7 +492,7 @@ export async function POST(req: Request) {
       let parsed
       try { parsed = JSON.parse(jsonStr) } catch { continue }
 
-      const assembled = assemblePatternsABC(parsed.patterns ?? [])
+      const assembled = assemblePatternsABC(parsed.patterns ?? [], level)
       if (!assembled) { console.error(`[generate-rhythm] attempt ${attempt}: assembly failed`); continue }
 
       const newTitle = String(parsed.title || '드럼 초견 챌린지')
