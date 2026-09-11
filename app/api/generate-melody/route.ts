@@ -250,7 +250,9 @@ function addMelodyTiesAcrossBars(bars: string[]): string[] {
     return n.startsWith('z') ? undefined : n.match(/[\^_=]?[A-Ga-g]/)?.[0]
   }
   for (let i = 0; i < out.length - 1; i++) {
-    if (Math.random() >= 0.3) continue
+    // 앞마디 끝 음과 다음 마디 첫 음이 같아야 해서 기회 자체가 드물다.
+    // 거기에 낮은 확률을 또 곱하면 붙임줄이 아예 안 나온다 — 실제로 0이었다.
+    if (Math.random() >= 0.7) continue
     const a = out[i], b = out[i + 1]
     // 잇단음표 묶음은 경계가 헷갈리므로 건드리지 않는다
     if ((a.trim().split(/\s+/).pop() ?? '').includes('(')) continue
