@@ -9,6 +9,20 @@ import { sendFcm } from '@/lib/fcm'
 // 넘은 사람은 대상이 아니다. 떠난 사람을 계속 찌르면 알림을 끄거나 앱을
 // 지운다. 규칙이 "어제 올렸을 것"이라 잔소리가 저절로 멈춘다.
 
+// 첫 연주를 권하는 말. 같은 말을 이레 내리 받으면 그냥 소음이 된다.
+// 날마다 다른 각도로 한 번씩 건네고, 이 목록이 끝나면 더 보내지 않는다.
+// 어느 문구든 드는 시간을 먼저 말한다 — 얼마나 걸릴지 모르면 시작하지 않는다.
+const FIRST_NUDGES = [
+  { title: '오늘 첫 연주를 올려보세요', body: '매일 3분이면 됩니다. 기록은 거기서 시작돼요.' },
+  { title: '잘하지 않아도 괜찮아요', body: '연습한 그대로면 됩니다. 3분이면 끝나요.' },
+  { title: '오늘 챌린지가 올라왔어요', body: '한 번 읽고 3분만 담아보세요.' },
+  { title: '얼굴은 안 나와도 됩니다', body: '손이나 악기만 보이면 돼요. 3분이면 됩니다.' },
+  { title: '첫 영상이 제일 무겁습니다', body: '한 번 올리고 나면 그다음은 쉬워져요. 매일 3분이면 됩니다.' },
+  { title: '오늘 올리면 기록이 시작돼요', body: '하루 3분, 그게 전부예요.' },
+  { title: '편할 때 시작하면 돼요', body: '오늘도 챌린지는 기다리고 있어요. 매일 3분이면 됩니다.' },
+]
+const NUDGE_DAYS = FIRST_NUDGES.length
+
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
@@ -58,6 +72,27 @@ export async function GET(req: NextRequest) {
     atRisk.set(uid, streak)
   }
 
+  // 한 번도 안 올린 사람에게는 시작을 권한다. 알림까지 켜 둔 사람이니
+  // 마음이 없는 게 아니라 첫 걸음이 무거운 것이다. 실제로 알림을 켠 76명
+  // 중 65명이 아직 첫 연주 전이었다(2026-09-11).
+  //
+  // 가입 후 이레까지만, 날마다 다른 말로 권한다. 그래도 안 올리면 거기서
+  // 그만둔다 — 같은 말을 계속 받으면 알림을 끄고, 그러면 나중에 정말
+  // 필요한 말도 못 전한다. 위의 "어제 올렸을 것"과 같은 이치다.
+  const signupCutoff = new Date(now.getTime() - NUDGE_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  const { data: newcomers } = await supabase
+    .from('profiles').select('id, created_at').gte('created_at', signupCutoff)
+  // uid -> 가입 후 며칠째(0부터). 이 맵에 있으면 "아직 첫 연주 전"이다.
+  const firstDay = new Map<string, number>()
+  for (const p of (newcomers ?? []) as { id: string; created_at: string }[]) {
+    if (daysOf.has(p.id)) continue
+    const d = Math.floor((now.getTime() - new Date(p.created_at).getTime()) / 86400000)
+    if (d < 0 || d >= NUDGE_DAYS) continue
+    firstDay.set(p.id, d)
+    atRisk.set(p.id, 0)
+  }
+  const firstTimers = firstDay.size
+
   if (atRisk.size === 0) {
     return NextResponse.json({ ok: true, targets: 0 })
   }
@@ -73,6 +108,12 @@ export async function GET(req: NextRequest) {
   // 오늘 하나면 하루가 더 붙는다고 알려준다.
   //
   // 드는 시간도 같이 적는다. 사람은 얼마나 걸릴지 모르면 시작하지 않는다.
+  function messageFor(uid: string) {
+    const day = firstDay.get(uid)
+    if (day !== undefined) return FIRST_NUDGES[day]
+    return message(atRisk.get(uid) ?? 1)
+  }
+
   function message(streak: number) {
     if (streak <= 1) {
       return {
@@ -96,7 +137,7 @@ export async function GET(req: NextRequest) {
   const deadEndpoints: string[] = []
   await Promise.allSettled(((webSubs ?? []) as { user_id: string; endpoint: string; subscription: unknown }[])
     .map(async s => {
-      const msg = message(atRisk.get(s.user_id) ?? 1)
+      const msg = messageFor(s.user_id)
       try {
         await webpush.sendNotification(
           s.subscription as webpush.PushSubscription,
@@ -115,7 +156,7 @@ export async function GET(req: NextRequest) {
   // FCM은 같은 문구끼리 묶어 보낸다. 한 명씩 보내면 왕복 횟수만큼 시간이 든다.
   const byMessage = new Map<string, { title: string; body: string; tokens: string[] }>()
   for (const d of (devices ?? []) as { user_id: string; token: string }[]) {
-    const msg = message(atRisk.get(d.user_id) ?? 1)
+    const msg = messageFor(d.user_id)
     const key = msg.title
     if (!byMessage.has(key)) byMessage.set(key, { ...msg, tokens: [] })
     byMessage.get(key)!.tokens.push(d.token)
@@ -132,6 +173,6 @@ export async function GET(req: NextRequest) {
     await supabase.from('device_tokens').delete().in('token', deadTokens)
   }
 
-  console.log('[streak] 대상', atRisk.size, '명 / web', web, '/ app', app)
-  return NextResponse.json({ ok: true, targets: atRisk.size, web, app })
+  console.log('[streak] 대상', atRisk.size, '명(첫 연주 권유', firstTimers, '명) / web', web, '/ app', app)
+  return NextResponse.json({ ok: true, targets: atRisk.size, firstTimers, web, app })
 }
