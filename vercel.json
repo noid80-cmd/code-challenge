@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/streak-cron",
-      "schedule": "0 10 * * *"
+      "schedule": "0 9 * * *"
     }
   ]
 }
