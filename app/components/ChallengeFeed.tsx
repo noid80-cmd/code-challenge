@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
 import dynamic from 'next/dynamic'
-import { localDate, challengeDate } from '@/lib/date'
+import { localDate, candidateDates, pickActiveDate } from '@/lib/date'
 import { TYPE_COLORS } from '@/lib/theme'
 import { LEVELS, LEVEL_COLORS, LEVEL_FALLBACK, LEVEL_LABELS, toLevel, type Level } from '@/lib/level'
 import { cachedLevel, fetchLevel, saveLevel } from './levelClient'
@@ -72,7 +72,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   const [filterProg, setFilterProg] = useState<number | 'all'>('all')
   const [streak, setStreak] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [isBeforeNoon, setIsBeforeNoon] = useState(false)
+  // 오늘 것이 아직 안 만들어져서 어제 챌린지를 보여주는 중인가
+  const [showingYesterday, setShowingYesterday] = useState(false)
   const [profile, setProfile] = useState<{ name: string; avatar_url: string | null } | null>(null)
   const [totalCount, setTotalCount] = useState(0)
   const [uploadedToday, setUploadedToday] = useState(false)
@@ -105,15 +106,19 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
 
-    const { date: chDate, isBeforeNoon } = challengeDate()
-    setIsBeforeNoon(isBeforeNoon)
     const lvl = await fetchLevel(user?.id)
     setUserLevel(lvl)
 
-    const { data: chAll, error: chError } = await supabase.from('challenges').select('*')
-      .eq('date', chDate).eq('type', type)
+    // 오늘·어제를 한 번에 받아, 오늘 것이 만들어졌으면 바로 그쪽을 본다.
+    const { today, yesterday } = candidateDates()
+    const { data: chBoth, error: chError } = await supabase.from('challenges').select('*')
+      .in('date', [today, yesterday]).eq('type', type)
       .order('seq', { ascending: true })
     if (chError) console.error('[ChallengeFeed] challenge query error:', chError)
+
+    const { date: chDate, showingYesterday } = pickActiveDate(chBoth ?? [])
+    setShowingYesterday(showingYesterday)
+    const chAll = (chBoth ?? []).filter(c => c.date === chDate)
 
     // 하루에 난이도별로 하나씩 올라오므로 유저 난이도에 맞는 것만 남긴다.
     // 그 난이도가 아직 없으면 가까운 난이도로 대신 보여주고, 대신 보여준다는
@@ -409,7 +414,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
           onClose={() => setLevelSheetOpen(false)}
         />
 
-        {isBeforeNoon && (
+        {showingYesterday && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
             background: 'rgba(240,236,224,0.05)', border: '1px solid rgba(240,236,224,0.12)',
@@ -417,7 +422,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
           }}>
             <span style={{ fontSize: 15 }}>🌅</span>
             <div>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#a0988c' }}>오늘의 챌린지는 낮 12시에 올라와요</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: '#a0988c' }}>오늘의 챌린지는 오전 10~11시에 올라와요</span>
               <span style={{ fontSize: 12, color: '#98948a', marginLeft: 8 }}>지금은 어제 챌린지예요</span>
             </div>
           </div>
@@ -504,7 +509,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
               borderRadius: 22, padding: '48px 20px', textAlign: 'center',
             }}>
               <p style={{ color: '#c0bab0', fontSize: 15, fontWeight: 700, marginBottom: 5 }}>오늘의 챌린지를 준비 중이에요</p>
-              <p style={{ color: '#a8a296', fontSize: 13 }}>매일 낮 12시에 새로운 {type === 'rhythm' ? '리듬 패턴' : type === 'melody' ? '멜로디 프레이즈' : '코드 진행'}이 올라와요</p>
+              <p style={{ color: '#a8a296', fontSize: 13 }}>매일 오전 10~11시에 새로운 {type === 'rhythm' ? '리듬 패턴' : type === 'melody' ? '멜로디 프레이즈' : '코드 진행'}이 올라와요</p>
               {isAdmin && (
                 <Link href="/admin" style={{
                   display: 'inline-block', marginTop: 22, padding: '9px 20px', borderRadius: 10,

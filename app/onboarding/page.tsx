@@ -82,7 +82,7 @@ export default function OnboardingPage() {
               매일 새로 배달되는<br />코드·리듬·멜로디 초견
             </h1>
             <p style={{ fontSize: 14, color: '#c8c4b0', lineHeight: 1.8, wordBreak: 'keep-all' }}>
-              매일 낮 12시, AI가 만든 새로운 챌린지가 올라와요.<br />
+              매일 오전 10~11시, AI가 만든 새로운 챌린지가 올라와요.<br />
               세 가지 초견을 매일 조금씩 연습해보세요.
             </p>
           </div>

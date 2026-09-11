@@ -9,7 +9,7 @@ import Link from 'next/link'
 import ChordPlayer from '@/app/components/ChordPlayer'
 import dynamic from 'next/dynamic'
 import { normalizeMeasures } from '@/lib/chords'
-import { challengeDate } from '@/lib/date'
+import { candidateDates, pickActiveDate } from '@/lib/date'
 import { LEVEL_FALLBACK, toLevel } from '@/lib/level'
 import { fetchLevel } from '@/app/components/levelClient'
 import { isNativeApp } from '@/lib/capacitor'
@@ -70,7 +70,6 @@ export default function UploadPage() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login?from=' + encodeURIComponent(window.location.pathname + window.location.search)); return }
-      const { date: today } = challengeDate()
       const search = new URLSearchParams(window.location.search)
       const typeParam = search.get('type') ?? 'chord'
 
@@ -83,11 +82,15 @@ export default function UploadPage() {
         setChallenge(data)
       } else {
         const lvl = await fetchLevel(user.id)
-        const { data: all } = await supabase.from('challenges').select('*')
-          .eq('date', today).eq('type', typeParam)
+        // 피드와 같은 기준이라야 한다 — 화면에서 본 챌린지에 영상이 붙어야 하니까.
+        const { today, yesterday } = candidateDates()
+        const { data: both } = await supabase.from('challenges').select('*')
+          .in('date', [today, yesterday]).eq('type', typeParam)
           .order('created_at', { ascending: false })
+        const { date: active } = pickActiveDate(both ?? [])
+        const all = (both ?? []).filter(ch => ch.date === active)
         const picked = LEVEL_FALLBACK[lvl]
-          .map(l => (all ?? []).filter(ch => toLevel(ch.level) === l))
+          .map(l => all.filter(ch => toLevel(ch.level) === l))
           .find(list => list.length > 0)?.[0] ?? null
         setChallenge(picked)
       }
