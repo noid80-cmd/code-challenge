@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
 import { sendFcm } from '@/lib/fcm'
+import { notifyTelegram } from '@/lib/telegram'
 
 // 연속 기록이 오늘 끊길 사람에게만 저녁에 한 번 알린다.
 //
@@ -94,6 +95,9 @@ export async function GET(req: NextRequest) {
   const firstTimers = firstDay.size
 
   if (atRisk.size === 0) {
+    // 보낼 사람이 없는 날도 알린다. 조용한 것과 고장난 것은 화면에서
+    // 똑같이 보인다 — 어느 쪽인지 말해주지 않으면 매번 DB를 뒤져야 한다.
+    await notifyTelegram('[초견챌린지] 저녁 알림 — 오늘은 보낼 사람이 없었습니다')
     return NextResponse.json({ ok: true, targets: 0 })
   }
 
@@ -174,5 +178,19 @@ export async function GET(req: NextRequest) {
   }
 
   console.log('[streak] 대상', atRisk.size, '명(첫 연주 권유', firstTimers, '명) / web', web, '/ app', app)
+
+  // 발송 결과를 로그로만 남기면 한 시간 뒤에는 아무도 알 수 없다. 실제로
+  // "저녁 알림이 왜 안 왔지"를 확인하려다 로그가 이미 사라져 대상자를 손으로
+  // 다시 계산해야 했다. 보낸 직후에 한 줄로 알린다.
+  await notifyTelegram(
+    `[초견챌린지] 저녁 알림 발송
+`
+    + `대상 ${atRisk.size}명 (첫 연주 권유 ${firstTimers}명)
+`
+    + `앱 ${app}건 · 웹 ${web}건`
+    + (app + web < atRisk.size ? `
+※ 대상보다 적게 나갔습니다 — 알림 미등록이거나 토큰 만료` : '')
+  )
+
   return NextResponse.json({ ok: true, targets: atRisk.size, firstTimers, web, app })
 }
