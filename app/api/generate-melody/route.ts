@@ -145,21 +145,21 @@ type RecipeNeed = { leap: number; bigLeap: number; chromatic: number; rhythm: nu
 const RECIPES: { name: string; need: (level: string) => RecipeNeed; neighborCap: (level: string) => number; chromaticCap: (level: string) => number; ruleText: string }[] = [
   {
     name: '도약·리듬 집중',
-    need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 1, rhythm: level === 'advanced' ? 8 : 6, dotted: level === 'advanced' ? 3 : 2, triplet: level === 'advanced' ? 3 : 2, syncopation: 1, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
+    need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 1, rhythm: level === 'advanced' ? 7 : 6, dotted: level === 'advanced' ? 2 : 1, triplet: level === 'advanced' ? 2 : 1, syncopation: 1, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
     neighborCap: () => 2,
     chromaticCap: () => 2,
     ruleText: '오늘은 도약과 리듬 심화 위주로 몰아서 만드세요. 쉼표 패턴은 아예 안 써도 되지만, 반음은 최소 1개는 넣으세요.',
   },
   {
     name: '반음·당김음 집중',
-    need: level => ({ leap: 1, bigLeap: 1, chromatic: 2, rhythm: level === 'advanced' ? 4 : 2, dotted: level === 'advanced' ? 2 : 1, triplet: level === 'advanced' ? 2 : 1, syncopation: level === 'advanced' ? 5 : 4, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
+    need: level => ({ leap: 1, bigLeap: 1, chromatic: 2, rhythm: 2, dotted: 1, triplet: 1, syncopation: level === 'advanced' ? 5 : 4, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
     neighborCap: () => 3,
     chromaticCap: () => 3,
     ruleText: '오늘은 당김음 위주로 몰아서 만드세요. 반음(크로매틱)도 다른 날보다 조금 더 쓰되, 과하게 넣지 말고 딱 필요한 개수만 쓰세요.',
   },
   {
     name: '쉼표·리듬 집중',
-    need: level => ({ leap: 2, bigLeap: 1, chromatic: 1, rhythm: level === 'advanced' ? 9 : 7, dotted: level === 'advanced' ? 3 : 2, triplet: level === 'advanced' ? 3 : 2, syncopation: 1, rest: level === 'advanced' ? 5 : 4, tie: level === 'advanced' ? 2 : 0 }),
+    need: level => ({ leap: 2, bigLeap: 1, chromatic: 1, rhythm: level === 'advanced' ? 8 : 7, dotted: 2, triplet: 2, syncopation: 1, rest: level === 'advanced' ? 5 : 4, tie: level === 'advanced' ? 2 : 0 }),
     neighborCap: () => 3,
     chromaticCap: () => 2,
     ruleText: '오늘은 쉼표와 리듬 심화 위주로 몰아서 만드세요. 반음은 최소 1개는 넣으세요.',
@@ -167,7 +167,7 @@ const RECIPES: { name: string; need: (level: string) => RecipeNeed; neighborCap:
   {
     name: '균형',
     need: level => level === 'advanced'
-      ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 6, dotted: 2, triplet: 2, syncopation: 2, rest: 1, tie: 2 }
+      ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 5, dotted: 2, triplet: 2, syncopation: 2, rest: 1, tie: 2 }
       : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 5, dotted: 1, triplet: 1, syncopation: 2, rest: 1, tie: 0 },
     neighborCap: level => level === 'advanced' ? 2 : 4,
     chromaticCap: () => 3,

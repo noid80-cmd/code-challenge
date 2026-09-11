@@ -967,21 +967,21 @@ JSON 객체로만 응답:
   const MELODY_RECIPES: { name: string; need: (level: string) => MelodyRecipeNeed; neighborCap: (level: string) => number; chromaticCap: (level: string) => number; ruleText: string }[] = [
     {
       name: '도약·리듬 집중',
-      need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 1, rhythm: level === 'advanced' ? 8 : 6, dotted: level === 'advanced' ? 3 : 2, triplet: level === 'advanced' ? 3 : 2, syncopation: 1, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
+      need: level => ({ leap: level === 'advanced' ? 8 : 6, bigLeap: level === 'advanced' ? 4 : 3, chromatic: 1, rhythm: level === 'advanced' ? 7 : 6, dotted: level === 'advanced' ? 2 : 1, triplet: level === 'advanced' ? 2 : 1, syncopation: 1, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
       neighborCap: () => 2,
       chromaticCap: () => 2,
       ruleText: '오늘은 도약과 리듬 심화 위주로 몰아서 만드세요. 쉼표 패턴은 아예 안 써도 되지만, 반음은 최소 1개는 넣으세요.',
     },
     {
       name: '반음·당김음 집중',
-      need: level => ({ leap: 1, bigLeap: 1, chromatic: 2, rhythm: level === 'advanced' ? 4 : 2, dotted: level === 'advanced' ? 2 : 1, triplet: level === 'advanced' ? 2 : 1, syncopation: level === 'advanced' ? 5 : 4, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
+      need: level => ({ leap: 1, bigLeap: 1, chromatic: 2, rhythm: 2, dotted: 1, triplet: 1, syncopation: level === 'advanced' ? 5 : 4, rest: 0, tie: level === 'advanced' ? 2 : 0 }),
       neighborCap: () => 3,
       chromaticCap: () => 3,
       ruleText: '오늘은 당김음 위주로 몰아서 만드세요. 반음(크로매틱)도 다른 날보다 조금 더 쓰되, 과하게 넣지 말고 딱 필요한 개수만 쓰세요.',
     },
     {
       name: '쉼표·리듬 집중',
-      need: level => ({ leap: 2, bigLeap: 1, chromatic: 1, rhythm: level === 'advanced' ? 9 : 7, dotted: level === 'advanced' ? 3 : 2, triplet: level === 'advanced' ? 3 : 2, syncopation: 1, rest: level === 'advanced' ? 5 : 4, tie: level === 'advanced' ? 2 : 0 }),
+      need: level => ({ leap: 2, bigLeap: 1, chromatic: 1, rhythm: level === 'advanced' ? 8 : 7, dotted: 2, triplet: 2, syncopation: 1, rest: level === 'advanced' ? 5 : 4, tie: level === 'advanced' ? 2 : 0 }),
       neighborCap: () => 3,
       chromaticCap: () => 2,
       ruleText: '오늘은 쉼표와 리듬 심화 위주로 몰아서 만드세요. 반음은 최소 1개는 넣으세요.',
@@ -989,7 +989,7 @@ JSON 객체로만 응답:
     {
       name: '균형',
       need: level => level === 'advanced'
-        ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 6, dotted: 2, triplet: 2, syncopation: 2, rest: 1, tie: 2 }
+        ? { leap: 5, bigLeap: 3, chromatic: 1, rhythm: 5, dotted: 2, triplet: 2, syncopation: 2, rest: 1, tie: 2 }
         : { leap: 4, bigLeap: 2, chromatic: 1, rhythm: 5, dotted: 1, triplet: 1, syncopation: 2, rest: 1, tie: 0 },
       neighborCap: level => level === 'advanced' ? 2 : 4,
       chromaticCap: () => 3,
@@ -1279,11 +1279,15 @@ JSON 객체로만 응답:
 
     const MELODY_FALLBACK = {
       title: '계이름 시창 챌린지',
-      description: '복합 리듬과 다양한 쉼표, 당김음을 포함한 중급 챌린지입니다.',
+      // 난이도를 말하지 않는다. 이 폴백은 고급 자리에도 들어갈 수 있는데
+      // 그때 "중급입니다"라고 적혀 있었다(2026-09-11 실제로 그랬다).
+      description: '복합 리듬과 다양한 쉼표, 당김음을 포함한 초견 챌린지입니다.',
       level: 'intermediate',
+      // 붓점(X·16)과 셋잇단음표(17·40)를 섞어둔다. 열 번 다 실패해 여기로
+      // 떨어지는 날에도 리듬이 4분음표만은 아니어야 한다.
       patterns: assembleMelodyABC([
-        { label: '복합 리듬·당김음', bars: ['18', '17', 'V', '1', 'H', 'P', '9', '40'] },
-        { label: '큰 도약·리듬 심화', bars: ['20', '42', 'U', '35', '2', '3', '8', '5'] },
+        { label: '복합 리듬·당김음', bars: ['X', '17', 'V', '1', 'H', 'P', '9', '40'] },
+        { label: '큰 도약·리듬 심화', bars: ['20', '42', 'U', '35', '2', '3', '16', '5'] },
       ])!,
     }
 
