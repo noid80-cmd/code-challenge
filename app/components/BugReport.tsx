@@ -13,6 +13,8 @@ type Mine = {
 
 // 눈에 띄지 않되 찾으면 있는 자리에 둔다. 평소엔 글자 버튼 하나로 접혀 있고,
 // 누르면 그 자리에서 펼쳐진다 — 새 화면으로 보내면 쓰다 만 내용이 날아간다.
+const SEEN_KEY = 'bugReplySeen'
+
 export default function BugReport() {
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
@@ -20,6 +22,10 @@ export default function BugReport() {
   const [done, setDone] = useState(false)
   const [error, setError] = useState('')
   const [mine, setMine] = useState<Mine[]>([])
+  // 답장은 푸시로 알린다. 그런데 알림을 꺼뒀거나 놓친 사람은 답장이 온 줄을
+  // 영영 모른다 — 접힌 상태에서는 아무 표시가 없어서 "버그 신고" 글씨를
+  // 스스로 눌러볼 이유가 없다. 안 본 답장이 있으면 점을 하나 띄운다.
+  const [unread, setUnread] = useState(false)
 
   // 내가 보낸 신고는 RLS상 본인에게 보인다(user_id = auth.uid()).
   const loadMine = useCallback(async () => {
@@ -37,7 +43,31 @@ export default function BugReport() {
     if (new URLSearchParams(window.location.search).get('bug') === '1') setOpen(true)
   }, [])
 
+  // 접혀 있어도 한 번은 읽어와야 점을 띄울 수 있다.
+  useEffect(() => { loadMine() }, [loadMine])
   useEffect(() => { if (open) loadMine() }, [open, loadMine])
+
+  // 마지막으로 읽은 답장 시각을 기기에 남긴다. 서버에 읽음 컬럼을 더하면
+  // 마이그레이션이 필요한데, 점 하나 띄우자고 치를 값은 아니다.
+  const latestReply = mine
+    .filter(m => m.admin_reply)
+    .map(m => m.resolved_at ?? m.created_at)
+    .sort()
+    .pop() ?? null
+
+  useEffect(() => {
+    if (!latestReply) { setUnread(false); return }
+    let seen: string | null = null
+    try { seen = window.localStorage.getItem(SEEN_KEY) } catch { /* 시크릿 모드 */ }
+    setUnread(!seen || seen < latestReply)
+  }, [latestReply])
+
+  // 펼쳐서 답장을 보면 읽은 것으로 친다.
+  useEffect(() => {
+    if (!open || !latestReply) return
+    try { window.localStorage.setItem(SEEN_KEY, latestReply) } catch { /* 시크릿 모드 */ }
+    setUnread(false)
+  }, [open, latestReply])
 
   async function send() {
     const message = text.trim()
@@ -70,9 +100,14 @@ export default function BugReport() {
   if (!open) {
     return (
       <button onClick={() => setOpen(true)} style={{
-        background: 'none', border: 'none', color: '#b0a89c', fontSize: 11, fontWeight: 600,
-        cursor: 'pointer', padding: 8, textDecoration: 'underline',
-      }}>버그 신고</button>
+        background: 'none', border: 'none', fontSize: 11, fontWeight: 600,
+        color: unread ? '#e0dcd0' : '#b0a89c',
+        cursor: 'pointer', padding: 8,
+        display: 'inline-flex', alignItems: 'center', gap: 5,
+      }}>
+        <span style={{ textDecoration: 'underline' }}>{unread ? '답장이 왔어요' : '버그 신고'}</span>
+        {unread && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#7dd3a0', flexShrink: 0 }} />}
+      </button>
     )
   }
 
