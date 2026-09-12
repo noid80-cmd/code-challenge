@@ -7,12 +7,14 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 //
 // 소리는 Web Audio로 직접 만든다. 오디오 파일을 받아오면 첫 클릭이
 // 늦게 울리고, 그 한 박이 어긋나면 메트로놈은 쓸모가 없다.
+//
+// 네 박을 똑같이 친다. 첫 박에 액센트를 주면 마디는 읽히지만 폰
+// 스피커에서는 약박이 묻혀 박을 놓친다 — 여기서는 안 들리는 게 더 나쁘다.
 
 const LS_BPM = 'metronome-bpm'
 const LS_VOL = 'metronome-volume'
 const MIN_BPM = 40
 const MAX_BPM = 208
-const BEATS_PER_BAR = 4
 
 export default function Metronome({
   defaultTempo,
@@ -24,14 +26,13 @@ export default function Metronome({
   const [open, setOpen] = useState(false)
   const [running, setRunning] = useState(false)
   const [bpm, setBpm] = useState(defaultTempo && defaultTempo >= MIN_BPM && defaultTempo <= MAX_BPM ? defaultTempo : 90)
-  const [volume, setVolume] = useState(0.6)
+  const [volume, setVolume] = useState(1)
   // 볼륨을 0으로 내려도 박은 보여야 한다 — 이어폰이 없으면 눈으로 센다.
-  const [beat, setBeat] = useState(-1)
+  const [pulse, setPulse] = useState(false)
 
   const ctxRef = useRef<AudioContext | null>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const nextNoteRef = useRef(0)
-  const beatRef = useRef(0)
   // 스케줄러는 setInterval 안에서 돌기 때문에 최신 값을 ref로 읽어야 한다.
   const bpmRef = useRef(bpm)
   const volRef = useRef(volume)
@@ -45,8 +46,8 @@ export default function Metronome({
     try {
       const b = Number(localStorage.getItem(LS_BPM))
       if (b >= MIN_BPM && b <= MAX_BPM) setBpm(b)
-      const v = Number(localStorage.getItem(LS_VOL))
-      if (v >= 0 && v <= 1) setVolume(v)
+      const v = localStorage.getItem(LS_VOL)
+      if (v !== null && Number(v) >= 0 && Number(v) <= 1) setVolume(Number(v))
     } catch { /* 저장소가 막힌 브라우저 */ }
   }, [])
 
@@ -54,26 +55,31 @@ export default function Metronome({
     try { localStorage.setItem(key, String(value)) } catch { /* 저장소가 막힌 브라우저 */ }
   }
 
-  // 한 박. 첫 박만 높게 쳐서 마디가 어디서 시작하는지 들린다.
-  function click(ctx: AudioContext, at: number, accent: boolean) {
+  // 한 박. 폰 스피커는 낮은 소리를 못 내보내므로 높은 쪽에서 딸깍 하게
+  // 만든다. 사인파는 같은 세기로도 작게 들려서 사각파를 쓰고, 배음이
+  // 거슬리지 않게 2.2kHz 위를 깎는다. 짧게 끊어야 딸깍으로 들린다.
+  function click(ctx: AudioContext, at: number) {
     const vol = volRef.current
     if (vol <= 0) return
     const osc = ctx.createOscillator()
     const gain = ctx.createGain()
-    osc.frequency.value = accent ? 1600 : 1000
-    // 툭 끊어야 딸깍으로 들린다. 서서히 줄이면 삑 소리가 된다.
+    const lp = ctx.createBiquadFilter()
+    osc.type = 'square'
+    osc.frequency.value = 1320
+    lp.type = 'lowpass'
+    lp.frequency.value = 5200
     gain.gain.setValueAtTime(0.0001, at)
-    gain.gain.exponentialRampToValueAtTime(vol * (accent ? 0.9 : 0.55), at + 0.001)
-    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.04)
-    osc.connect(gain); gain.connect(ctx.destination)
-    osc.start(at); osc.stop(at + 0.05)
+    gain.gain.exponentialRampToValueAtTime(Math.min(1, vol), at + 0.001)
+    gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.055)
+    osc.connect(lp); lp.connect(gain); gain.connect(ctx.destination)
+    osc.start(at); osc.stop(at + 0.07)
   }
 
   const stop = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current)
     timerRef.current = null
     setRunning(false)
-    setBeat(-1)
+    setPulse(false)
   }, [])
 
   const start = useCallback(() => {
@@ -85,7 +91,6 @@ export default function Metronome({
     // 아이폰은 화면을 끄거나 다른 앱을 다녀오면 잠들어 있다.
     ctx.resume().catch(() => {})
     nextNoteRef.current = ctx.currentTime + 0.1
-    beatRef.current = 0
     setRunning(true)
     // 25ms마다 앞으로 0.15초치를 미리 예약한다. setInterval 자체는
     // 몇 십 ms씩 흔들리지만, 소리 시각은 오디오 시계로 박아두므로
@@ -94,15 +99,13 @@ export default function Metronome({
       const c = ctxRef.current
       if (!c) return
       while (nextNoteRef.current < c.currentTime + 0.15) {
-        const b = beatRef.current
-        click(c, nextNoteRef.current, b % BEATS_PER_BAR === 0)
         const at = nextNoteRef.current
-        const delay = Math.max(0, (at - c.currentTime) * 1000)
+        click(c, at)
         // 박마다 짧게 번쩍인다. 한 박 내내 켜두면 깜빡임이 아니라 그냥 켜진 것이 된다.
-        setTimeout(() => setBeat(b % BEATS_PER_BAR), delay)
-        setTimeout(() => setBeat(-1), delay + 90)
+        const delay = Math.max(0, (at - c.currentTime) * 1000)
+        setTimeout(() => setPulse(true), delay)
+        setTimeout(() => setPulse(false), delay + 90)
         nextNoteRef.current += 60 / bpmRef.current
-        beatRef.current = b + 1
       }
     }, 25)
   }, [])
@@ -117,10 +120,19 @@ export default function Metronome({
 
   return (
     <div style={{ position: 'absolute', display: 'flex', alignItems: 'flex-end', gap: 8, ...style }}>
+      {/* 패널 밖 아무 데나 누르면 닫힌다. 화면 전체를 덮지만 z-index가
+          패널·아이콘보다 뒤라서 그 둘은 그대로 눌린다. */}
+      {open && (
+        <div
+          onClick={() => setOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: -1 }}
+        />
+      )}
+
       {open && (
         <div style={{
           background: 'rgba(12,12,11,0.94)', border: '1px solid rgba(255,255,255,0.16)',
-          borderRadius: 14, padding: '12px 14px', width: 186,
+          borderRadius: 14, padding: '12px 14px', width: 190,
           backdropFilter: 'blur(12px)', boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -138,7 +150,7 @@ export default function Metronome({
             style={{ width: '100%', accentColor: '#f0ece0', marginBottom: 12 }}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
               <path d="M7 3L4 5.5H2v5h2L7 13V3z" stroke="rgba(240,236,224,0.6)" strokeWidth="1.4" strokeLinejoin="round" />
               {volume > 0 && <path d="M10 6a2.6 2.6 0 010 4" stroke="rgba(240,236,224,0.6)" strokeWidth="1.4" strokeLinecap="round" />}
@@ -152,7 +164,21 @@ export default function Metronome({
             />
           </div>
 
-          <div style={{ fontSize: 10, color: 'rgba(240,236,224,0.38)', lineHeight: 1.5, marginTop: 10, wordBreak: 'keep-all' }}>
+          {/* 시작·정지는 패널 안에 둔다. 밖에 띄우면 안내 문구나 녹화
+              버튼과 자리를 다툰다. */}
+          <button
+            type="button"
+            onClick={() => running ? stop() : start()}
+            style={{
+              width: '100%', padding: '10px', borderRadius: 11, cursor: 'pointer', border: 'none',
+              background: running ? '#ff4444' : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+              color: running ? '#fff' : '#0a0a08', fontSize: 13.5, fontWeight: 900,
+            }}
+          >
+            {running ? '정지' : '시작'}
+          </button>
+
+          <div style={{ fontSize: 10, color: 'rgba(240,236,224,0.38)', lineHeight: 1.5, marginTop: 9, wordBreak: 'keep-all' }}>
             {volume === 0
               ? '소리 없이 박만 깜빡여요'
               : '클릭 소리가 영상에도 담겨요 — 이어폰을 쓰면 연주만 남아요'}
@@ -170,30 +196,12 @@ export default function Metronome({
           border: `1px solid ${running ? 'transparent' : 'rgba(255,255,255,0.28)'}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           backdropFilter: 'blur(8px)',
-          // 첫 박마다 한 번 밝아진다. 소리를 꺼도 박이 보인다.
-          boxShadow: beat === 0 ? '0 0 0 5px rgba(240,236,224,0.45)'
-            : beat > 0 ? '0 0 0 3px rgba(240,236,224,0.2)' : 'none',
+          boxShadow: pulse ? '0 0 0 5px rgba(240,236,224,0.45)' : 'none',
           transition: 'box-shadow 0.07s',
         }}
       >
         <MetronomeIcon color={running ? '#0a0a08' : '#f0ece0'} />
       </button>
-
-      {open && (
-        <button
-          type="button"
-          onClick={() => running ? stop() : start()}
-          style={{
-            position: 'absolute', right: 0, bottom: 52,
-            padding: '7px 12px', borderRadius: 999, cursor: 'pointer',
-            background: running ? '#ff4444' : 'rgba(240,236,224,0.92)',
-            border: 'none', color: running ? '#fff' : '#0a0a08',
-            fontSize: 12, fontWeight: 800, whiteSpace: 'nowrap',
-          }}
-        >
-          {running ? '정지' : '시작'}
-        </button>
-      )}
     </div>
   )
 }

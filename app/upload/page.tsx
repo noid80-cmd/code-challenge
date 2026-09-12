@@ -659,11 +659,11 @@ export default function UploadPage() {
         />
 
         {/* 메트로놈 — 아이콘만 작게. 코드든 리듬이든 멜로디든 박은 필요하다.
-            녹화 버튼(가운데 아래)과 전환 버튼(오른쪽 아래) 위로 띄운다. */}
+            녹화 버튼과 "손이 보이게" 안내 문구(bottom 150) 위로 띄운다. */}
         {recordMode && (
           <Metronome
             defaultTempo={challenge?.chords?.progressions?.[selectedProgression]?.tempo}
-            style={{ right: 16, bottom: 158, zIndex: 12 }}
+            style={{ right: 16, bottom: 210, zIndex: 12 }}
           />
         )}
 
