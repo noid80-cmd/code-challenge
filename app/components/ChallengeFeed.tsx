@@ -100,6 +100,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
   const [viewerIndex, setViewerIndex] = useState<number | null>(null)
   // 드럼 하는 사람이 보고 싶은 건 대개 드럼이다. 전공으로 걸러 본다.
   const [majorFilter, setMajorFilter] = useState<Major | 'all'>('all')
+  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({})
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -164,6 +165,19 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
         subs = subsRaw.map(s => ({ ...s, profiles: profMap.get(s.user_id) ?? null }))
       }
 
+      // 댓글이 몇 개 달렸는지 목록에서 바로 보여준다. 전체화면을 열어야만
+      // 보이면 "여기 댓글을 쓸 수 있다"는 걸 알 방법이 없다 — 14일 동안
+      // 댓글이 0개였던 이유 중 하나다.
+      if (subs && subs.length > 0) {
+        const { data: cmts } = await supabase.from('comments')
+          .select('submission_id').in('submission_id', subs.map(x => x.id))
+        const counts: Record<string, number> = {}
+        ;(cmts ?? []).forEach((c: { submission_id: string }) => {
+          counts[c.submission_id] = (counts[c.submission_id] ?? 0) + 1
+        })
+        setCommentCounts(counts)
+      }
+
       if (subs && user) {
         const { data: userLikes } = await supabase.from('likes').select('submission_id').eq('user_id', user.id)
         const likedIds = new Set(userLikes?.map(l => l.submission_id) || [])
@@ -208,6 +222,30 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
     await load()
   }
 
+  // 좋아요는 껐다 켰다 할 수 있다. 그때마다 알림이 가면 놀리는 것처럼 보여서,
+  // 이 기기에서 한 번 보낸 영상은 다시 보내지 않는다.
+  const NOTIFIED_KEY = 'reactionNotified'
+  async function notifyReaction(submissionId: string, type: 'like' | 'comment') {
+    try {
+      if (type === 'like') {
+        const seen = JSON.parse(window.localStorage.getItem(NOTIFIED_KEY) ?? '[]') as string[]
+        if (seen.includes(submissionId)) return
+        window.localStorage.setItem(NOTIFIED_KEY, JSON.stringify([...seen.slice(-200), submissionId]))
+      }
+    } catch { /* 시크릿 모드면 그냥 보낸다 */ }
+    try {
+      const supabase = createClient()
+      const { data: s } = await supabase.auth.getSession()
+      const token = s.session?.access_token
+      if (!token) return
+      await fetch('/api/notify-reaction', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ submissionId, type }),
+      })
+    } catch { /* 알림이 실패해도 반응 자체는 이미 남았다 */ }
+  }
+
   async function toggleLike(submissionId: string, liked: boolean) {
     if (!user) { window.location.href = '/login?from=' + encodeURIComponent(window.location.pathname); return }
     const supabase = createClient()
@@ -215,6 +253,7 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
       await supabase.from('likes').delete().eq('submission_id', submissionId).eq('user_id', user.id)
     } else {
       await supabase.from('likes').insert({ submission_id: submissionId, user_id: user.id })
+      notifyReaction(submissionId, 'like')
     }
     setSubmissions(prev => prev.map(s => s.id === submissionId
       ? { ...s, user_liked: !liked, likes_count: liked ? s.likes_count - 1 : s.likes_count + 1 }
@@ -805,7 +844,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
                   <SubmissionThumb key={sub.id} sub={sub} onOpen={() => setViewerIndex(i)}
                     label={subLabel}
                     level={subLevel}
-                    dimLevel={!subCh || subLevel === toLevel(challenge?.level)} />
+                    dimLevel={!subCh || subLevel === toLevel(challenge?.level)}
+                    commentCount={commentCounts[sub.id] ?? 0} />
                 )
               })}
             </div>
@@ -823,7 +863,8 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
             onReport={sub => handleReport(sub.id)}
             onBlock={sub => handleBlock(sub.user_id)}
             challengeById={challengeById}
-            myLevel={toLevel(challenge?.level)} />
+            myLevel={toLevel(challenge?.level)}
+            onCommented={id => notifyReaction(id, 'comment')} />
         )}
       </main>
     </div>
@@ -833,8 +874,9 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
 // 목록 타일. 화면이 까매도 카드로 읽혀야 한다 — 오늘 올라온 영상 대부분이
 // 일부러 아무것도 안 잡히게 찍은 것이라, 프레임만 보여주면 빈 네모가 늘어선다.
 // 이름·난이도·진행·좋아요를 늘 함께 얹어서 "누가 무엇을 올렸다"가 읽히게 한다.
-function SubmissionThumb({ sub, onOpen, label, level, dimLevel }: {
+function SubmissionThumb({ sub, onOpen, label, level, dimLevel, commentCount }: {
   sub: Submission; onOpen: () => void; label?: string; level: Level; dimLevel: boolean
+  commentCount: number
 }) {
   const supabase = createClient()
   const videoUrl = sub.video_url.startsWith('http')
@@ -899,6 +941,16 @@ function SubmissionThumb({ sub, onOpen, label, level, dimLevel }: {
             fontSize: 11, fontWeight: 700, flexShrink: 0,
             color: sub.likes_count > 0 ? '#fb7185' : '#6f6a60',
           }}>{sub.likes_count > 0 ? '♥' : '♡'} {sub.likes_count}</span>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 3, flexShrink: 0,
+            fontSize: 11, fontWeight: 700, color: commentCount > 0 ? '#b0a89c' : '#6f6a60',
+          }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <path d="M21 11.5a8.4 8.4 0 0 1-9 8.4 8.9 8.9 0 0 1-3.8-.9L3 21l1.9-4.9A8.4 8.4 0 0 1 12 3a8.4 8.4 0 0 1 9 8.5z"
+                stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {commentCount}
+          </span>
         </div>
       </div>
     </button>
@@ -910,10 +962,11 @@ const TOP_BAR = '54px + env(safe-area-inset-top)'
 
 // 누르면 전체 화면으로 열고 좌우로 넘겨 본다. 스크롤 스냅을 쓰면 라이브러리
 // 없이도 손가락이 놓는 자리에 딱 맞춰 선다.
-function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, onReport, onBlock, challengeById, myLevel }: {
+function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, onReport, onBlock, challengeById, myLevel, onCommented }: {
   subs: Submission[]; startIndex: number; onClose: () => void; currentUserId?: string
   onLike: (sub: Submission) => void; onReport: (sub: Submission) => void; onBlock: (sub: Submission) => void
   challengeById: Record<string, Challenge>; myLevel: Level
+  onCommented: (submissionId: string) => void
 }) {
   const supabase = createClient()
   const scroller = useRef<HTMLDivElement>(null)
@@ -1003,6 +1056,7 @@ function SubmissionViewer({ subs, startIndex, onClose, currentUserId, onLike, on
     }
     setDraft('')
     loadComments(cur.id)
+    onCommented(cur.id)
   }
 
   async function removeComment(id: string) {
