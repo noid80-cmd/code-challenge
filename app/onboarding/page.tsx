@@ -9,9 +9,10 @@ import { saveLevel } from '@/app/components/levelClient'
 import { saveMajor } from '@/app/components/majorClient'
 import { DEFAULT_LEVEL, type Level } from '@/lib/level'
 import { type Major } from '@/lib/majors'
+import { enablePush } from '@/lib/pushEnable'
 import { readPendingInvite } from '@/lib/pendingInvite'
 
-const STEPS = 5
+const STEPS = 6
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(0)
@@ -20,6 +21,11 @@ export default function OnboardingPage() {
   const [level, setLevel] = useState<Level>(DEFAULT_LEVEL)
   // 전공은 여기서 한 번만 고르면 업로드할 때마다 다시 묻지 않는다.
   const [major, setMajor] = useState<Major | ''>('')
+  // 알림은 이 앱의 심장이다 — 매일 새 챌린지가 올라오는 걸 모르면 안 들어온다.
+  // 그런데 지금까지는 어디서도 먼저 묻지 않아서, 가입자 288명 중 92명(32%)만
+  // 켜져 있었다. 방금 "매일 오전에 올라와요"라고 말한 이 자리가 물을 자리다.
+  const [pushBusy, setPushBusy] = useState(false)
+  const [pushOn, setPushOn] = useState(false)
 
   useEffect(() => {
     async function check() {
@@ -155,6 +161,34 @@ export default function OnboardingPage() {
 
         {step === 4 && (
           <div style={{ textAlign: 'center' }}>
+            <div style={{
+              width: 58, height: 58, borderRadius: 18, margin: '0 auto 22px',
+              background: pushOn ? 'linear-gradient(135deg, #f8f4ec, #c8c4b0)' : 'rgba(240,236,224,0.08)',
+              border: pushOn ? 'none' : '1px solid rgba(240,236,224,0.16)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke={pushOn ? '#0a0a08' : '#c8c4b0'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                <path d="M13.7 21a2 2 0 01-3.4 0" />
+              </svg>
+            </div>
+            <h1 style={{ fontSize: 24, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.03em', marginBottom: 10, lineHeight: 1.35 }}>
+              {pushOn ? '알림을 켰어요' : `새 챌린지가 올라오면
+알려드릴까요?`}
+            </h1>
+            <p style={{ fontSize: 14, color: '#c8c4b0', lineHeight: 1.8, wordBreak: 'keep-all', whiteSpace: 'pre-line' }}>
+              {pushOn
+                ? `매일 오전에 새 챌린지를 알려드릴게요.
+알림은 언제든 끌 수 있어요.`
+                : `하루 한 번, 오전에 한 번이에요.
+연습 안 한 날만 저녁에 한 번 더 알려드려요.`}
+            </p>
+          </div>
+        )}
+
+        {step === 5 && (
+          <div style={{ textAlign: 'center' }}>
             <h1 style={{ fontSize: 24, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.03em', marginBottom: 10 }}>
               준비됐어요!
             </h1>
@@ -171,20 +205,53 @@ export default function OnboardingPage() {
             어느 악기인지 알 길이 없다. */}
         {(() => {
           const blocked = step === 3 && !major
+          const askingPush = step === 4 && !pushOn
+          const next = () => setStep(s => s + 1)
           return (
-            <button
-              onClick={() => { if (blocked) return; step < STEPS - 1 ? setStep(s => s + 1) : finish() }}
-              disabled={blocked}
-              style={{
-                display: 'block', width: '100%', padding: '16px', borderRadius: 14, textAlign: 'center',
-                background: blocked ? 'rgba(240,236,224,0.08)' : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-                color: blocked ? '#8a8478' : '#0a0a08', fontSize: 16, fontWeight: 900,
-                border: 'none', cursor: blocked ? 'default' : 'pointer',
-                boxShadow: blocked ? 'none' : '0 8px 28px rgba(240,236,224,0.35)',
-              }}
-            >
-              {blocked ? '전공을 골라주세요' : step < STEPS - 1 ? '다음' : '시작하기'}
-            </button>
+            <>
+              <button
+                onClick={async () => {
+                  if (blocked || pushBusy) return
+                  if (askingPush) {
+                    // 켜졌는지와 무관하게 앞으로 간다 — 알림 때문에 가입이 막히면 안 된다.
+                    setPushBusy(true)
+                    const ok = await enablePush()
+                    setPushBusy(false)
+                    if (ok) setPushOn(true)
+                    else next()
+                    return
+                  }
+                  step < STEPS - 1 ? next() : finish()
+                }}
+                disabled={blocked || pushBusy}
+                style={{
+                  display: 'block', width: '100%', padding: '16px', borderRadius: 14, textAlign: 'center',
+                  background: blocked ? 'rgba(240,236,224,0.08)' : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                  color: blocked ? '#8a8478' : '#0a0a08', fontSize: 16, fontWeight: 900,
+                  border: 'none', cursor: blocked || pushBusy ? 'default' : 'pointer',
+                  boxShadow: blocked ? 'none' : '0 8px 28px rgba(240,236,224,0.35)',
+                  opacity: pushBusy ? 0.6 : 1,
+                }}
+              >
+                {blocked ? '전공을 골라주세요'
+                  : pushBusy ? '켜는 중...'
+                  : askingPush ? '알림 받기'
+                  : step < STEPS - 1 ? '다음' : '시작하기'}
+              </button>
+              {/* 길을 막지는 않는다. 넘어가도 홈의 배너로 언제든 켤 수 있다. */}
+              {askingPush && !pushBusy && (
+                <button
+                  onClick={next}
+                  style={{
+                    display: 'block', width: '100%', padding: '13px', marginTop: 8,
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    color: '#8a8478', fontSize: 14, fontWeight: 700,
+                  }}
+                >
+                  나중에
+                </button>
+              )}
+            </>
           )
         })()}
       </div>
