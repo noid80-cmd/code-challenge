@@ -114,6 +114,12 @@ export default function MyVideosPage() {
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<{ name: string; avatar_url: string | null } | null>(null)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  // 이름은 가입할 때 구글/카카오 계정 이름이 그대로 들어온다. 바꿀 방법이
+  // 없어서 실명이 공개 피드에 그대로 걸렸다 — 닉네임으로 바꾸게 해달라는
+  // 신고가 실제로 들어왔다(2026-09-11).
+  const [editingName, setEditingName] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
+  const [savingName, setSavingName] = useState(false)
   const [userId, setUserId] = useState<string | null>(null)
   const [deletingAccount, setDeletingAccount] = useState(false)
 
@@ -165,6 +171,24 @@ export default function MyVideosPage() {
       setProfile(p => p ? { ...p, avatar_url: url } : p)
     }
     setAvatarUploading(false)
+  }
+
+  async function handleSaveName() {
+    const next = nameDraft.trim().replace(/s+/g, ' ')
+    if (!next) { alert('이름을 입력해주세요.'); return }
+    if (next.length > 12) { alert('12자까지 쓸 수 있어요.'); return }
+    if (!userId) return
+    if (next === profile?.name) { setEditingName(false); return }
+    setSavingName(true)
+    const supabase = createClient()
+    // RLS가 막으면 Supabase는 에러 없이 0행을 갱신하고 끝난다. 반영된 행을
+    // 확인하지 않으면 바뀐 것처럼 보이다가 새로고침하면 옛 이름이 돌아온다.
+    const { data, error } = await supabase.from('profiles')
+      .update({ name: next }).eq('id', userId).select('id')
+    setSavingName(false)
+    if (error || !data?.length) { alert('이름을 바꾸지 못했어요. 잠시 후 다시 시도해주세요.'); return }
+    setProfile(pr => pr ? { ...pr, name: next } : pr)
+    setEditingName(false)
   }
 
   function handleDeleteState(subId: string) {
@@ -258,14 +282,47 @@ export default function MyVideosPage() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontSize: 11,
                 }}>
-                  {avatarUploading ? '…' : '✎'}
+                  {avatarUploading ? '…' : (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                      <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z" stroke="#0a0a08" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
                 </div>
               </label>
-              <div>
-                <div style={{ fontSize: 17, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em' }}>
-                  {profile?.name ?? ''}
-                </div>
-                <div style={{ fontSize: 12, color: '#b0a493', marginTop: 3 }}>사진을 탭하면 변경할 수 있어요</div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                {editingName ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <input value={nameDraft} onChange={e => setNameDraft(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setEditingName(false) }}
+                      maxLength={12} autoFocus placeholder="닉네임" style={{
+                        flex: 1, minWidth: 0, background: 'rgba(240,236,224,0.06)',
+                        border: '1px solid rgba(240,236,224,0.2)', borderRadius: 10,
+                        padding: '7px 10px', color: '#f0ece0', fontSize: 15, fontWeight: 800,
+                      }} />
+                    <button type="button" onClick={handleSaveName} disabled={savingName} style={{
+                      background: '#f0ece0', border: 'none', borderRadius: 10, padding: '7px 12px',
+                      color: '#0a0a08', fontSize: 12, fontWeight: 800, cursor: savingName ? 'default' : 'pointer',
+                    }}>{savingName ? '...' : '저장'}</button>
+                    <button type="button" onClick={() => setEditingName(false)} style={{
+                      background: 'none', border: 'none', color: '#b0a493', fontSize: 12,
+                      fontWeight: 700, cursor: 'pointer', padding: '7px 2px',
+                    }}>취소</button>
+                  </div>
+                ) : (
+                  <>
+                    <button type="button" onClick={() => { setNameDraft(profile?.name ?? ''); setEditingName(true) }} style={{
+                      background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      fontSize: 17, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.02em',
+                    }}>
+                      {profile?.name ?? ''}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0, opacity: 0.55 }}>
+                        <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3z" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </button>
+                    <div style={{ fontSize: 12, color: '#b0a493', marginTop: 3 }}>이름과 사진을 탭하면 바꿀 수 있어요</div>
+                  </>
+                )}
               </div>
             </div>
 
