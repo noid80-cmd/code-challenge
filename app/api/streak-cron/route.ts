@@ -186,6 +186,13 @@ export async function GET(req: NextRequest) {
   // 발송 결과를 로그로만 남기면 한 시간 뒤에는 아무도 알 수 없다. 실제로
   // "저녁 알림이 왜 안 왔지"를 확인하려다 로그가 이미 사라져 대상자를 손으로
   // 다시 계산해야 했다. 보낸 직후에 한 줄로 알린다.
+  // 버그 신고 알림은 제때 오는데도 가입 알림 사이에 묻혀서 지나친다. 실제로
+  // 답장 없이 이틀을 넘긴 건이 있었다. 답장 안 한 신고가 남아 있으면 매일
+  // 저녁 리포트에 다시 얹는다 — 처리해야 사라지니 놓칠 수가 없다.
+  const { count: pendingBugs } = await supabase
+    .from('bug_reports').select('id', { count: 'exact', head: true })
+    .is('admin_reply', null)
+
   await notifyTelegram(
     `[초견챌린지] 저녁 알림 발송
 `
@@ -194,6 +201,8 @@ export async function GET(req: NextRequest) {
     + `앱 ${app}건 · 웹 ${web}건`
     + (app + web < atRisk.size ? `
 ※ 대상보다 적게 나갔습니다 — 알림 미등록이거나 토큰 만료` : '')
+    + (pendingBugs ? `
+※ 답장 안 한 버그 신고 ${pendingBugs}건` : '')
   )
 
   return NextResponse.json({ ok: true, targets: atRisk.size, firstTimers, web, app })
