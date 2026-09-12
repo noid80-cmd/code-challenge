@@ -4,17 +4,22 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import AcademyCard from '@/app/components/AcademyCard'
 import LevelPicker from '@/app/components/LevelPicker'
+import MajorPicker from '@/app/components/MajorPicker'
 import { saveLevel } from '@/app/components/levelClient'
+import { saveMajor } from '@/app/components/majorClient'
 import { DEFAULT_LEVEL, type Level } from '@/lib/level'
+import { type Major } from '@/lib/majors'
 import { readPendingInvite } from '@/lib/pendingInvite'
 
-const STEPS = 4
+const STEPS = 5
 
 export default function OnboardingPage() {
   const [step, setStep] = useState(0)
   const [userId, setUserId] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
   const [level, setLevel] = useState<Level>(DEFAULT_LEVEL)
+  // 전공은 여기서 한 번만 고르면 업로드할 때마다 다시 묻지 않는다.
+  const [major, setMajor] = useState<Major | ''>('')
 
   useEffect(() => {
     async function check() {
@@ -33,6 +38,7 @@ export default function OnboardingPage() {
     if (!userId) return
     const supabase = createClient()
     await saveLevel(userId, level)
+    if (major) await saveMajor(userId, major)
     await supabase.from('profiles').update({ onboarded_at: new Date().toISOString() }).eq('id', userId)
     // 초대 링크로 들어와 가입한 사람은 홈이 아니라 그룹으로 보낸다
     window.location.href = readPendingInvite() ? '/groups' : '/'
@@ -136,6 +142,18 @@ export default function OnboardingPage() {
         )}
 
         {step === 3 && (
+          <div>
+            <h1 style={{ fontSize: 24, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.03em', marginBottom: 8, textAlign: 'center' }}>
+              어떤 악기를 하나요?
+            </h1>
+            <p style={{ fontSize: 13.5, color: '#c8c4b0', lineHeight: 1.7, marginBottom: 22, textAlign: 'center', wordBreak: 'keep-all' }}>
+              올린 연주에 전공이 함께 붙어요.<br />한 번만 고르면 다음부터는 묻지 않아요.
+            </p>
+            <MajorPicker value={major} onChange={setMajor} />
+          </div>
+        )}
+
+        {step === 4 && (
           <div style={{ textAlign: 'center' }}>
             <h1 style={{ fontSize: 24, fontWeight: 900, color: '#f0ece0', letterSpacing: '-0.03em', marginBottom: 10 }}>
               준비됐어요!
@@ -149,18 +167,26 @@ export default function OnboardingPage() {
       </main>
 
       <div style={{ padding: '0 24px 40px', maxWidth: 420, margin: '0 auto', width: '100%' }}>
-        <button
-          onClick={() => step < STEPS - 1 ? setStep(s => s + 1) : finish()}
-          style={{
-            display: 'block', width: '100%', padding: '16px', borderRadius: 14, textAlign: 'center',
-            background: 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
-            color: '#0a0a08', fontSize: 16, fontWeight: 900,
-            border: 'none', cursor: 'pointer',
-            boxShadow: '0 8px 28px rgba(240,236,224,0.35)',
-          }}
-        >
-          {step < STEPS - 1 ? '다음' : '시작하기'}
-        </button>
+        {/* 전공 단계에서는 하나 고를 때까지 기다린다 — 비어 있으면 올린 연주가
+            어느 악기인지 알 길이 없다. */}
+        {(() => {
+          const blocked = step === 3 && !major
+          return (
+            <button
+              onClick={() => { if (blocked) return; step < STEPS - 1 ? setStep(s => s + 1) : finish() }}
+              disabled={blocked}
+              style={{
+                display: 'block', width: '100%', padding: '16px', borderRadius: 14, textAlign: 'center',
+                background: blocked ? 'rgba(240,236,224,0.08)' : 'linear-gradient(135deg, #f8f4ec, #c8c4b0)',
+                color: blocked ? '#8a8478' : '#0a0a08', fontSize: 16, fontWeight: 900,
+                border: 'none', cursor: blocked ? 'default' : 'pointer',
+                boxShadow: blocked ? 'none' : '0 8px 28px rgba(240,236,224,0.35)',
+              }}
+            >
+              {blocked ? '전공을 골라주세요' : step < STEPS - 1 ? '다음' : '시작하기'}
+            </button>
+          )
+        })()}
       </div>
     </div>
   )

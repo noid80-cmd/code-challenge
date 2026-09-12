@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { MAJORS, MAJOR_LABELS, isMajor, type Major } from '@/lib/majors'
+import { MAJORS, MAJOR_LABELS, type Major } from '@/lib/majors'
 import { localDate } from '@/lib/date'
 import Link from 'next/link'
 import ChordPlayer from '@/app/components/ChordPlayer'
@@ -12,6 +12,7 @@ import { normalizeMeasures } from '@/lib/chords'
 import { candidateDates, pickActiveDate } from '@/lib/date'
 import { LEVEL_FALLBACK, toLevel } from '@/lib/level'
 import { fetchLevel } from '@/app/components/levelClient'
+import { cachedMajor, fetchMajor, saveMajor } from '@/app/components/majorClient'
 import { isNativeApp } from '@/lib/capacitor'
 
 const RhythmViewer = dynamic(() => import('@/app/components/RhythmViewer'), { ssr: false })
@@ -107,11 +108,18 @@ export default function UploadPage() {
   }, [router])
 
 
+  // 가입할 때 고른 전공(profiles.major)을 채워 넣는다. 캐시를 먼저 써서
+  // 화면이 비었다가 채워지는 깜빡임을 없애고, 프로필 값이 오면 덮어쓴다.
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem('major')
-      if (isMajor(saved)) setMajor(saved)
-    } catch { /* 저장소가 막힌 브라우저 */ }
+    const c = cachedMajor()
+    if (c) setMajor(c)
+    let alive = true
+    ;(async () => {
+      const { data: { user } } = await createClient().auth.getUser()
+      const m = await fetchMajor(user?.id)
+      if (alive && m) setMajor(m)
+    })()
+    return () => { alive = false }
   }, [])
 
   // 카메라 시작 — 오버레이는 항상 DOM에 있으므로 stream을 바로 연결
@@ -412,12 +420,13 @@ export default function UploadPage() {
     if (!file) { setError('영상을 선택해주세요.'); return }
     // 전공은 한 번만 고르면 다음부터 기억한다. 비어 있으면 영상이 어느 악기인지 알 길이 없다.
     if (!major) { setError('전공을 하나 골라주세요. 한 번만 고르면 다음부터는 기억합니다.'); return }
-    try { localStorage.setItem('major', major) } catch { /* 저장소가 막힌 브라우저 */ }
     if (!challenge) { setError('오늘의 챌린지가 없어요.'); return }
     setError(''); setUploading(true)
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/login?from=/upload'); return }
+    // 여기서 고른 것이 곧 프로필의 전공이 된다 — 가입 전에 들어온 사람도 한 번이면 끝난다.
+    await saveMajor(user.id, major)
     const ts = Date.now()
     const ext = file.name.split('.').pop() || 'webm'
     const path = `${user.id}/${ts}.${ext}`
