@@ -17,6 +17,18 @@ type Submission = {
   challenges: { title: string; date: string } | null
 }
 
+// 날짜는 "언제 올렸나"가 아니라 "어느 문제를 풀었나"로 센다.
+//
+// 챌린지는 오전 10~11시에 새로 만들어진다. 아침 9시에 앱을 열면 아직 어제
+// 문제가 떠 있고, 거기에 올린 영상은 피드에선 어제 챌린지에 붙는데 날짜는
+// 오늘로 찍혔다 — 한 영상이 두 날짜를 가졌다. 연속 기록의 뜻도 "며칠 연속
+// 파일을 올렸나"가 아니라 "며칠 연속 문제를 풀었나"다.
+//
+// 챌린지가 지워진 옛 영상만 올린 시각으로 돌아간다.
+function challengeDay(s: { challenges: { date: string } | null; created_at: string }) {
+  return s.challenges?.date ?? localDate(new Date(s.created_at))
+}
+
 function calcStreak(dates: string[]) {
   const uniq = [...new Set(dates)].sort().reverse()
   if (uniq.length === 0) return 0
@@ -119,8 +131,15 @@ export default function MyVideosPage() {
       const subs = (data ?? []) as Submission[]
       const seen = new Set<string>()
       const deduped = subs.filter(s => { if (seen.has(s.video_url)) return false; seen.add(s.video_url); return true })
+      // 목록도 문제 날짜 순으로 놓는다. 올린 시각으로 세워두면, 아침에 어제
+      // 문제를 푼 영상이 어제 밤에 오늘 문제를 푼 영상보다 위에 온다.
+      // 같은 날 문제끼리는 먼저 올린 것이 위다.
+      deduped.sort((a, b) => {
+        const d = challengeDay(b).localeCompare(challengeDay(a))
+        return d !== 0 ? d : a.created_at.localeCompare(b.created_at)
+      })
       setSubmissions(deduped)
-      const dates = subs.map(s => localDate(new Date(s.created_at)))
+      const dates = subs.map(challengeDay)
       setSubmittedDates(new Set(dates))
       setStreak(calcStreak(dates))
       setTotalLikes(subs.reduce((sum, s) => sum + s.likes_count, 0))
@@ -151,7 +170,7 @@ export default function MyVideosPage() {
   function handleDeleteState(subId: string) {
     const newSubs = submissions.filter(s => s.id !== subId)
     setSubmissions(newSubs)
-    const dates = newSubs.map(s => localDate(new Date(s.created_at)))
+    const dates = newSubs.map(challengeDay)
     setSubmittedDates(new Set(dates))
     setStreak(calcStreak(dates))
     setTotalLikes(newSubs.reduce((sum, s) => sum + s.likes_count, 0))
@@ -184,12 +203,12 @@ export default function MyVideosPage() {
 
   const byMonth: Record<string, Submission[]> = {}
   submissions.forEach(s => {
-    const d = new Date(s.created_at)
-    const key = `${d.getFullYear()}년 ${d.getMonth() + 1}월`
+    const [y, m] = challengeDay(s).split('-')
+    const key = `${y}년 ${Number(m)}월`
     if (!byMonth[key]) byMonth[key] = []
     byMonth[key].push(s)
   })
-  const uploadsToday = submissions[0] ? localDate(new Date(submissions[0].created_at)) === localDate() : false
+  const uploadsToday = submittedDates.has(localDate())
 
   return (
     <div style={{ minHeight: '100vh', background: 'linear-gradient(160deg, #080808 0%, #0a0a0a 60%, #090909 100%)' }}>
@@ -379,7 +398,7 @@ function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
     : supabase.storage.from('videos').getPublicUrl(sub.video_url).data.publicUrl
   const posterUrl = thumbUrl(supabase, sub.thumbnail_url)
   const displayPoster = posterUrl ?? localPoster ?? undefined
-  const date = new Date(sub.created_at)
+  const [, cm, cd] = challengeDay(sub).split('-')
 
   function captureFrame() {
     if (localPoster || posterUrl) return
@@ -487,7 +506,7 @@ function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
               </div>
             )}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 11, color: '#b0a493' }}>{date.getMonth() + 1}/{date.getDate()}</span>
+              <span style={{ fontSize: 11, color: '#b0a493' }}>{Number(cm)}/{Number(cd)}</span>
               <button type="button" onClick={e => { e.stopPropagation(); handleToggle() }} disabled={toggling} style={{
                 background: 'none', border: 'none', cursor: toggling ? 'default' : 'pointer',
                 fontSize: 13, padding: 0, color: sub.is_private ? '#a0988c' : '#b0a493',

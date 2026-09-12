@@ -52,13 +52,17 @@ export async function GET(req: NextRequest) {
 
   // 연속 기록을 세려면 지난 며칠치만 있으면 된다. 40일이면 충분하다.
   const since = new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000).toISOString()
+  // 연속은 "며칠 연속 문제를 풀었나"다. 올린 시각으로 세면 아침에 어제
+  // 문제를 푼 사람이 오늘 푼 것으로 잡혀 하루가 비어 보인다 — 그러면
+  // 끊기지 않은 사람에게 "끊긴다"는 알림이 간다. 화면과 같은 기준을 쓴다.
   const { data: subs } = await supabase
-    .from('submissions').select('user_id, created_at').gte('created_at', since)
+    .from('submissions').select('user_id, created_at, challenges(date)').gte('created_at', since)
 
   const daysOf = new Map<string, Set<string>>()
-  for (const s of (subs ?? []) as { user_id: string; created_at: string }[]) {
+  for (const s of (subs ?? []) as unknown as { user_id: string; created_at: string; challenges: { date: string } | null }[]) {
     if (!daysOf.has(s.user_id)) daysOf.set(s.user_id, new Set())
-    daysOf.get(s.user_id)!.add(kstDate(new Date(s.created_at)))
+    // 챌린지가 지워진 옛 영상만 올린 시각으로 돌아간다.
+    daysOf.get(s.user_id)!.add(s.challenges?.date ?? kstDate(new Date(s.created_at)))
   }
 
   // 어제 올렸고 오늘은 아직 안 올린 사람 = 오늘 밤에 기록이 끊기는 사람
