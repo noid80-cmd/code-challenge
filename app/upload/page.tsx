@@ -13,6 +13,7 @@ import { candidateDates, pickActiveDate } from '@/lib/date'
 import { LEVEL_FALLBACK, toLevel } from '@/lib/level'
 import { fetchLevel } from '@/app/components/levelClient'
 import { cachedMajor, fetchMajor, saveMajor } from '@/app/components/majorClient'
+import Metronome from '@/app/components/Metronome'
 import { isNativeApp } from '@/lib/capacitor'
 
 const RhythmViewer = dynamic(() => import('@/app/components/RhythmViewer'), { ssr: false })
@@ -656,6 +657,15 @@ export default function UploadPage() {
           muted
           style={{ flex: 1, width: '100%', objectFit: 'cover', transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
         />
+
+        {/* 메트로놈 — 아이콘만 작게. 코드든 리듬이든 멜로디든 박은 필요하다.
+            녹화 버튼(가운데 아래)과 전환 버튼(오른쪽 아래) 위로 띄운다. */}
+        {recordMode && (
+          <Metronome
+            defaultTempo={challenge?.chords?.progressions?.[selectedProgression]?.tempo}
+            style={{ right: 16, bottom: 158, zIndex: 12 }}
+          />
+        )}
 
         {/* 하단 컨트롤 */}
         <div style={{

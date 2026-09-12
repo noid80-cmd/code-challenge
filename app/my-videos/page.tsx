@@ -8,6 +8,7 @@ import { thumbUrl } from '@/lib/thumbUrl'
 import AcademyCard from '@/app/components/AcademyCard'
 import BugReport from '@/app/components/BugReport'
 import { PushSettingRow } from '@/app/components/PushBanner'
+import MajorSettingRow from '@/app/components/MajorSettingRow'
 
 type Submission = {
   id: string; video_url: string; caption: string | null
@@ -290,6 +291,9 @@ export default function MyVideosPage() {
                 {uploadsToday ? '내일도 올려보세요!' : `오늘 올리면 ${streak + 1}일이 돼요!`}
               </div>
             )}
+
+            {/* 전공 — 부전공을 시작하거나 전향하면 여기서 바꾼다 */}
+            <MajorSettingRow userId={userId} />
 
             {/* 알림 설정 — 늘 같은 자리에 있어야 찾을 수 있다 */}
             <PushSettingRow user={userId ? { id: userId } : null} />
