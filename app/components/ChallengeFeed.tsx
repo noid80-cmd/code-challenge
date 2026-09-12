@@ -174,10 +174,15 @@ export default function ChallengeFeed({ type }: { type: 'chord' | 'rhythm' | 'me
         setSubmissions(subs || [])
       }
 
-      const { count } = await supabase
-        .from('submissions').select('*', { count: 'exact', head: true })
+      // "N명이 참여했어요"는 사람 수다. 행 수를 세면 안 된다 — 업로드는 올릴
+      // 곳마다 행을 하나씩 만들어서(공개 + 그룹) 한 사람이 둘로 세졌고, 한
+      // 사람이 두 번 올려도 둘로 세졌다. 그래서 영상 하나에 "3명이 참여"가
+      // 떴다. 비공개로 올린 사람은 목록에 안 보여도 참여한 것이 맞으니 센다 —
+      // 이 줄이 있는 이유가 "여기 보이는 것 말고도 더 있다"이기 때문이다.
+      const { data: joined } = await supabase
+        .from('submissions').select('user_id')
         .in('challenge_id', (chAll ?? []).map(c => c.id))
-      setTotalCount(count ?? 0)
+      setTotalCount(new Set((joined ?? []).map(r => r.user_id)).size)
     }
 
     if (user) {
