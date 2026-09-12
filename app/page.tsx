@@ -6,6 +6,7 @@ import Link from 'next/link'
 import type { User } from '@supabase/supabase-js'
 import { TYPE_COLORS } from '@/lib/theme'
 import { toLevel, type Level } from '@/lib/level'
+import { isMajor } from '@/lib/majors'
 import { cachedLevel, saveLevel } from '@/app/components/levelClient'
 import LevelSheet, { LevelChip } from '@/app/components/LevelSheet'
 import PushBanner from '@/app/components/PushBanner'
@@ -21,8 +22,11 @@ export default function LandingPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       setUser(user)
       if (user) {
-        const { data: prof } = await supabase.from('profiles').select('avatar_url, onboarded_at, level').eq('id', user.id).single()
-        if (!prof?.onboarded_at) { window.location.href = '/onboarding'; return }
+        const { data: prof } = await supabase.from('profiles').select('avatar_url, onboarded_at, level, major').eq('id', user.id).single()
+        // 전공 단계가 생기기 전에 가입한 사람은 onboarded_at만 찍혀 있고 전공이
+        // 비어 있다. 올린 연주가 어느 악기인지 알 길이 없고 전공 필터에도 안
+        // 잡힌다 — 온보딩으로 돌려보내 그 한 단계만 다시 거치게 한다.
+        if (!prof?.onboarded_at || !isMajor(prof?.major)) { window.location.href = '/onboarding'; return }
         setAvatarUrl(prof?.avatar_url ?? user.user_metadata?.avatar_url ?? user.user_metadata?.picture ?? null)
         setLevel(toLevel(prof?.level))
       }

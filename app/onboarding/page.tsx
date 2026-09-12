@@ -8,7 +8,7 @@ import MajorPicker from '@/app/components/MajorPicker'
 import { saveLevel } from '@/app/components/levelClient'
 import { saveMajor } from '@/app/components/majorClient'
 import { DEFAULT_LEVEL, type Level } from '@/lib/level'
-import { type Major } from '@/lib/majors'
+import { isMajor, type Major } from '@/lib/majors'
 import { enablePush } from '@/lib/pushEnable'
 import { readPendingInvite } from '@/lib/pendingInvite'
 
@@ -26,14 +26,21 @@ export default function OnboardingPage() {
   // 켜져 있었다. 방금 "매일 오전에 올라와요"라고 말한 이 자리가 물을 자리다.
   const [pushBusy, setPushBusy] = useState(false)
   const [pushOn, setPushOn] = useState(false)
+  // 이미 온보딩을 마쳤는데 전공만 없는 사람. 6단계를 처음부터 다시 보여주면
+  // 이미 아는 이야기를 또 읽히는 것이라, 전공 한 단계만 보여주고 끝낸다.
+  const [majorOnly, setMajorOnly] = useState(false)
 
   useEffect(() => {
     async function check() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { window.location.href = '/login?from=/onboarding'; return }
-      const { data: prof } = await supabase.from('profiles').select('onboarded_at').eq('id', user.id).single()
-      if (prof?.onboarded_at) { window.location.href = '/'; return }
+      const { data: prof } = await supabase.from('profiles').select('onboarded_at, major').eq('id', user.id).single()
+      if (prof?.onboarded_at) {
+        if (isMajor(prof?.major)) { window.location.href = '/'; return }
+        setMajorOnly(true)
+        setStep(3)
+      }
       setUserId(user.id)
       setReady(true)
     }
@@ -63,7 +70,7 @@ export default function OnboardingPage() {
       display: 'flex', flexDirection: 'column',
     }}>
       <header style={{ padding: '20px 20px 0', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6, visibility: majorOnly ? 'hidden' : 'visible' }}>
           {Array.from({ length: STEPS }).map((_, i) => (
             <div key={i} style={{
               width: 24, height: 4, borderRadius: 2,
@@ -221,7 +228,7 @@ export default function OnboardingPage() {
                     else next()
                     return
                   }
-                  step < STEPS - 1 ? next() : finish()
+                  majorOnly || step >= STEPS - 1 ? finish() : next()
                 }}
                 disabled={blocked || pushBusy}
                 style={{
@@ -236,7 +243,7 @@ export default function OnboardingPage() {
                 {blocked ? '전공을 골라주세요'
                   : pushBusy ? '켜는 중...'
                   : askingPush ? '알림 받기'
-                  : step < STEPS - 1 ? '다음' : '시작하기'}
+                  : majorOnly || step >= STEPS - 1 ? '시작하기' : '다음'}
               </button>
               {/* 길을 막지는 않는다. 넘어가도 홈의 배너로 언제든 켤 수 있다. */}
               {askingPush && !pushBusy && (

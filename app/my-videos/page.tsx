@@ -181,6 +181,13 @@ export default function MyVideosPage() {
     if (next === profile?.name) { setEditingName(false); return }
     setSavingName(true)
     const supabase = createClient()
+    // 바꾸기 전 이름을 한 번만 떠 둔다. profiles.name을 덮어쓰기 때문에,
+    // 안 떠 두면 닉네임으로 바꾼 순간 학원에서 누군지 알 길이 없어진다.
+    // 이미 떠 둔 게 있으면 건드리지 않는다 — 처음 것이 본명이다.
+    if (profile?.name) {
+      await supabase.from('profile_real_names')
+        .upsert({ user_id: userId, real_name: profile.name }, { onConflict: 'user_id', ignoreDuplicates: true })
+    }
     // RLS가 막으면 Supabase는 에러 없이 0행을 갱신하고 끝난다. 반영된 행을
     // 확인하지 않으면 바뀐 것처럼 보이다가 새로고침하면 옛 이름이 돌아온다.
     const { data, error } = await supabase.from('profiles')

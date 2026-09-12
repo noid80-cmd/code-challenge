@@ -13,7 +13,7 @@ type DraftChallenge = { title: string; description: string; progressions: Progre
 type ExistingChallenge = { id: string; date: string; title: string; level: string; type?: string }
 type RhythmDraft = { title: string; description: string; level: string; patterns: { label: string; abc: string }[] }
 type MelodyDraft = { title: string; description: string; level: string; patterns: { label: string; abc: string }[] }
-type Member = { id: string; name: string; avatar_url: string | null; created_at: string; submissionCount: number; lastSubmission: string | null; suspended_at: string | null }
+type Member = { id: string; name: string; realName: string | null; avatar_url: string | null; created_at: string; submissionCount: number; lastSubmission: string | null; suspended_at: string | null }
 type AdminSubmission = {
   id: string; user_id: string; created_at: string; hidden_at: string | null
   caption: string | null; group_id: string | null; userName: string; challengeTitle: string
@@ -483,8 +483,15 @@ export default function AdminPage() {
       countMap[s.user_id] = (countMap[s.user_id] ?? 0) + 1
       if (!lastMap[s.user_id]) lastMap[s.user_id] = s.created_at
     })
+    // 닉네임으로 바꾼 사람은 profiles.name이 활동명이다. 누군지 알아야 하니
+    // 본명을 같이 읽는다 — 이 테이블은 본인과 어드민만 읽을 수 있다.
+    const { data: reals } = await supabase.from('profile_real_names').select('user_id, real_name')
+    const realOf: Record<string, string> = {}
+    ;(reals ?? []).forEach((r: { user_id: string; real_name: string }) => { realOf[r.user_id] = r.real_name })
+
     setMembers((profiles ?? []).map(p => ({
       ...p,
+      realName: realOf[p.id] ?? null,
       submissionCount: countMap[p.id] ?? 0,
       lastSubmission: lastMap[p.id] ?? null,
     })))
@@ -841,6 +848,9 @@ export default function AdminPage() {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
                       <span style={{ fontSize: 14, fontWeight: 700, color: '#ccccee' }}>{m.name ?? '이름없음'}</span>
+                      {m.realName && m.realName !== m.name && (
+                        <span style={{ fontSize: 11, color: '#9494c0', fontWeight: 600 }}>본명 {m.realName}</span>
+                      )}
                       {m.suspended_at && (
                         <span style={{ fontSize: 10, fontWeight: 800, color: '#e07060', background: 'rgba(224,112,96,0.15)', padding: '2px 6px', borderRadius: 5 }}>정지됨</span>
                       )}
