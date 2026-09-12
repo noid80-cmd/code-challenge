@@ -430,8 +430,12 @@ function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
   }
 
   async function handleToggle() {
-    setToggling(true)
     const next = !sub.is_private
+    // 숨기는 쪽만 되묻는다. 잘못 누르면 피드에서 즉시 사라지는데 본인은
+    // 사라진 걸 알 방법이 없다 — 다시 공개하는 건 언제든 되돌릴 수 있으니
+    // 그쪽은 묻지 않는다.
+    if (next && !confirm('이 영상을 나만 보기로 바꿀까요? 피드에서 안 보이게 돼요.')) return
+    setToggling(true)
     // RLS가 막으면 Supabase는 에러 없이 0행을 처리하고 끝난다. 반영된 행을
     // 확인하지 않으면 자물쇠는 잠긴 것처럼 보이는데 서버는 그대로다 —
     // 새로고침하면 다시 공개로 보여서 "비공이 자꾸 풀린다"가 된다.
@@ -509,9 +513,21 @@ function VideoCard({ sub, userId, onDelete, onTogglePrivacy }: {
               <span style={{ fontSize: 11, color: '#b0a493' }}>{Number(cm)}/{Number(cd)}</span>
               <button type="button" onClick={e => { e.stopPropagation(); handleToggle() }} disabled={toggling} style={{
                 background: 'none', border: 'none', cursor: toggling ? 'default' : 'pointer',
-                fontSize: 13, padding: 0, color: sub.is_private ? '#a0988c' : '#b0a493',
+                fontSize: 11, fontWeight: 700, padding: 0, display: 'flex', alignItems: 'center', gap: 4,
+                color: sub.is_private ? '#a0988c' : '#b0a493',
               }}>
-                {toggling ? '...' : sub.is_private ? '🔒' : '🔓'}
+                {/* 자물쇠 그림만 두면 열린 자물쇠를 "눌러서 공개"로 읽고 눌러서
+                    멀쩡한 영상을 숨긴다. 지금 상태를 글자로 같이 밝힌다. */}
+                {toggling ? '...' : (
+                  <>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
+                      <rect x="4" y="11" width="16" height="10" rx="2" stroke="currentColor" strokeWidth="1.8" />
+                      <path d={sub.is_private ? 'M8 11V7a4 4 0 0 1 8 0v4' : 'M8 11V7a4 4 0 0 1 7.6-1.8'}
+                        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                    {sub.is_private ? '나만 보기' : '공개중'}
+                  </>
+                )}
               </button>
               <span style={{ fontSize: 12, color: '#a0988c', fontWeight: 700 }}>♥ {sub.likes_count}</span>
               <button type="button" onClick={e => { e.stopPropagation(); handleDelete() }} disabled={deleting} style={{
