@@ -191,7 +191,7 @@ export async function GET(req: NextRequest) {
   // 저녁 리포트에 다시 얹는다 — 처리해야 사라지니 놓칠 수가 없다.
   const { count: pendingBugs } = await supabase
     .from('bug_reports').select('id', { count: 'exact', head: true })
-    .is('admin_reply', null)
+    .is('admin_reply', null).is('resolved_at', null)
 
   await notifyTelegram(
     `[초견챌린지] 저녁 알림 발송

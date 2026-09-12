@@ -50,7 +50,10 @@ export default function OnboardingPage() {
   async function finish() {
     if (!userId) return
     const supabase = createClient()
-    await saveLevel(userId, level)
+    // 전공만 고치러 온 사람의 난이도까지 건드리면 안 된다. 이 화면의
+    // 난이도 단계를 지나오지 않았으므로 level 은 기본값 그대로다 — 저장하면
+    // 중급으로 맞춰둔 사람이 초급으로 되돌아간다.
+    if (!majorOnly) await saveLevel(userId, level)
     if (major) await saveMajor(userId, major)
     await supabase.from('profiles').update({ onboarded_at: new Date().toISOString() }).eq('id', userId)
     // 초대 링크로 들어와 가입한 사람은 홈이 아니라 그룹으로 보낸다
