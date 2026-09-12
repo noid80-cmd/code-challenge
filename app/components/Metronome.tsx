@@ -56,8 +56,8 @@ export default function Metronome({
   }
 
   // 한 박. 폰 스피커는 낮은 소리를 못 내보내므로 높은 쪽에서 딸깍 하게
-  // 만든다. 사인파는 같은 세기로도 작게 들려서 사각파를 쓰고, 배음이
-  // 거슬리지 않게 2.2kHz 위를 깎는다. 짧게 끊어야 딸깍으로 들린다.
+  // 만든다. 사인파는 같은 세기로도 작게 들려서 사각파를 쓰고, 너무
+  // 날카로운 배음만 5.2kHz 위에서 깎는다. 짧게 끊어야 딸깍으로 들린다.
   function click(ctx: AudioContext, at: number) {
     const vol = volRef.current
     if (vol <= 0) return
@@ -92,6 +92,8 @@ export default function Metronome({
     ctx.resume().catch(() => {})
     nextNoteRef.current = ctx.currentTime + 0.1
     setRunning(true)
+    // 시작하면 패널을 접는다 — 연주하는 동안 악보를 가리면 안 된다.
+    setOpen(false)
     // 25ms마다 앞으로 0.15초치를 미리 예약한다. setInterval 자체는
     // 몇 십 ms씩 흔들리지만, 소리 시각은 오디오 시계로 박아두므로
     // 흔들림이 박에 닿지 않는다.
@@ -144,24 +146,24 @@ export default function Metronome({
             <button type="button" onClick={() => adjust(5)} style={stepStyle}>+</button>
           </div>
 
-          <input
-            type="range" min={MIN_BPM} max={MAX_BPM} step={1} value={bpm}
-            onChange={e => { const v = Number(e.target.value); setBpm(v); remember(LS_BPM, v) }}
-            style={{ width: '100%', accentColor: '#f0ece0', marginBottom: 12 }}
+          <DragBar
+            value={bpm} min={MIN_BPM} max={MAX_BPM} step={1}
+            onChange={v => { setBpm(v); remember(LS_BPM, v) }}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2, marginBottom: 6 }}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
               <path d="M7 3L4 5.5H2v5h2L7 13V3z" stroke="rgba(240,236,224,0.6)" strokeWidth="1.4" strokeLinejoin="round" />
               {volume > 0 && <path d="M10 6a2.6 2.6 0 010 4" stroke="rgba(240,236,224,0.6)" strokeWidth="1.4" strokeLinecap="round" />}
               {volume > 0.55 && <path d="M12 4a5.4 5.4 0 010 8" stroke="rgba(240,236,224,0.6)" strokeWidth="1.4" strokeLinecap="round" />}
               {volume === 0 && <path d="M10.5 6.5l3 3M13.5 6.5l-3 3" stroke="rgba(240,236,224,0.6)" strokeWidth="1.4" strokeLinecap="round" />}
             </svg>
-            <input
-              type="range" min={0} max={1} step={0.05} value={volume}
-              onChange={e => { const v = Number(e.target.value); setVolume(v); remember(LS_VOL, v) }}
-              style={{ flex: 1, accentColor: '#f0ece0' }}
-            />
+            <div style={{ flex: 1 }}>
+              <DragBar
+                value={volume} min={0} max={1} step={0.05}
+                onChange={v => { setVolume(v); remember(LS_VOL, v) }}
+              />
+            </div>
           </div>
 
           {/* 시작·정지는 패널 안에 둔다. 밖에 띄우면 안내 문구나 녹화
@@ -202,6 +204,68 @@ export default function Metronome({
       >
         <MetronomeIcon color={running ? '#0a0a08' : '#f0ece0'} />
       </button>
+    </div>
+  )
+}
+
+// 손으로 끄는 막대. <input type="range">를 쓰면 아이폰에서는 동그라미를
+// 정확히 짚어야만 움직인다 — 막대를 왼쪽 오른쪽으로 쓸어도 안 바뀌고,
+// 아무 데나 눌러도 그 자리로 안 간다. 그래서 직접 만든다.
+//
+// 누른 자리로 곧장 가고, 누른 채 움직이면 따라온다. 짚을 곳을 넓히려고
+// 보이는 막대(5px)보다 손이 닿는 자리(38px)를 훨씬 크게 뒀다.
+function DragBar({
+  value, min, max, step, onChange,
+}: {
+  value: number
+  min: number
+  max: number
+  step: number
+  onChange: (v: number) => void
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  const dragging = useRef(false)
+  const pct = ((value - min) / (max - min)) * 100
+
+  function setFrom(clientX: number) {
+    const el = ref.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    if (r.width === 0) return
+    const t = Math.min(1, Math.max(0, (clientX - r.left) / r.width))
+    const raw = min + t * (max - min)
+    const snapped = Math.round(raw / step) * step
+    // 0.05씩 움직이는 볼륨에서 0.30000000000000004 같은 값이 나오지 않게 한다.
+    onChange(Math.min(max, Math.max(min, Number(snapped.toFixed(4)))))
+  }
+
+  return (
+    <div
+      ref={ref}
+      onPointerDown={e => {
+        dragging.current = true
+        e.currentTarget.setPointerCapture(e.pointerId)
+        setFrom(e.clientX)
+      }}
+      onPointerMove={e => { if (dragging.current) setFrom(e.clientX) }}
+      onPointerUp={() => { dragging.current = false }}
+      onPointerCancel={() => { dragging.current = false }}
+      style={{
+        position: 'relative', height: 38, display: 'flex', alignItems: 'center',
+        cursor: 'pointer',
+        // 끄는 동안 화면이 따라 움직이거나 확대되지 않게 한다.
+        touchAction: 'none', userSelect: 'none', WebkitUserSelect: 'none',
+      }}
+    >
+      <div style={{ position: 'relative', width: '100%', height: 5, borderRadius: 3, background: 'rgba(240,236,224,0.16)' }}>
+        <div style={{ position: 'absolute', inset: 0, width: `${pct}%`, borderRadius: 3, background: '#f0ece0' }} />
+        <div style={{
+          position: 'absolute', top: '50%', left: `${pct}%`,
+          width: 18, height: 18, borderRadius: '50%', background: '#f8f4ec',
+          transform: 'translate(-50%, -50%)', boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+          pointerEvents: 'none',
+        }} />
+      </div>
     </div>
   )
 }
